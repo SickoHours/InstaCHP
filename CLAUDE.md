@@ -89,6 +89,20 @@ src/
 | Officer ID | 6 digits, starts with 0 | "012345" |
 | Crash Date | mm/dd/yyyy, not future | "12/01/2025" |
 
+## New Request Form (`/law/jobs/new`)
+
+**Law firms submit only 2 fields:**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| Client Name | text | Yes | Min 2 characters |
+| Report Number | text | Yes | Format: `9XXX-YYYY-ZZZZZ` |
+
+**NOT included in new request form:**
+- Client Type (collected later in chat interface)
+- Crash Date/Time (Staff fills this in - Page 1 data)
+- Case Reference (not part of app logic)
+
 ## Core Business Rules
 
 1. **NCIC Auto-Derivation:** Always first 4 digits of report number

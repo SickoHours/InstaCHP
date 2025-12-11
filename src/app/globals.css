@@ -121,6 +121,18 @@
   opacity: 0;
 }
 
+/* Card fade-in (for staggered lists) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -158,4 +170,535 @@ h1, h2, h3, h4, h5, h6 {
 
 .active\:scale-98:active {
   transform: scale(0.98);
+}
+
+/* ============================================
+   FORM ANIMATIONS
+   ============================================ */
+
+/* Form field entrance - staggered slide up */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 500ms ease-out forwards;
+  opacity: 0;
+}
+
+/* Validation checkmark pop */
+@keyframes checkPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-check-pop {
+  animation: checkPop 300ms ease-out forwards;
+}
+
+/* Radio selection pulse */
+@keyframes radioPulse {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-radio-pulse {
+  animation: radioPulse 200ms ease-out forwards;
+}
+
+/* Success shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Error message entrance */
+@keyframes errorSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-error-slide {
+  animation: errorSlide 200ms ease-out forwards;
+}
+
+/* Input focus glow */
+@keyframes focusGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  }
+}
+
+.animate-focus-glow {
+  animation: focusGlow 300ms ease-out forwards;
+}
+
+/* ============================================
+   DARK MODE / JOB DETAIL PAGE ANIMATIONS
+   ============================================ */
+
+/* Page entrance - fade up with blur reduction */
+@keyframes pageEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-page-entrance {
+  animation: pageEntrance 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Timeline message cascade */
+@keyframes messageCascade {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-message-cascade {
+  animation: messageCascade 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+/* Glowing pulse for status badges */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    opacity: 0.9;
+  }
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Subtle glow for interactive elements */
+@keyframes subtleGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.2), 0 0 40px rgba(20, 184, 166, 0.1);
+  }
+}
+
+.animate-subtle-glow {
+  animation: subtleGlow 4s ease-in-out infinite;
+}
+
+/* Timeline connector glow */
+@keyframes lineGlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+.animate-line-glow {
+  background: linear-gradient(
+    180deg,
+    rgba(20, 184, 166, 0.1) 0%,
+    rgba(20, 184, 166, 0.5) 50%,
+    rgba(20, 184, 166, 0.1) 100%
+  );
+  background-size: 100% 200%;
+  animation: lineGlow 3s ease-in-out infinite;
+}
+
+/* Download button hover glow */
+@keyframes buttonGlow {
+  from {
+    box-shadow: 0 0 0 rgba(20, 184, 166, 0);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.4), 0 0 60px rgba(20, 184, 166, 0.2);
+  }
+}
+
+.hover-glow:hover {
+  animation: buttonGlow 300ms ease-out forwards;
+}
+
+/* Dot pulse for timeline nodes */
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+.animate-dot-pulse {
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+/* Floating gradient background orbs for dark mode */
+@keyframes floatDark {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.15;
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+    opacity: 0.2;
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.95);
+    opacity: 0.1;
+  }
+}
+
+.orb-dark {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: floatDark 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Glass card dark variant */
+.glass-card-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Header blur on scroll */
+.header-blur {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Smooth text reveal */
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-text-reveal {
+  animation: textReveal 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* Icon spin for loading states */
+@keyframes iconSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-icon-spin {
+  animation: iconSpin 1s linear infinite;
+}
+
+/* Scale bounce for interactive feedback */
+@keyframes scaleBounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.active\:scale-bounce:active {
+  animation: scaleBounce 150ms ease-out;
+}
+
+/* ============================================
+   DARK MODE UTILITY CLASSES
+   ============================================ */
+
+/* Dark stat card with glass effect and hover glow */
+.stat-card-dark {
+  position: relative;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-card-dark:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+/* Dark search input styling */
+.search-input-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-input-dark::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.search-input-dark:focus {
+  border-color: rgba(20, 184, 166, 0.5);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Form card dark variant */
+.form-card-dark {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Mobile footer dark */
+.mobile-footer-dark {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Job card dark variant */
+.job-card-dark {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.job-card-dark:hover {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Staggered card entrance animation */
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-entrance {
+  animation: cardEntrance 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* Empty state icon container */
+.empty-state-icon-dark {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* ============================================
+   TOAST NOTIFICATION ANIMATIONS
+   ============================================ */
+
+/* Toast entrance - slide up with fade */
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast-enter {
+  animation: toastEnter 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast exit - slide out with fade */
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+.animate-toast-exit {
+  animation: toastExit 200ms ease-in forwards;
+}
+
+/* Toast progress bar - shrinks from right to left */
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* ============================================
+   SKELETON LOADING ANIMATIONS
+   ============================================ */
+
+/* Gentle skeleton pulse - softer than shimmer */
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+/* Skeleton shimmer - gradient sweep */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.1) 0%,
+    rgba(148, 163, 184, 0.2) 50%,
+    rgba(148, 163, 184, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   TOOLTIP ANIMATIONS
+   ============================================ */
+
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-tooltip-enter {
+  animation: tooltipEnter 0.15s ease-out forwards;
 }

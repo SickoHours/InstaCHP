@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InstaTCR
 
-## Getting Started
+A web application for managing California Highway Patrol (CHP) crash report requests. InstaTCR streamlines the process of requesting, tracking, and obtaining crash reports for personal injury law firms.
 
-First, run the development server:
+## Current Status
+
+**Version:** 0.1.0 (V1 MVP - Frontend Only)
+**Phase:** Design System & Landing Page Complete
+
+## Tech Stack
+
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript (strict mode)
+- **Styling:** Tailwind CSS 4
+- **Icons:** Lucide React
+- **Deployment:** Vercel
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Run linting
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx           # Landing page
+│   ├── layout.tsx         # Root layout with fonts
+│   ├── globals.css        # Design system CSS
+│   ├── law/               # Law firm screens (coming soon)
+│   └── staff/             # Staff screens (coming soon)
+├── components/
+│   ├── ui/                # Reusable UI components
+│   │   ├── Button.tsx     # 3 variants, 3 sizes
+│   │   ├── Card.tsx       # Glass effect support
+│   │   ├── Container.tsx  # Responsive container
+│   │   └── Logo.tsx       # Text-based logo
+│   └── landing/           # Landing page components
+│       ├── AnimatedBackground.tsx
+│       ├── Hero.tsx
+│       ├── ValuePropositionCard.tsx
+│       └── Footer.tsx
+└── lib/
+    ├── utils.ts           # cn() utility
+    └── constants.ts       # Colors & constants
+```
 
-## Learn More
+## Design System
 
-To learn more about Next.js, take a look at the following resources:
+- **Colors:** Navy blue (#0a1628), Gold (#d4a84b), Teal (#14b8a6)
+- **Typography:** Source Serif 4 (headings), Work Sans (body)
+- **Mobile-first:** 375px minimum, 768px breakpoint
+- **Touch targets:** 44px minimum (WCAG 2.1 AAA)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[CLAUDE.md](CLAUDE.md)** - Quick reference for AI assistants
+- **[INSTATCR-MASTER-PRD.md](INSTATCR-MASTER-PRD.md)** - Complete product specifications
+- **[DEV-ROADMAP.md](DEV-ROADMAP.md)** - Detailed development roadmap
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history
 
-## Deploy on Vercel
+## Two User Types
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Law Firms** - Submit requests, track status, download reports
+2. **Staff** - Process requests, run automation, handle escalations
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Law firms never see technical details about automation or internal processes.
+
+## License
+
+Private - All rights reserved

@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Tokens */
+  --primary-navy: #0f2c59;
+  --primary-gold: #c5a572;
+  --accent-teal: #1a7f7a;
+  --accent-amber: #d97706;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-300: #cbd5e1;
+  --slate-600: #475569;
+  --slate-900: #0f172a;
+
+  /* Semantic Colors */
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+
+  /* Background & Foreground */
+  --background: var(--slate-900);
+  --foreground: var(--slate-50);
 }
 
 @theme inline {
+  --color-primary-navy: var(--primary-navy);
+  --color-primary-gold: var(--primary-gold);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-amber: var(--accent-amber);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-work-sans);
+  --font-serif: var(--font-source-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Glass Effect Utility */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(12px)) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
+/* Animated Orbs */
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.2;
+  }
+  33% {
+    transform: translate(100px, -50px) scale(1.1);
+    opacity: 0.25;
+  }
+  66% {
+    transform: translate(-50px, 80px) scale(0.9);
+    opacity: 0.15;
+  }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  mix-blend-mode: multiply;
+  animation: float 25s ease-in-out infinite;
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: var(--accent-teal);
+  top: 10%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: var(--primary-gold);
+  top: 50%;
+  right: 10%;
+  animation-delay: 8s;
+}
+
+.orb-3 {
+  width: 700px;
+  height: 700px;
+  background: var(--primary-navy);
+  bottom: 5%;
+  left: 30%;
+  animation-delay: 16s;
+}
+
+/* Fade-in Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 600ms ease forwards;
+  opacity: 0;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .orb {
+    animation: none !important;
+  }
+}
+
+/* Base Styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 700;
+}
+
+/* Utility class for scale transforms */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+.active\:scale-98:active {
+  transform: scale(0.98);
 }

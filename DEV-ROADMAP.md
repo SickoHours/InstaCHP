@@ -8,10 +8,12 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 
 | Version | Focus | Duration | Status |
 |---------|-------|----------|--------|
-| **V1** | MVP Frontend | 13 days | ✅ Complete (100%) |
+| **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.2.0) |
 | **V2** | Backend Integration | 6 days | ⚪ Not Started |
 | **V3** | VAPI AI Caller | TBD | ⚪ Not Started |
 | **V4** | Open Router AI | TBD | ⚪ Not Started |
+
+**Current Version:** V1.2.0 (December 12, 2025)
 
 ---
 
@@ -376,6 +378,110 @@ Complete, polished frontend with mock data. No backend dependencies.
 
 ---
 
+### Post-Phase 6: Continued Enhancements ✅ COMPLETE
+
+**Status:** ✅ Complete (V1.0.5 - V1.2.0)
+
+After Phase 6 completion, additional enhancements were made to improve user experience and streamline workflows.
+
+#### V1.0.5: Frontend Polish Features ✅ COMPLETE
+
+- [x] **Dynamic Job Creation** - MockDataManager for in-memory CRUD operations
+- [x] **MockDataContext** - React Context for global state management
+- [x] **Interactive Timeline** - Driver/Passenger selection in timeline
+- [x] **DriverPassengerChoice** - Two-button selection component
+- [x] **PassengerMiniForm** - Compact form for passenger data (plate, license, VIN)
+- [x] **Staff Quick-Fill Buttons** - Copy passenger data to Card 2
+- [x] **CHPNudge** - Dismissible info card encouraging CHP call
+- [x] **Escalation Conditional** - Card 6 hidden when reports obtained
+- [x] **Manual Completion Labels** - Updated to "First Name *" clarity
+
+#### V1.0.6: Enhanced Flow & Auto-Wrapper ✅ COMPLETE
+
+- [x] **Status System Updates** - NEW jobs start as NEEDS_CALL
+- [x] **Card Visibility Logic** - Cards 6 & 7 hidden when reports exist
+- [x] **Passenger Flow Enhancements** - Skip option with warning nudge
+- [x] **Page1DetailsCard** - Crash details prompt (date, time, officer badge)
+- [x] **Page1DataCard** - Editable crash details card
+- [x] **Page2DataCard** - Editable driver info card
+- [x] **Law Firm Auto-Wrapper** - Automatic wrapper trigger when prerequisites met
+- [x] **Timeline Message Hygiene** - New event types with icons/colors
+
+#### V1.0.7: Simplified Law Firm Job View ✅ COMPLETE
+
+- [x] **InlineFieldsCard** - NEW unified form combining Page 1 + Page 2 fields
+  - Always-visible fields (no edit mode)
+  - Single "Save & Check for Report" button
+  - HHMM time validation (4-digit 24-hour format)
+- [x] **Flow Gate Implementation** - Driver/Passenger selection REQUIRED first
+  - Prominent selection at top of page
+  - Form fields visible but disabled until selection made
+  - PassengerMiniForm embedded in gate for passengers
+- [x] **Unified Save Handler** - Single `handleSaveAllFields` replaces separate handlers
+  - Atomic updates for all fields
+  - Auto-wrapper prerequisites: Page 1 complete + ≥1 Page 2 field
+- [x] **Simplified Timeline** - Read-only event display
+  - Removed all interactive rendering branches
+  - No embedded forms or chat-style interactions
+  - Simple loop showing all events
+- [x] **Time Validation Utility** - `formatHHMMTime()` for HHMM display
+- [x] **Deprecated Components** - Page1DataCard, Page2DataCard, Page1DetailsCard marked @deprecated
+
+**Key Changes in V1.0.7:**
+| Before | After |
+|--------|-------|
+| Separate Page1DataCard + Page2DataCard | Single InlineFieldsCard |
+| Edit/display toggle mode | Always-visible fields |
+| Interactive timeline with embedded forms | Read-only timeline |
+| HTML time picker | 4-digit HHMM text input |
+| Form accessible without selection | Flow gate requires driver/passenger first |
+
+**Deliverable:** ✅ Streamlined law firm experience with flow gating and unified forms.
+
+#### V1.1.0: Redesigned Driver/Passenger Flow ✅ COMPLETE
+
+- [x] **FlowWizard** - Step-by-step orchestrator for law firm flow
+  - Selection → Verification → SpeedUp → CrashDetails → Done
+- [x] **SpeedUpPrompt** - Binary yes/no choice for sharing crash details
+- [x] **CrashDetailsForm** - Focused crash details form (date, time, officer)
+- [x] **PassengerVerificationForm** - Enhanced form with repeatable names
+- [x] **Type System Updates** - FlowStep, PassengerVerificationData, InteractiveState extensions
+- [x] **Timeline Events** - 6 new event types for flow wizard tracking
+
+**Key Changes in V1.1.0:**
+| Before | After |
+|--------|-------|
+| Overlapping forms | Linear step-by-step wizard |
+| Confusing parallel paths | Clean skip at every step |
+| Required fields | All fields optional |
+
+#### V1.2.0: Conditional Rescue Flow ✅ COMPLETE
+
+- [x] **DriverInfoRescueForm** - Rescue form for Page 2 verification failures
+  - Plate, Driver's License, VIN fields
+  - Repeatable additional names UI
+  - Auto-triggers wrapper re-run on submission
+- [x] **WrapperResult Types** - 5 distinct result types for failure differentiation
+  - `FULL`, `FACE_PAGE`, `PAGE1_NOT_FOUND`, `PAGE2_VERIFICATION_FAILED`, `PORTAL_ERROR`
+- [x] **ReportTypeHint** - Face Page vs Full Report hint even when verification fails
+- [x] **CrashDetailsForm Update** - "Save & Check for Report" button triggers wrapper immediately
+- [x] **Conditional Form Visibility**
+  - Rescue form ONLY for `PAGE2_VERIFICATION_FAILED`
+  - InlineFieldsCard ONLY for `PAGE1_NOT_FOUND` corrections
+- [x] **Timeline Events** - 4 new event types for rescue flow
+
+**Key Changes in V1.2.0:**
+| Before | After |
+|--------|-------|
+| Single wrapper result types | 5 distinct failure modes |
+| No recovery for Page 2 failures | Rescue form for additional identifiers |
+| Unknown report type on failure | reportTypeHint preserved |
+| "Continue" button | "Save & Check for Report" (triggers wrapper) |
+
+**Deliverable:** ✅ Complete rescue flow with conditional form visibility and reportTypeHint.
+
+---
+
 ## V2: Backend Integration (6 Days)
 
 Connect frontend to real Convex database and CHP wrapper service.
@@ -497,6 +603,8 @@ Add AI-powered assistance features.
 
 ## Resources
 
-- **[CLAUDE.md](CLAUDE.md)** - Quick reference for AI assistants
-- **[INSTATCR-MASTER-PRD.md](INSTATCR-MASTER-PRD.md)** - Complete product specifications
+- **[CLAUDE.md](CLAUDE.md)** - Quick reference for Claude Code
+- **[AGENTS.md](AGENTS.md)** - Documentation guide for all AI agents
+- **[INSTATCR-MASTER-PRD.md](INSTATCR-MASTER-PRD.md)** - Documentation navigation hub
+- **[docs/prd/](docs/prd/)** - Detailed product specifications (6 focused documents)
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history

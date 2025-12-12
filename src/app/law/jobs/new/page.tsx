@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Check, Loader2, AlertCircle } from 'lucide-react
 import { Container, Button, Input } from '@/components/ui';
 import { cn, isValidReportNumber } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
+import { useMockData } from '@/context/MockDataContext';
 
 // Form state interface - only 2 fields per PRD
 interface FormState {
@@ -23,6 +24,7 @@ interface FormErrors {
 export default function NewRequestPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { createJob } = useMockData();
 
   // Form state - simplified to just clientName and reportNumber
   const [formState, setFormState] = useState<FormState>({
@@ -157,13 +159,19 @@ export default function NewRequestPage() {
         }, 1500);
       });
 
+      // Create new job with initial events
+      const newJob = createJob({
+        clientName: formState.clientName,
+        reportNumber: formState.reportNumber,
+      });
+
       setIsSubmitting(false);
       setIsSuccess(true);
       toast.success('Request submitted successfully!');
 
-      // Navigate after success animation
+      // Navigate to new job's chat view
       await new Promise((resolve) => setTimeout(resolve, 800));
-      router.push('/law/jobs/job_001');
+      router.push(`/law/jobs/${newJob._id}`);
     } catch (error) {
       setIsSubmitting(false);
       const errorMessage = 'Failed to submit request. Please try again.';

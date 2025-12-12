@@ -1,6 +1,7 @@
 'use client';
 
 import { ToastProvider } from '@/context/ToastContext';
+import { MockDataProvider } from '@/context/MockDataContext';
 import { ToastContainer } from '@/components/ui/Toast';
 
 interface ProvidersProps {
@@ -9,9 +10,11 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ToastProvider>
-      {children}
-      <ToastContainer />
-    </ToastProvider>
+    <MockDataProvider>
+      <ToastProvider>
+        {children}
+        <ToastContainer />
+      </ToastProvider>
+    </MockDataProvider>
   );
 }

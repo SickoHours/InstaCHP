@@ -116,7 +116,7 @@ export const mockJobs: Job[] = [
       {
         runId: 'run_001',
         timestamp: now - hours(4),
-        result: 'NO_RESULT',
+        result: 'PAGE1_NOT_FOUND',
         duration: 11200,
       },
     ],
@@ -306,7 +306,7 @@ export const mockJobs: Job[] = [
       {
         runId: 'run_008',
         timestamp: now - days(3),
-        result: 'NO_RESULT',
+        result: 'PAGE1_NOT_FOUND',
         duration: 13000,
       },
     ],
@@ -343,7 +343,7 @@ export const mockJobs: Job[] = [
       {
         runId: 'run_010',
         timestamp: now - days(10),
-        result: 'NO_RESULT',
+        result: 'PAGE1_NOT_FOUND',
         duration: 12500,
       },
     ],
@@ -391,7 +391,7 @@ export const mockJobs: Job[] = [
       {
         runId: 'run_011',
         timestamp: now - hours(12),
-        result: 'ERROR',
+        result: 'PORTAL_ERROR',
         duration: 45000,
         errorMessage: 'Portal timeout after 45 seconds',
       },
@@ -422,7 +422,7 @@ export const mockJobs: Job[] = [
       {
         runId: 'run_012',
         timestamp: now - days(18),
-        result: 'NO_RESULT',
+        result: 'PAGE1_NOT_FOUND',
         duration: 11500,
       },
     ],

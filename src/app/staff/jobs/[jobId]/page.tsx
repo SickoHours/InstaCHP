@@ -30,6 +30,7 @@ import {
   CreditCard,
   Hash,
   MapPin,
+  Copy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getJobById, getUserFacingEvents, getJobEvents } from '@/lib/mockData';
@@ -140,8 +141,9 @@ function WrapperResultBadge({ result }: { result: WrapperResult }) {
   const config: Record<WrapperResult, { color: string; label: string }> = {
     FULL: { color: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30', label: 'Full Report' },
     FACE_PAGE: { color: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30', label: 'Face Page' },
-    NO_RESULT: { color: 'bg-slate-500/20 text-slate-200 border-slate-500/30', label: 'No Result' },
-    ERROR: { color: 'bg-red-500/20 text-red-200 border-red-500/30', label: 'Error' },
+    PAGE1_NOT_FOUND: { color: 'bg-slate-500/20 text-slate-200 border-slate-500/30', label: 'Page 1 Not Found' },
+    PAGE2_VERIFICATION_FAILED: { color: 'bg-amber-500/20 text-amber-200 border-amber-500/30', label: 'Verification Failed' },
+    PORTAL_ERROR: { color: 'bg-red-500/20 text-red-200 border-red-500/30', label: 'Portal Error' },
   };
 
   const { color, label } = config[result];
@@ -595,20 +597,40 @@ export default function StaffJobDetailPage() {
     clearInterval(interval);
     setWrapperProgress(100);
 
-    // Random result: FULL (30%), FACE_PAGE (40%), NO_RESULT (15%), ERROR (15%)
+    // New result distribution:
+    // 30% → FULL (page1 passed, page2 passed)
+    // 35% → FACE_PAGE (page1 passed, face page available)
+    // 15% → PAGE1_NOT_FOUND (page1 failed)
+    // 15% → PAGE2_VERIFICATION_FAILED (page1 passed, page2 failed)
+    // 5% → PORTAL_ERROR (technical issue)
     const rand = Math.random();
     let result: WrapperResult;
-    if (rand < 0.3) result = 'FULL';
-    else if (rand < 0.7) result = 'FACE_PAGE';
-    else if (rand < 0.85) result = 'NO_RESULT';
-    else result = 'ERROR';
+    let page1Passed = false;
+
+    if (rand < 0.30) {
+      result = 'FULL';
+      page1Passed = true;
+    } else if (rand < 0.65) {
+      result = 'FACE_PAGE';
+      page1Passed = true;
+    } else if (rand < 0.80) {
+      result = 'PAGE1_NOT_FOUND';
+      page1Passed = false;
+    } else if (rand < 0.95) {
+      result = 'PAGE2_VERIFICATION_FAILED';
+      page1Passed = true;
+    } else {
+      result = 'PORTAL_ERROR';
+      page1Passed = false;
+    }
 
     const newRun: WrapperRun = {
       runId: `run_${generateId()}`,
       timestamp: Date.now(),
       result,
       duration,
-      errorMessage: result === 'ERROR' ? 'Portal timeout after 45 seconds' : undefined,
+      page1Passed,
+      errorMessage: result === 'PORTAL_ERROR' ? 'Portal timeout after 45 seconds' : undefined,
     };
 
     // Update local job state
@@ -624,7 +646,9 @@ export default function StaffJobDetailPage() {
       } else if (result === 'FACE_PAGE') {
         newStatus = 'FACE_PAGE_ONLY';
         newFacePageToken = `fp_token_${generateId()}`;
-      } else if (result === 'ERROR') {
+      } else if (result === 'PAGE1_NOT_FOUND' || result === 'PAGE2_VERIFICATION_FAILED') {
+        newStatus = 'NEEDS_MORE_INFO';
+      } else if (result === 'PORTAL_ERROR') {
         newStatus = 'AUTOMATION_ERROR';
       }
 
@@ -645,10 +669,12 @@ export default function StaffJobDetailPage() {
       toast.success('Full report retrieved successfully!');
     } else if (result === 'FACE_PAGE') {
       toast.success('Face page retrieved. Full report may be available later.');
-    } else if (result === 'NO_RESULT') {
-      toast.warning('No results found. Report may not be in the system yet.');
-    } else if (result === 'ERROR') {
-      toast.error('Wrapper failed. Please try again or escalate.');
+    } else if (result === 'PAGE1_NOT_FOUND') {
+      toast.warning('Report not found with provided Page 1 details.');
+    } else if (result === 'PAGE2_VERIFICATION_FAILED') {
+      toast.warning('Page 2 verification failed. Need more identifiers.');
+    } else if (result === 'PORTAL_ERROR') {
+      toast.error('Portal error. Please try again or escalate.');
     }
   };
 
@@ -1040,6 +1066,68 @@ export default function StaffJobDetailPage() {
 
             {/* Card 2: Page 2 Verification */}
             <StaffControlCard title="Page 2 Verification" icon={User} animationDelay={200}>
+              {/* Passenger-Provided Data Quick-Fill Banner */}
+              {localJob.passengerProvidedData && (
+                <div className="mb-4 p-3 rounded-lg bg-teal-500/10 border border-teal-500/20">
+                  <p className="text-xs text-teal-400 mb-2 uppercase tracking-wider">
+                    Passenger Provided:
+                  </p>
+                  <div className="space-y-2">
+                    {localJob.passengerProvidedData.plate && (
+                      <button
+                        onClick={() =>
+                          setPage2Data((prev) => ({
+                            ...prev,
+                            plate: localJob.passengerProvidedData!.plate!,
+                          }))
+                        }
+                        className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                      >
+                        <Car className="w-4 h-4 text-teal-400" />
+                        <span className="text-sm text-slate-300 flex-1">
+                          Plate: {localJob.passengerProvidedData.plate}
+                        </span>
+                        <Copy className="w-4 h-4 text-teal-400" />
+                      </button>
+                    )}
+                    {localJob.passengerProvidedData.driverLicense && (
+                      <button
+                        onClick={() =>
+                          setPage2Data((prev) => ({
+                            ...prev,
+                            driverLicense: localJob.passengerProvidedData!.driverLicense!,
+                          }))
+                        }
+                        className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                      >
+                        <CreditCard className="w-4 h-4 text-teal-400" />
+                        <span className="text-sm text-slate-300 flex-1">
+                          Driver License: {localJob.passengerProvidedData.driverLicense}
+                        </span>
+                        <Copy className="w-4 h-4 text-teal-400" />
+                      </button>
+                    )}
+                    {localJob.passengerProvidedData.vin && (
+                      <button
+                        onClick={() =>
+                          setPage2Data((prev) => ({
+                            ...prev,
+                            vin: localJob.passengerProvidedData!.vin!,
+                          }))
+                        }
+                        className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                      >
+                        <Car className="w-4 h-4 text-teal-400" />
+                        <span className="text-sm text-slate-300 flex-1">
+                          VIN: {localJob.passengerProvidedData.vin}
+                        </span>
+                        <Copy className="w-4 h-4 text-teal-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <DarkInput
                   label="First Name"
@@ -1160,10 +1248,12 @@ export default function StaffJobDetailPage() {
                     {lastWrapperResult === 'FULL' && 'Full CHP crash report downloaded successfully.'}
                     {lastWrapperResult === 'FACE_PAGE' &&
                       'CHP report found (Face Page only). Full report may be available later.'}
-                    {lastWrapperResult === 'NO_RESULT' &&
-                      'No results found. Try again later or verify the information.'}
-                    {lastWrapperResult === 'ERROR' &&
-                      'An error occurred. Portal may be unavailable.'}
+                    {lastWrapperResult === 'PAGE1_NOT_FOUND' &&
+                      'Report not found with provided Page 1 details (date/time/officer).'}
+                    {lastWrapperResult === 'PAGE2_VERIFICATION_FAILED' &&
+                      'Page 1 passed, but Page 2 verification failed. Need more identifiers.'}
+                    {lastWrapperResult === 'PORTAL_ERROR' &&
+                      'Portal error occurred. Please try again or escalate.'}
                   </p>
                 </div>
               )}
@@ -1208,9 +1298,11 @@ export default function StaffJobDetailPage() {
                         ? 'border-l-emerald-500'
                         : run.result === 'FACE_PAGE'
                           ? 'border-l-yellow-500'
-                          : run.result === 'ERROR'
+                          : run.result === 'PORTAL_ERROR'
                             ? 'border-l-red-500'
-                            : 'border-l-slate-500';
+                            : run.result === 'PAGE2_VERIFICATION_FAILED'
+                              ? 'border-l-amber-500'
+                              : 'border-l-slate-500';
 
                     return (
                       <div
@@ -1364,38 +1456,41 @@ export default function StaffJobDetailPage() {
               )}
             </StaffControlCard>
 
-            {/* Card 6: Escalation */}
-            <StaffControlCard title="Escalation" icon={AlertTriangle} animationDelay={600}>
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
-                <p className="text-xs text-amber-400">
-                  Use when automation fails multiple times and manual in-person pickup at CHP office
-                  is required.
+            {/* Card 6: Escalation - Only show if NO reports obtained */}
+            {!localJob.facePageToken && !localJob.fullReportToken && (
+              <StaffControlCard title="Escalation" icon={AlertTriangle} animationDelay={600}>
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+                  <p className="text-xs text-amber-400">
+                    Use when automation fails multiple times and manual in-person pickup at CHP office
+                    is required.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowEscalationDialog(true)}
+                  disabled={isEscalated}
+                  className={cn(
+                    'w-full h-12 md:h-10 rounded-lg font-medium',
+                    'transition-all duration-200',
+                    'flex items-center justify-center gap-2',
+                    isEscalated
+                      ? 'bg-amber-600/30 text-amber-400 cursor-not-allowed'
+                      : 'bg-amber-600 text-white hover:bg-amber-500 active:scale-98'
+                  )}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{isEscalated ? 'Already Escalated' : 'Escalate to Manual Pickup'}</span>
+                </button>
+
+                <p className="text-xs text-slate-500 mt-3">
+                  All staff can see escalated jobs globally.
                 </p>
-              </div>
+              </StaffControlCard>
+            )}
 
-              <button
-                onClick={() => setShowEscalationDialog(true)}
-                disabled={isEscalated}
-                className={cn(
-                  'w-full h-12 md:h-10 rounded-lg font-medium',
-                  'transition-all duration-200',
-                  'flex items-center justify-center gap-2',
-                  isEscalated
-                    ? 'bg-amber-600/30 text-amber-400 cursor-not-allowed'
-                    : 'bg-amber-600 text-white hover:bg-amber-500 active:scale-98'
-                )}
-              >
-                <AlertTriangle className="w-4 h-4" />
-                <span>{isEscalated ? 'Already Escalated' : 'Escalate to Manual Pickup'}</span>
-              </button>
-
-              <p className="text-xs text-slate-500 mt-3">
-                All staff can see escalated jobs globally.
-              </p>
-            </StaffControlCard>
-
-            {/* Card 7: Manual Completion */}
-            <StaffControlCard title="Manual Completion" icon={Upload} animationDelay={700}>
+            {/* Card 7: Manual Completion - Only show if NO reports obtained */}
+            {!localJob.facePageToken && !localJob.fullReportToken && (
+              <StaffControlCard title="Manual Completion" icon={Upload} animationDelay={700}>
               {/* File Type Selection */}
               <div className="space-y-2 mb-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider">File Type</p>
@@ -1427,13 +1522,15 @@ export default function StaffJobDetailPage() {
               {uploadType === 'face' && (
                 <div className="mb-4">
                   <DarkInput
-                    label="Guaranteed Name *"
+                    label="First Name *"
                     value={guaranteedName}
                     onChange={setGuaranteedName}
-                    placeholder="Client full name"
+                    placeholder="Enter driver's first name only"
                     icon={User}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Required to unlock auto-checker</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    First name only - used to unlock auto-checker
+                  </p>
                 </div>
               )}
 
@@ -1514,7 +1611,8 @@ export default function StaffJobDetailPage() {
                   <span>Mark as Completed</span>
                 </button>
               )}
-            </StaffControlCard>
+              </StaffControlCard>
+            )}
 
             {/* Bottom Spacer */}
             <div className="h-8" />

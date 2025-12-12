@@ -105,6 +105,16 @@ export function formatCrashTime(time: string): string {
 }
 
 /**
+ * Format HHMM time to display format HH:MM (24-hour)
+ * @example formatHHMMTime('1430') => '14:30'
+ * @example formatHHMMTime('0845') => '08:45'
+ */
+export function formatHHMMTime(time: string): string {
+  if (!time || time.length !== 4) return time;
+  return `${time.slice(0, 2)}:${time.slice(2, 4)}`;
+}
+
+/**
  * Format timestamp as relative time
  * @example formatRelativeTime(Date.now() - 3600000) => '1 hour ago'
  */

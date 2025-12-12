@@ -11,6 +11,9 @@ import {
   XCircle,
   Sparkles,
   RefreshCw,
+  Zap,
+  ArrowRight,
+  UserCheck,
 } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { EventType } from '@/lib/types';
@@ -26,6 +29,10 @@ interface TimelineMessageProps extends React.HTMLAttributes<HTMLDivElement> {
   animationDelay?: number;
   /** Whether this is the latest/most recent event */
   isLatest?: boolean;
+  /** Interactive content (buttons, forms) to embed in message bubble */
+  children?: React.ReactNode;
+  /** Whether this message contains interactive elements */
+  isInteractive?: boolean;
 }
 
 /**
@@ -43,6 +50,29 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   escalated: AlertCircle,
   completed: CheckCircle2,
   message: MessageCircle,
+  // V1.0.5+ Interactive prompts
+  driver_passenger_prompt: MessageCircle,
+  driver_selected: CheckCircle2,
+  passenger_selected: CheckCircle2,
+  passenger_data_provided: CheckCircle2,
+  chp_nudge_shown: MessageCircle,
+  // V1.0.6+ Enhanced flows
+  page1_details_request: MessageCircle,
+  auto_wrapper_triggered: Sparkles,
+  auto_wrapper_success: CheckCircle2,
+  auto_wrapper_failed: XCircle,
+  // V1.1.0+ Flow wizard events
+  flow_speedup_prompt: Zap,
+  flow_speedup_yes: CheckCircle2,
+  flow_speedup_no: ArrowRight,
+  flow_crash_details_saved: FileText,
+  flow_verification_saved: UserCheck,
+  flow_completed: Sparkles,
+  // V1.2.0+ Rescue flow events
+  page1_not_found: AlertCircle,
+  page2_verification_needed: AlertCircle,
+  rescue_info_saved: CheckCircle2,
+  rescue_wrapper_triggered: Sparkles,
 };
 
 /**
@@ -60,6 +90,29 @@ const EVENT_COLORS: Record<EventType, string> = {
   escalated: 'text-amber-400',
   completed: 'text-emerald-400',
   message: 'text-slate-400',
+  // V1.0.5+ Interactive prompts
+  driver_passenger_prompt: 'text-teal-400',
+  driver_selected: 'text-emerald-400',
+  passenger_selected: 'text-emerald-400',
+  passenger_data_provided: 'text-cyan-400',
+  chp_nudge_shown: 'text-cyan-400',
+  // V1.0.6+ Enhanced flows
+  page1_details_request: 'text-teal-400',
+  auto_wrapper_triggered: 'text-purple-400',
+  auto_wrapper_success: 'text-emerald-400',
+  auto_wrapper_failed: 'text-red-400',
+  // V1.1.0+ Flow wizard events
+  flow_speedup_prompt: 'text-amber-400',
+  flow_speedup_yes: 'text-emerald-400',
+  flow_speedup_no: 'text-slate-400',
+  flow_crash_details_saved: 'text-cyan-400',
+  flow_verification_saved: 'text-cyan-400',
+  flow_completed: 'text-emerald-400',
+  // V1.2.0+ Rescue flow events
+  page1_not_found: 'text-amber-400',
+  page2_verification_needed: 'text-amber-400',
+  rescue_info_saved: 'text-emerald-400',
+  rescue_wrapper_triggered: 'text-purple-400',
 };
 
 const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(
@@ -71,6 +124,8 @@ const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(
       timestamp,
       animationDelay = 0,
       isLatest = false,
+      children,
+      isInteractive = false,
       style,
       ...props
     },
@@ -139,7 +194,8 @@ const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(
             className={cn(
               'glass-card-dark rounded-2xl p-4',
               'transform transition-all duration-300',
-              'hover:scale-[1.01] hover:border-slate-600/50',
+              // Disable hover effects for interactive messages
+              !isInteractive && 'hover:scale-[1.01] hover:border-slate-600/50',
               isLatest && 'border-teal-500/30 animate-subtle-glow'
             )}
           >
@@ -147,6 +203,13 @@ const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(
             <p className="text-slate-200 text-sm md:text-base leading-relaxed">
               {message}
             </p>
+
+            {/* Interactive content (buttons, forms, etc.) */}
+            {children && (
+              <div className="mt-4">
+                {children}
+              </div>
+            )}
 
             {/* Timestamp */}
             <p className="mt-2 text-xs text-slate-500 flex items-center gap-1.5">

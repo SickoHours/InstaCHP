@@ -1,37 +1,82 @@
-# InstaTCR - Quick Reference for AI Assistants
+# InstaTCR - Quick Reference for Claude
 
-## What is InstaTCR?
-InstaTCR is a web application that helps personal injury law firms request, track, and obtain California Highway Patrol (CHP) crash reports. It automates the process of searching CHP portals and downloading reports through browser automation.
+> **For general AI agent guidance, see [AGENTS.md](AGENTS.md)**
+> This document is Claude-specific shortcuts and quick lookups.
 
-## Current Phase: V1 MVP (Frontend + Mock Data Only)
-- **Duration:** 13 days
-- **Goal:** Complete, polished frontend with realistic mock data
-- **No backend:** All data is mocked, wrapper execution simulated (8-13 seconds)
-- **Deliverables:** All 6 screens functional, mobile-first responsive design, complete component library
+---
 
-## 🚨 THE CRITICAL RULE 🚨
-**Law firms NEVER see technical details about automation, portals, robots, or manual processes.**
+## 🎯 What is InstaTCR?
+InstaTCR is a web application that helps personal injury law firms request, track, and obtain California Highway Patrol (CHP) crash reports through browser automation.
 
-### Two User Types
-1. **Law Firms (Public)** - See friendly messages like "We're contacting CHP about your report"
-2. **Staff (Internal)** - See all technical details, internal statuses, automation errors, journey logs
+---
 
-## Tech Stack (V1)
-- **Frontend:** Next.js 15 (App Router), TypeScript (strict), Tailwind CSS
-- **Deployment:** Vercel
-- **Data:** Mock data in `src/lib/mockData.ts`
-- **No backend dependencies in V1**
+## 📋 Documentation Precedence Rules (READ FIRST)
 
-## Key Technical Specs
-- **Mobile-first:** 375px minimum width
-- **Main breakpoint:** 768px (mobile ↔ desktop)
-- **Touch targets:** ≥ 44px (WCAG 2.1 AAA)
-- **Mobile input font-size:** 16px (prevents iOS zoom)
-- **Desktop input font-size:** 14px
-- **Mobile button height:** 48px
-- **Desktop button height:** 40px
+**When behavior is unclear or docs conflict:**
 
-## File Structure
+1. **[CHANGELOG.md](CHANGELOG.md)** ← Shipped features (truth)
+2. **[DEV-ROADMAP.md](DEV-ROADMAP.md)** ← Current plan
+3. **[docs/prd/*.md](docs/prd/)** ← Requirements (may be stale)
+
+**If mismatch found:**
+- Assume PRD is stale, code + changelog are correct
+- Propose PRD updates, don't change code to match old text
+
+👉 **Full precedence guide:** [AGENTS.md § Documentation Precedence Rules](AGENTS.md#-documentation-precedence-rules-critical)
+
+---
+
+## 🗺️ Documentation Quick Links
+
+| I need... | Read this... |
+|-----------|-------------|
+| Overview & vision | [docs/prd/01-product-foundation.md](docs/prd/01-product-foundation.md) |
+| Status system rules | [docs/prd/02-business-logic.md](docs/prd/02-business-logic.md) § Status System |
+| User workflows | [docs/prd/02-business-logic.md](docs/prd/02-business-logic.md) § User Flows |
+| Screen layouts | [docs/prd/03-screen-specifications.md](docs/prd/03-screen-specifications.md) |
+| CHP wrapper specs | [docs/prd/04-chp-wrapper.md](docs/prd/04-chp-wrapper.md) |
+| UI components | [docs/prd/05-component-library.md](docs/prd/05-component-library.md) |
+| Implementation guide | [docs/prd/06-implementation-guide.md](docs/prd/06-implementation-guide.md) |
+| What's shipped | [CHANGELOG.md](CHANGELOG.md) ← **READ FIRST** |
+| What's next | [DEV-ROADMAP.md](DEV-ROADMAP.md) |
+
+---
+
+## 🚨 THE CRITICAL RULE (Never Forget)
+
+**Law firms NEVER see technical details.**
+
+| User Type | Sees | Example Message |
+|-----------|------|-----------------|
+| **Law Firms** | Friendly, vague status | "We're contacting CHP about your report" |
+| **Staff** | All technical details | "Wrapper running", "Automation error", "Journey log" |
+
+**Status Mapping:**
+- 13 internal statuses (staff)
+- 8 public statuses (law firms)
+- **Source of truth:** `src/lib/statusMapping.ts` → `STATUS_MESSAGES`
+
+---
+
+## 📊 Current Status: V1 Complete (Frontend Only)
+
+**V1 MVP:** ✅ COMPLETE
+- All 6 screens functional
+- Mock data only (18 sample jobs)
+- No backend (wrapper simulated 8-13s)
+- Dark mode + glass-morphism
+
+**V2-V4:** ⚪ Not started
+- V2: Convex + real wrapper
+- V3: VAPI AI phone calls
+- V4: Open Router AI
+
+👉 **Details:** [DEV-ROADMAP.md](DEV-ROADMAP.md)
+
+---
+
+## 🏗️ File Structure (Quick Reference)
+
 ```
 src/
 ├── app/
@@ -39,162 +84,251 @@ src/
 │   ├── law/
 │   │   ├── page.tsx                # Law firm dashboard
 │   │   └── jobs/
-│   │       ├── new/page.tsx        # New request form
+│   │       ├── new/page.tsx        # New request form (2 fields only!)
 │   │       └── [jobId]/page.tsx    # Job detail (chat view)
 │   └── staff/
 │       ├── page.tsx                # Staff queue
-│       └── jobs/[jobId]/page.tsx   # Staff job detail
-├── components/
-│   ├── ui/
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   ├── Card.tsx
-│   │   ├── StatusBadge.tsx
-│   │   ├── FloatingActionButton.tsx
-│   │   ├── TabBar.tsx
-│   │   └── MobileJobCard.tsx
-│   └── layout/
-│       ├── MobileNav.tsx
-│       └── MobileDrawer.tsx
-└── lib/
-    ├── mockData.ts                 # 18 sample jobs (all 13 statuses)
-    ├── statusMapping.ts            # Internal → public conversion
-    ├── utils.ts                    # Helper functions
-    └── types.ts                    # TypeScript interfaces
+│       └── jobs/[jobId]/page.tsx   # Staff job detail (7 cards)
+├── components/ui/                   # Reusable components
+├── lib/
+│   ├── mockData.ts                 # 18 sample jobs (V1)
+│   ├── statusMapping.ts            # Status conversion (CANONICAL)
+│   ├── utils.ts                    # Helper functions
+│   └── types.ts                    # TypeScript interfaces
 ```
 
-## Status Mapping Quick Reference
+---
+
+## 🎨 Tech Stack (V1)
+
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript (strict)
+- **Styling:** Tailwind CSS 4
+- **Icons:** lucide-react
+- **Data:** Mock data (no backend)
+- **Deployment:** Vercel
+
+---
+
+## 📏 Key Technical Specs
+
+| Spec | Value |
+|------|-------|
+| Mobile min width | 375px |
+| Main breakpoint | 768px |
+| Touch targets | ≥ 44px (WCAG AAA) |
+| Mobile input font | 16px (prevents iOS zoom) |
+| Desktop input font | 14px |
+| Mobile button height | 48px |
+| Desktop button height | 40px |
+
+---
+
+## 🔤 Status Mapping Quick Reference
 
 | Internal Status | Public Status | Color | Law Firm Message |
 |-----------------|---------------|-------|------------------|
-| `NEW` | `SUBMITTED` | Gray | "We've received your request and will begin processing shortly." |
+| `NEW` | `SUBMITTED` | Gray | "We've received your request..." |
 | `NEEDS_CALL` | `IN_PROGRESS` | Blue | "We're working on your request." |
-| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
+| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP..." |
 | `READY_FOR_AUTOMATION` | `IN_PROGRESS` | Blue | "We're working on your request." |
-| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
-| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy (face page). The full report will follow." |
-| `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | "We're waiting for the full report to become available." |
+| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP..." |
+| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy..." |
+| `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | "We're waiting for the full report..." |
 | `COMPLETED_FULL_REPORT` | `REPORT_READY` | Green | "Your report is ready to download." |
 | `COMPLETED_MANUAL` | `REPORT_READY` | Green | "Your report is ready to download." |
-| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information to locate your report." |
+| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information..." |
 | `NEEDS_IN_PERSON_PICKUP` | `IN_PROGRESS` | Blue | "We're working on your request." |
 | `AUTOMATION_ERROR` | `IN_PROGRESS` | Blue | "We're working on your request." |
 | `CANCELLED` | `CANCELLED` | Red | "This request has been cancelled." |
 
-> **Canonical source:** `STATUS_MESSAGES` in `src/lib/statusMapping.ts`
+👉 **Full messages:** `src/lib/statusMapping.ts` → `STATUS_MESSAGES`
 
-## Validation Rules Quick Reference
+---
+
+## ✅ Validation Rules Quick Reference
 
 | Field | Format | Example |
 |-------|--------|---------|
 | Report Number | `9XXX-YYYY-ZZZZZ` | "9465-2025-02802" |
-| NCIC | 4 digits, starts with 9 (auto-derived) | "9465" |
-| Crash Time | HHMM (24-hour) | "1430" (2:30 PM) |
+| NCIC | 4 digits, starts with 9 (auto) | "9465" |
+| Crash Time | HHMM (24-hour) | "1430" |
 | Officer ID | 6 digits, starts with 0 | "012345" |
 | Crash Date | mm/dd/yyyy, not future | "12/01/2025" |
 
-## New Request Form (`/law/jobs/new`)
+👉 **Details:** [docs/prd/06-implementation-guide.md § Validation Rules](docs/prd/06-implementation-guide.md)
 
-**Law firms submit only 2 fields:**
+---
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| Client Name | text | Yes | Min 2 characters |
-| Report Number | text | Yes | Format: `9XXX-YYYY-ZZZZZ` |
+## 📝 New Request Form (`/law/jobs/new`)
 
-**NOT included in new request form:**
-- Client Type (collected later in chat interface)
-- Crash Date/Time (Staff fills this in - Page 1 data)
-- Case Reference (not part of app logic)
+**Law firms submit ONLY 2 fields:**
 
-## Core Business Rules
+| Field | Required | Validation |
+|-------|----------|------------|
+| Client Name | Yes | Min 2 characters |
+| Report Number | Yes | `9XXX-YYYY-ZZZZZ` |
 
-1. **NCIC Auto-Derivation:** Always first 4 digits of report number
-2. **Name Auto-Split:** `"Dora Cruz-Arteaga"` → `{ firstName: "Dora", lastName: "Cruz-Arteaga" }`
-3. **Wrapper Prerequisites:** Page 1 complete + at least ONE Page 2 field
-4. **Wrapper Results:** FULL (30%), FACE_PAGE (40%), NO_RESULT (15%), ERROR (15%)
-5. **Wrapper Timing:** 8-13 seconds (simulated in V1)
+**NOT in form:**
+- ❌ Client Type (collected later in chat)
+- ❌ Crash Date/Time (staff fills in Card 1)
+- ❌ Case Reference (not used)
 
-## Essential Functions
+👉 **Why?** See [CHANGELOG.md § [1.0.1] PRD-FORM-001](CHANGELOG.md)
+
+---
+
+## 🧮 Core Business Rules
+
+| Rule | Implementation |
+|------|----------------|
+| **NCIC derivation** | First 4 digits of report number |
+| **Name splitting** | `"Dora Cruz"` → `{firstName: "Dora", lastName: "Cruz"}` |
+| **Wrapper prerequisites** | Page 1 complete + ≥1 Page 2 field |
+| **Wrapper results (V1 mock)** | FULL 30%, FACE_PAGE 40%, NO_RESULT 15%, ERROR 15% |
+| **Wrapper timing (V1 mock)** | 8-13 seconds |
+
+---
+
+## 🔧 Essential Functions
 
 ```typescript
-// Convert internal status to public
+// Status conversion (ALWAYS use this for law firm views)
 getPublicStatus(internalStatus: InternalStatus): PublicStatus
 
-// Derive NCIC from report number
+// NCIC extraction
 deriveNcic(reportNumber: string): string  // First 4 chars
 
-// Split client name
+// Name parsing
 splitClientName(fullName: string): { firstName, lastName }
 
-// Convert date for API
+// Date formatting
 convertDateForApi(htmlDate: string): string  // YYYY-MM-DD → MM/DD/YYYY
 
 // Relative time
 formatRelativeTime(timestamp: number): string  // "2 hours ago"
 ```
 
-## Staff Job Detail Layout
+👉 **Source:** `src/lib/utils.ts` and `src/lib/statusMapping.ts`
+
+---
+
+## 🖥️ Staff Job Detail Layout
 
 **Mobile (< 768px):** Two tabs
 - Tab 1: "Law Firm View"
 - Tab 2: "Staff Controls" (7 cards)
 
 **Desktop (≥ 768px):** Split view
-- Left column: Law Firm View
-- Right column: Staff Controls (7 cards)
+- Left: Law Firm View
+- Right: Staff Controls (7 cards)
 
 ### Staff Controls (7 Cards)
-1. **Page 1 Data** - Call CHP button, crash details
-2. **Page 2 Verification** - Driver name, plate, license, VIN
-3. **CHP Wrapper** - Prerequisites, Run button, results
-4. **Wrapper History** - All previous runs
-5. **Auto-Checker** - Check if full report ready (unlocked when has face page + name)
-6. **Escalation** - Escalate to manual pickup
-7. **Manual Completion** - Upload face page or full report
 
-## Development Commands (After Setup)
+| # | Card Name | Purpose |
+|---|-----------|---------|
+| 1 | Page 1 Data | Call CHP, NCIC (auto), crash date/time, officer ID |
+| 2 | Page 2 Verification | Driver name (auto-split), plate, license, VIN |
+| 3 | CHP Wrapper | Prerequisites, Run button, journey log |
+| 4 | Wrapper History | Previous runs with results |
+| 5 | Auto-Checker | Check if full report ready (requires face page + name) |
+| 6 | Escalation | Escalate to manual pickup |
+| 7 | Manual Completion | Upload face page or full report |
+
+---
+
+## 💻 Development Commands
 
 ```bash
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Type checking
-npm run type-check
-
-# Lint
-npm run lint
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run type-check   # TypeScript check
+npm run lint         # ESLint
 ```
 
-## Component Sizing Reference
+---
+
+## 📱 Responsive Design Patterns
 
 ```typescript
-// Mobile (< 768px)
+// Mobile (< 768px) - base styles
 button: "h-12 text-base"     // 48px height, 16px font
 input: "h-12 text-base"      // 48px height, 16px font
 
-// Desktop (≥ 768px)
+// Desktop (≥ 768px) - md: prefix
 button: "md:h-10 md:text-sm" // 40px height, 14px font
 input: "md:h-10 md:text-sm"  // 40px height, 14px font
+
+// Visibility toggles
+className="md:hidden"              // Mobile only
+className="hidden md:block"        // Desktop only
+className="md:grid md:grid-cols-2" // Desktop grid
 ```
 
-## Hide/Show Based on Breakpoint
+---
 
-```typescript
-className="md:hidden"              // Show on mobile, hide on desktop
-className="hidden md:block"        // Hide on mobile, show on desktop
-className="md:grid md:grid-cols-2" // Desktop: 2 columns
+## 🎯 Common Tasks (Quick Patterns)
+
+### Task: Check what's shipped
+```
+Read: CHANGELOG.md (ALWAYS read first)
 ```
 
-## Remember
-- Start mobile-first (375px)
-- Test at 768px breakpoint
-- No backend in V1 (all mock data)
-- Law firms never see internal statuses
-- NCIC always auto-derived from report number
+### Task: Understand a screen layout
+```
+Read: docs/prd/03-screen-specifications.md
+Find: Screen {number}
+```
 
-## Full Documentation
-See **INSTATCR-MASTER-PRD.md** (4800+ lines) for complete specifications, user flows, component details, and implementation strategy.
+### Task: Use a component
+```
+Read: docs/prd/05-component-library.md
+Find: Component name
+Check: src/components/ui/{ComponentName}.tsx
+```
+
+### Task: Add status-related code
+```
+Read: src/lib/statusMapping.ts  # CANONICAL source
+Use: STATUS_MESSAGES export
+Use: getPublicStatus() for law firm views
+```
+
+### Task: Validate a field
+```
+Read: docs/prd/06-implementation-guide.md § Validation Rules
+Check: src/lib/utils.ts for existing validators
+```
+
+---
+
+## ⚠️ Common Mistakes to Avoid
+
+1. **❌ Showing internal status to law firms**
+   - ✅ Always use `getPublicStatus()`
+
+2. **❌ Trusting PRD without checking CHANGELOG**
+   - ✅ Read CHANGELOG.md first for V1 features
+
+3. **❌ Adding backend code in V1**
+   - ✅ V1 is frontend-only, all data is mocked
+
+4. **❌ Breaking mobile-first design**
+   - ✅ Start at 375px, enhance at 768px
+
+5. **❌ Adding more fields to new request form**
+   - ✅ Form has ONLY 2 fields (see CHANGELOG PRD-FORM-001)
+
+---
+
+## 📚 See Also
+
+- **[README.md](README.md)** - Setup + quick start
+- **[AGENTS.md](AGENTS.md)** - Complete documentation guide for all AI agents
+- **[DEV-ROADMAP.md](DEV-ROADMAP.md)** - Development status
+- **[INSTATCR-MASTER-PRD.md](INSTATCR-MASTER-PRD.md)** - Documentation index
+
+---
+
+*Last Updated: 2025-12-11*
+*Quick reference for Claude Code - see [AGENTS.md](AGENTS.md) for full guidance*

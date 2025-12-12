@@ -63,9 +63,69 @@ export interface StatusConfig {
 export type ClientType = 'driver' | 'passenger' | 'pedestrian' | 'other';
 
 /**
- * CHP wrapper execution result types
+ * Flow wizard step states
  */
-export type WrapperResult = 'FULL' | 'FACE_PAGE' | 'NO_RESULT' | 'ERROR';
+export type FlowStep = 'selection' | 'verification' | 'speedup' | 'crash_details' | 'done';
+
+/**
+ * Passenger verification data collected during flow wizard
+ */
+export interface PassengerVerificationData {
+  additionalNames: Array<{ firstName: string; lastName: string }>;
+  plate?: string;
+  driverLicense?: string;
+  vin?: string;
+}
+
+/**
+ * Rescue form data collected when Page 2 verification fails
+ */
+export interface RescueFormData {
+  plate?: string;
+  driverLicense?: string;
+  vin?: string;
+  additionalNames: Array<{ firstName: string; lastName: string }>;
+}
+
+/**
+ * Interactive timeline state for law firm flow wizard (V1.0.5+)
+ */
+export interface InteractiveState {
+  // Legacy fields (backward compatibility)
+  driverPassengerAsked: boolean;
+  chpNudgeDismissed: boolean;
+  // Flow wizard tracking (V1.1.0+)
+  flowStep?: FlowStep;
+  speedUpOffered?: boolean;
+  speedUpAccepted?: boolean;
+  passengerVerification?: PassengerVerificationData;
+  crashDetailsProvided?: boolean;
+  flowCompletedAt?: number;
+  // Rescue form tracking (V1.2.0+)
+  rescueInfoProvided?: boolean;
+  rescueInfoTimestamp?: number;
+  rescueFormData?: RescueFormData;
+}
+
+/**
+ * CHP wrapper execution result types
+ * - FULL: Success, full report retrieved
+ * - FACE_PAGE: Success, face page only (full report may come later)
+ * - PAGE1_NOT_FOUND: Page 1 failed - report not found with given date/time/officer
+ * - PAGE2_VERIFICATION_FAILED: Page 1 passed, but Page 2 verification failed (need more identifiers)
+ * - PORTAL_ERROR: Technical error (timeout, portal down, etc.)
+ */
+export type WrapperResult =
+  | 'FULL'
+  | 'FACE_PAGE'
+  | 'PAGE1_NOT_FOUND'
+  | 'PAGE2_VERIFICATION_FAILED'
+  | 'PORTAL_ERROR';
+
+/**
+ * Report type hint - known once Page 1 succeeds (before Page 2 verification)
+ */
+export type ReportTypeHint = 'FULL' | 'FACE_PAGE' | 'UNKNOWN';
 
 /**
  * Record of a single wrapper execution
@@ -75,6 +135,8 @@ export interface WrapperRun {
   timestamp: number;
   result: WrapperResult;
   duration: number; // milliseconds
+  page1Passed?: boolean; // True if Page 1 succeeded (reached Page 2)
+  reportTypeHint?: ReportTypeHint; // Known report type even before Page 2 verification completes
   errorMessage?: string;
 }
 
@@ -92,11 +154,11 @@ export interface Job {
 
   // Client Info
   clientName: string;
-  clientType: ClientType;
+  clientType: ClientType | null; // Null when not yet selected
 
   // Report Info (Page 1 data)
   reportNumber: string; // Format: 9XXX-YYYY-ZZZZZ
-  crashDate: string; // Format: MM/DD/YYYY
+  crashDate?: string; // Format: MM/DD/YYYY (optional for NEW jobs)
   crashTime?: string; // Format: HHMM (24-hour)
   ncic: string; // 4 digits, derived from report number
   officerId?: string; // 6 digits, starts with 0
@@ -108,6 +170,17 @@ export interface Job {
   plate?: string;
   driverLicense?: string;
   vin?: string;
+
+  // Passenger-provided verification data (V1.0.5+)
+  passengerProvidedData?: {
+    plate?: string;
+    driverLicense?: string;
+    vin?: string;
+    providedAt: number; // Timestamp
+  };
+
+  // Interactive timeline state (V1.0.5+)
+  interactiveState?: InteractiveState;
 
   // Status
   internalStatus: InternalStatus;
@@ -142,7 +215,30 @@ export type EventType =
   | 'check_requested' // Auto-checker run
   | 'escalated'
   | 'completed'
-  | 'message';
+  | 'message'
+  // V1.0.5+ Interactive prompts (law firm chat)
+  | 'driver_passenger_prompt' // "Is this for a driver or passenger?"
+  | 'driver_selected' // "You selected: Driver"
+  | 'passenger_selected' // "You selected: Passenger"
+  | 'passenger_data_provided' // "Thank you! We received: [fields]"
+  | 'chp_nudge_shown' // Optional nudge with plain language
+  // V1.0.6+ Enhanced flows
+  | 'page1_details_request' // "Do you know crash date/time/officer?"
+  | 'auto_wrapper_triggered' // "We're checking CHP for your report..."
+  | 'auto_wrapper_success' // "Report retrieved successfully!"
+  | 'auto_wrapper_failed' // "No report found yet"
+  // V1.1.0+ Flow wizard events
+  | 'flow_speedup_prompt' // "Want to share crash details to speed things up?"
+  | 'flow_speedup_yes' // User chose to provide crash details
+  | 'flow_speedup_no' // User skipped crash details
+  | 'flow_crash_details_saved' // Crash details saved
+  | 'flow_verification_saved' // Passenger verification data saved
+  | 'flow_completed' // Flow wizard completed
+  // V1.2.0+ Rescue flow events
+  | 'page1_not_found' // Page 1 failed - report not found
+  | 'page2_verification_needed' // Page 1 passed, need more identifiers
+  | 'rescue_info_saved' // Rescue form data saved
+  | 'rescue_wrapper_triggered'; // Re-running wrapper with rescue data
 
 /**
  * Timeline event for job history

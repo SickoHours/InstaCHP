@@ -22,9 +22,9 @@ import type {
  */
 export const STATUS_MAP: Record<InternalStatus, StatusConfig> = {
   NEW: {
-    publicStatus: 'SUBMITTED',
-    color: 'gray',
-    message: "We've received your request and will begin processing shortly.",
+    publicStatus: 'IN_PROGRESS',
+    color: 'blue',
+    message: "We're working on your request.",
   },
   NEEDS_CALL: {
     publicStatus: 'IN_PROGRESS',

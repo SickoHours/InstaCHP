@@ -30,6 +30,28 @@ export { default as BottomSheet, ConfirmSheet, ActionSheet } from './BottomSheet
 // Timeline
 export { default as TimelineMessage } from './TimelineMessage';
 
+// Interactive prompts (V1.0.5+)
+export { default as DriverPassengerChoice } from './DriverPassengerChoice';
+export { default as PassengerMiniForm } from './PassengerMiniForm';
+export { default as CHPNudge } from './CHPNudge';
+export { default as Page1DetailsCard } from './Page1DetailsCard';
+
+// Law firm data cards (V1.0.6+)
+export { default as Page1DataCard } from './Page1DataCard';
+export { default as Page2DataCard } from './Page2DataCard';
+
+// Unified inline form (V1.0.7+)
+export { default as InlineFieldsCard } from './InlineFieldsCard';
+
+// Flow wizard components (V1.1.0+)
+export { default as FlowWizard } from './FlowWizard';
+export { default as SpeedUpPrompt } from './SpeedUpPrompt';
+export { default as CrashDetailsForm } from './CrashDetailsForm';
+export { default as PassengerVerificationForm } from './PassengerVerificationForm';
+
+// Rescue flow components (V1.2.0+)
+export { default as DriverInfoRescueForm } from './DriverInfoRescueForm';
+
 // Toast notifications
 export { Toast, ToastContainer } from './Toast';
 

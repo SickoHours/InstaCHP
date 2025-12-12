@@ -5,6 +5,728 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-12-12
+
+### Fixed
+
+#### FlowWizard Hidden for Reports with Face Page or Waiting Status
+
+**Problem:**
+The FlowWizard (which contains the SpeedUpPrompt asking for crash details) was still showing when a job reached `WAITING_FOR_FULL_REPORT` or `FACE_PAGE_ONLY` status. At these stages, crash details can no longer help speed up report retrieval since:
+- For `WAITING_FOR_FULL_REPORT`: We already have the face page and are just waiting for the full report to become available
+- For `FACE_PAGE_ONLY`: We've already retrieved what's available from CHP
+
+**Fix:**
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED (line 788)
+  - Added `WAITING_FOR_FULL_REPORT` and `FACE_PAGE_ONLY` to FlowWizard exclusion list
+  - FlowWizard now hidden when job reaches these statuses
+  - Prevents irrelevant "speed things up" prompts from appearing
+
+**User Impact:**
+Law firms no longer see the crash details prompt when it's no longer useful, creating a cleaner and more logical user experience.
+
+---
+
+## [1.2.0] - 2025-12-12
+
+### Added
+
+#### Conditional Rescue Flow for Page 2 Verification Failures (Complete Implementation)
+
+**Problem Solved:**
+When the CHP wrapper found a report (Page 1 succeeded) but failed to verify and retrieve it (Page 2 failed), there was no way for law firms to provide additional identifiers to retry.
+
+**New Result Types:**
+Updated `WrapperResult` to distinguish failure modes:
+
+| Result | Meaning | UI Response |
+|--------|---------|-------------|
+| `FULL` | Success - full report retrieved | Download available |
+| `FACE_PAGE` | Success - face page only | Download + waiting message |
+| `PAGE1_NOT_FOUND` | Page 1 failed - report not found | Show Page 1 correction form |
+| `PAGE2_VERIFICATION_FAILED` | Page 1 passed, Page 2 failed | Show rescue form |
+| `PORTAL_ERROR` | Technical error | Auto-retry message |
+
+**New Report Type Hint:**
+- Added `ReportTypeHint` type: `'FULL' | 'FACE_PAGE' | 'UNKNOWN'`
+- Known once Page 1 succeeds, even before Page 2 verification
+- Displayed in timeline: "The full report is available" or "A preliminary copy (face page) is available"
+- Helps users understand what to expect after providing rescue info
+
+**New Component Created:**
+
+- **`src/components/ui/DriverInfoRescueForm.tsx`** - NEW (~335 lines)
+  - Amber-styled rescue form with explanation header
+  - "We found your report, but need additional identifiers to verify and retrieve it"
+  - Vehicle/ID section: License Plate, Driver's License, VIN
+  - Additional Names section with repeatable rows (starts empty)
+  - "+ Add another name" button, trash icon to remove
+  - Submit button: "Save & Check Again" with loading state
+  - Auto-triggers wrapper re-run on submission
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - EXTENDED (~50 lines added)
+  - `WrapperResult` type updated with 5 distinct result types
+  - `ReportTypeHint` type added for Face Page vs Full Report hint
+  - `RescueFormData` interface for rescue form data
+  - `WrapperRun` interface extended with `page1Passed` and `reportTypeHint`
+  - `InteractiveState` extended with rescue tracking fields:
+    - `rescueInfoProvided`, `rescueInfoTimestamp`, `rescueFormData`
+  - 4 new `EventType` values for rescue flow
+
+**CrashDetailsForm Update:**
+
+- **`src/components/ui/CrashDetailsForm.tsx`** - UPDATED (~15 lines changed)
+  - Button text: "Continue" → "Save & Check for Report"
+  - Loading state: "Checking CHP..."
+  - Icon: ArrowRight → Search
+  - Triggers wrapper immediately on submission
+
+**Timeline Event Support:**
+
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED (~15 lines added)
+  - Icon mappings for 4 new rescue event types:
+    - `page1_not_found`: AlertCircle (amber)
+    - `page2_verification_needed`: AlertCircle (amber)
+    - `rescue_info_saved`: CheckCircle2 (emerald)
+    - `rescue_wrapper_triggered`: Sparkles (purple)
+
+**Page Integration:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - MAJOR UPDATE (~150 lines changed)
+  - Updated `runAutoWrapper()` with new result types and reportTypeHint
+  - New mock result distribution: FULL 30%, FACE_PAGE 35%, PAGE1_NOT_FOUND 15%, PAGE2_VERIFICATION_FAILED 15%, PORTAL_ERROR 5%
+  - Added `handleRescueSubmit()` for rescue form processing
+  - Added `needsRescue` flag for conditional rendering
+  - Added `needsPage1Correction` flag for Page 1 corrections
+  - Updated `showInlineFieldsCard` to only show for Page 1 corrections
+  - Timeline messages include reportTypeHint for better user feedback
+
+### Changed
+
+- **`src/components/ui/index.ts`** - Added DriverInfoRescueForm export
+  - New "Rescue flow components (V1.2.0+)" section
+
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Updated wrapper result handling
+  - WrapperResultBadge updated for new result types
+  - Staff runWrapper function updated with new result distribution
+
+- **`src/lib/mockData.ts`** - Updated sample data
+  - Replaced 'NO_RESULT' with 'PAGE1_NOT_FOUND'
+  - Replaced 'ERROR' with 'PORTAL_ERROR'
+
+### Guardrails Implemented
+
+**Rescue form visibility conditions (all must be true):**
+1. At least one wrapper run with `result === 'PAGE2_VERIFICATION_FAILED'`
+2. `rescueInfoProvided` is not yet true
+3. Job status is not completed/cancelled
+
+**Page 1 correction visibility conditions (all must be true):**
+1. At least one wrapper run with `result === 'PAGE1_NOT_FOUND'`
+2. Job status is not completed/cancelled
+3. Flow wizard is complete
+
+### UX Flow Diagram
+
+```
+Flow Wizard Complete
+        ↓
+  [Wrapper Runs]
+        ↓
+   ┌────┴────┐
+   ↓         ↓
+SUCCESS   FAILURE
+   ↓         ↓
+Timeline   ┌─────┴─────┬─────────────┐
++ Download ↓           ↓             ↓
+        PAGE1_NOT_FOUND  PAGE2_FAIL  PORTAL_ERROR
+             ↓              ↓              ↓
+        InlineFieldsCard  RescueForm   Auto-retry
+             ↓              ↓
+        [Retry Wrapper]  [Retry Wrapper]
+```
+
+### Technical Notes
+
+- **Backward Compatibility:** Legacy wrapper results (NO_RESULT, ERROR) mapped to new types
+- **ReportTypeHint:** Persisted in WrapperRun for UI display even when verification fails
+- **Mobile-First:** Rescue form uses 48px touch targets, responsive inputs
+- **Plain English:** All timeline messages avoid technical jargon
+
+**Files Created:** 1 file
+**Files Modified:** 6 files
+**Lines Added:** ~400 lines
+**Lines Changed:** ~200 lines
+
+---
+
+## [1.1.0] - 2025-12-12
+
+### Added
+
+#### Redesigned Law Firm "Driver vs Passenger" Flow (Complete Implementation)
+
+**Problem Solved:**
+The previous flow was confusing after the user selected Driver or Passenger:
+- Two forms coexisted (PassengerMiniForm + InlineFieldsCard) with overlapping fields
+- Inconsistent paths between drivers and passengers
+- No clean skip experience
+- Crash details buried in a large unified form
+
+**New Step-by-Step Wizard Flow:**
+
+| Path | Flow |
+|------|------|
+| **Driver** | Selection → Speed-Up Prompt → [Crash Details] → Done |
+| **Passenger** | Selection → Verification Form → Speed-Up Prompt → [Crash Details] → Done |
+
+**New Components Created (4 files):**
+
+- **`src/components/ui/SpeedUpPrompt.tsx`** - NEW (~90 lines)
+  - Binary yes/no choice: "Want to share crash details to speed things up?"
+  - Primary "Yes, I have details" button + secondary "No thanks" button
+  - Amber Zap icon, glass-morphism styling
+  - Mobile: stacked buttons (48px), Desktop: side-by-side (40px)
+
+- **`src/components/ui/CrashDetailsForm.tsx`** - NEW (~190 lines)
+  - Focused crash details form (date, time, officer ID)
+  - ALL fields optional - Continue always enabled
+  - Clean "Skip this step" text link
+  - HHMM time validation (reused from InlineFieldsCard)
+
+- **`src/components/ui/PassengerVerificationForm.tsx`** - NEW (~250 lines)
+  - Enhanced passenger verification with repeatable name pairs
+  - "Other people involved" section with + Add / × Remove functionality
+  - Vehicle info section (plate, license, VIN)
+  - ALL fields optional - Continue always enabled
+  - "I don't have any of this information" skip link
+
+- **`src/components/ui/FlowWizard.tsx`** - NEW (~170 lines)
+  - Orchestrator managing step-by-step state machine
+  - Renders correct step component based on `job.interactiveState.flowStep`
+  - Handles step transitions with opacity fade
+  - Calls `onComplete` when wizard finishes
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - EXTENDED (~45 lines added)
+  - `FlowStep` type: `'selection' | 'verification' | 'speedup' | 'crash_details' | 'done'`
+  - `PassengerVerificationData` interface with `additionalNames` array
+  - `InteractiveState` interface extended with flow wizard fields:
+    - `flowStep`, `speedUpOffered`, `speedUpAccepted`
+    - `passengerVerification`, `crashDetailsProvided`, `flowCompletedAt`
+  - 6 new `EventType` values for timeline tracking
+
+**Timeline Event Support:**
+
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED (~20 lines added)
+  - Icon mappings for 6 new event types:
+    - `flow_speedup_prompt`: Zap (amber)
+    - `flow_speedup_yes`: CheckCircle2 (emerald)
+    - `flow_speedup_no`: ArrowRight (slate)
+    - `flow_crash_details_saved`: FileText (cyan)
+    - `flow_verification_saved`: UserCheck (cyan)
+    - `flow_completed`: Sparkles (emerald)
+
+**Page Integration:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - MAJOR REFACTOR (~200 lines changed)
+  - Removed old flow gate code and PassengerMiniForm rendering
+  - Added `FlowWizard` component with `onStepChange` and `onComplete` handlers
+  - New visibility logic: Wizard shown until `flowStep === 'done'`
+  - `InlineFieldsCard` hidden during wizard, shown after completion
+  - New handlers: `handleFlowStepChange()`, `handleFlowComplete()`
+  - Timeline events added at each step with user-friendly messages
+
+### Changed
+
+- **`src/components/ui/index.ts`** - Added exports for 4 new flow wizard components
+  - FlowWizard, SpeedUpPrompt, CrashDetailsForm, PassengerVerificationForm
+
+### UX Improvements
+
+- **Clean skip at every step** - Subtle text links, no modal dialogs
+- **All fields optional** - Continue button always enabled
+- **Linear flow** - No overlapping forms or confusing parallel paths
+- **Friendly copy** - "Want to speed things up?" vs "Required fields"
+- **Repeatable names** - Passengers can add multiple people involved in crash
+
+### Technical Notes
+
+- **Backward Compatibility:** Legacy jobs without `flowStep` default to `'selection'` if `clientType` is null, or `'done'` if already set
+- **State Machine:** Flow step tracked in `job.interactiveState.flowStep`
+- **Auto-Wrapper:** Triggers when Page 1 complete (date + time) AND any Page 2 field provided
+- **Mobile-First:** All new components use 48px touch targets, responsive to 375px
+
+**Files Created:** 4 files
+**Files Modified:** 4 files
+**Lines Added:** ~700 lines
+**Lines Changed:** ~200 lines
+
+---
+
+## [1.0.7] - 2025-12-11
+
+### Added
+
+#### Simplified Law Firm Job View (Complete Implementation)
+
+**New Unified Form Component:**
+- **`src/components/ui/InlineFieldsCard.tsx`** - NEW: Always-visible unified form (~340 lines)
+  - Combines all Page 1 + Page 2 fields in single component
+  - Section 1: Crash Details (crashDate, crashTime, officerId)
+  - Section 2: Driver Information (firstName, lastName, plate, driverLicense, vin)
+  - Single "Save & Check for Report" button at bottom
+  - No edit mode - fields always visible and editable
+  - HHMM time validation (4-digit 24-hour format: 0000-2359)
+  - Disabled state support for flow gate integration
+  - Glass-morphism styling matching existing dark theme
+  - Responsive: h-12 mobile, h-10 desktop, 48px touch targets
+
+**Flow Gate Implementation:**
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Flow gating system (~90 lines changed)
+  - Added `isFormLocked` logic - form locked until driver/passenger selected
+  - Flow gate card prominent at top when `clientType === null`
+  - DriverPassengerChoice embedded in flow gate
+  - PassengerMiniForm shown in gate for passenger selection
+  - InlineFieldsCard disabled when gate active (visible but greyed out)
+  - Clear helper text: "Please select Driver or Passenger first to enable form"
+
+**Unified Save Handler:**
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Consolidated save logic (~55 lines)
+  - New `handleSaveAllFields()` replaces separate Page1/Page2 handlers
+  - Updates all fields atomically in single operation
+  - Generates timeline events for changed sections
+  - Auto-wrapper prerequisites: Page 1 complete (date + time) AND ≥1 Page 2 field
+  - Prevents wrapper failure when Page 2 missing
+
+**Simplified Timeline:**
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Read-only timeline (~70 lines removed)
+  - Removed all interactive rendering branches
+  - No embedded forms or chat-style interactions
+  - Simple read-only loop showing all events
+  - Cleaner, more maintainable code
+
+**Time Validation Utility:**
+- **`src/lib/utils.ts`** - UPDATED: Added `formatHHMMTime()` (~8 lines)
+  - Formats HHMM to HH:MM display (24-hour)
+  - Example: `formatHHMMTime('1430')` => `'14:30'`
+  - Existing `isValidCrashTime()` validates HHMM format
+
+### Changed
+
+- **`src/components/ui/index.ts`** - Added InlineFieldsCard export
+  - New "Unified inline form (V1.0.7+)" section
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - Major restructure
+  - Removed imports: Page1DataCard, Page2DataCard, Page1DetailsCard
+  - Added import: InlineFieldsCard
+  - Removed `handlePage1Save`, `handlePage2Save` handlers
+  - Removed `handlePage1DetailsSubmit`, `handlePage1Skip` handlers
+  - Removed useEffect for `page1_details_request` trigger
+  - Added `handleSaveAllFields` unified handler
+  - Replaced separate data cards with InlineFieldsCard
+  - Added flow gate UI section before form
+  - Simplified timeline to read-only loop
+
+### Deprecated
+
+- **`src/components/ui/Page1DataCard.tsx`** - Marked @deprecated
+  - Replaced by InlineFieldsCard
+  - Kept for reference only
+
+- **`src/components/ui/Page2DataCard.tsx`** - Marked @deprecated
+  - Replaced by InlineFieldsCard
+  - Kept for reference only
+
+- **`src/components/ui/Page1DetailsCard.tsx`** - Marked @deprecated
+  - Replaced by InlineFieldsCard
+  - Kept for reference only
+
+### Technical Notes
+
+- **V1 Limitations:** All data remains in-memory, wrapper is mocked
+- **Mobile-First:** All components use 48px touch targets, responsive to 375px
+- **Plain English:** All law firm messages avoid technical jargon
+- **Flow Gate:** Driver/Passenger selection REQUIRED before form access
+- **Auto-Wrapper Prerequisites:** Crash date + crash time + any Page 2 field
+- **HHMM Format:** 4-digit 24-hour time (0000-2359), not HTML time picker
+
+**Files Modified:** 5 files
+**Files Created:** 1 file
+**Lines Added:** ~400 lines
+**Lines Removed:** ~150 lines
+
+---
+
+## [1.0.6] - 2025-12-11
+
+### Added
+
+#### Enhanced Flow & Auto-Wrapper (Complete Implementation - All 6 Phases)
+
+**Phase 1: Status System Updates**
+- **`src/lib/mockDataManager.ts`** - UPDATED: Default status changed (~1 line)
+  - New jobs now start with `internalStatus: 'NEEDS_CALL'` (was `'NEW'`)
+  - Ensures jobs enter active state immediately for better tracking
+
+- **`src/lib/statusMapping.ts`** - UPDATED: NEW status mapping (~3 lines)
+  - NEW now maps to `IN_PROGRESS` public status (was `SUBMITTED`)
+  - Color changed from `gray` to `blue` (active state)
+  - Message: "We're working on your request." (consistent with NEEDS_CALL)
+
+**Phase 2: Card Visibility Logic**
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - UPDATED: Card 7 conditional rendering (~3 lines)
+  - Manual Completion card now hidden when `facePageToken || fullReportToken` exists
+  - Same conditional hiding as Card 6 (Escalation)
+  - Both cards completely omitted (not disabled) when reports obtained
+
+**Phase 3: Passenger Flow Enhancements**
+- **`src/components/ui/PassengerMiniForm.tsx`** - UPDATED: Skip option and improved copy (~60 lines added)
+  - Help text changed to "Provide as many fields as possible for the best chance of finding your report"
+  - Added "I don't have this information" button (shown when no fields filled)
+  - Added skip nudge modal with warning: "Not having this extra information could delay your report"
+  - "Continue Anyway" and "Go Back" buttons in nudge modal
+  - Allows empty submission when user explicitly chooses to skip
+
+**Phase 4: Page 1 Details Nudge**
+- **`src/components/ui/Page1DetailsCard.tsx`** - NEW: Crash details prompt form (~210 lines)
+  - 3 optional fields: crash date, crash time, officer badge number
+  - Skip button option with "Skip for Now" label
+  - Dark glass-morphism styling matching existing components
+  - Used in interactive timeline event
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Page 1 nudge integration (~90 lines added)
+  - Added `useEffect` to trigger `page1_details_request` event when appropriate
+  - Triggers when: `NEEDS_CALL` status + `clientType` selected + not already shown
+  - Added `handlePage1DetailsSubmit()` handler to update crash details
+  - Added `handlePage1Skip()` handler for skip action
+  - Interactive timeline rendering for Page 1 details card
+
+**Phase 5: Law Firm Auto-Wrapper (Major Feature)**
+- **`src/components/ui/Page1DataCard.tsx`** - NEW: Editable crash details card (~240 lines)
+  - Display mode shows crash date, time, officer badge (when data exists)
+  - Edit mode with Save/Cancel buttons
+  - "Add Details" button when empty, "Edit" button when populated
+  - Auto-triggers wrapper on save if prerequisites met
+  - Dark glass-morphism with cyan border
+
+- **`src/components/ui/Page2DataCard.tsx`** - NEW: Editable driver info card (~320 lines)
+  - 5 fields: firstName, lastName, plate, driverLicense, vin
+  - Same edit/display pattern as Page1DataCard
+  - Auto-triggers wrapper on save if prerequisites met
+  - Shows complete name in display mode
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Auto-wrapper logic (~120 lines added)
+  - Added `runAutoWrapper()` function (mock wrapper with 8-13s delay)
+  - Random results: FULL (30%), FACE_PAGE (40%), NO_RESULT (15%), ERROR (15%)
+  - Added `handlePage1Save()` and `handlePage2Save()` handlers
+  - Both handlers check prerequisites: Page 1 complete + ≥1 Page 2 field
+  - Auto-triggers wrapper when prerequisites met (no visible "Run" button for law firms)
+  - Cards render between CHP nudge and timeline section
+  - Cards hidden when job status is COMPLETED_FULL_REPORT, COMPLETED_MANUAL, or CANCELLED
+  - Plain-English timeline messages for all wrapper actions/results
+
+**Phase 6: Timeline Message Hygiene**
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED: Event type mappings (~8 lines added)
+  - Added icon mappings for 4 new event types:
+    - `page1_details_request`: MessageCircle
+    - `auto_wrapper_triggered`: Sparkles
+    - `auto_wrapper_success`: CheckCircle2
+    - `auto_wrapper_failed`: XCircle
+  - Added color mappings for 4 new event types:
+    - `page1_details_request`: text-teal-400
+    - `auto_wrapper_triggered`: text-purple-400
+    - `auto_wrapper_success`: text-emerald-400
+    - `auto_wrapper_failed`: text-red-400
+
+### Changed
+
+- **`src/lib/types.ts`** - Extended EventType (~4 lines added)
+  - Added `'page1_details_request'` event type
+  - Added `'auto_wrapper_triggered'` event type
+  - Added `'auto_wrapper_success'` event type
+  - Added `'auto_wrapper_failed'` event type
+
+- **`src/components/ui/index.ts`** - Barrel exports (~3 lines added)
+  - Exported `Page1DetailsCard` component
+  - Exported `Page1DataCard` component
+  - Exported `Page2DataCard` component
+
+### Technical Notes
+
+- **V1 Limitations:** All data remains in-memory, wrapper is mocked with random results
+- **Mobile-First:** All new components use 48px touch targets, responsive to 375px
+- **Plain English:** All law firm messages avoid technical jargon
+- **Status Flow:** NEW → NEEDS_CALL (immediate active state)
+- **Auto-Wrapper Prerequisites:** Crash date + crash time + any driver field
+- **Card Hiding:** Complete omission (not disabling) when conditions not met
+
+## [1.0.5] - 2025-12-11
+
+### Added
+
+#### Frontend Polish Features (Complete Implementation - All 8 Phases)
+
+**Phase 1: Foundation - Dynamic Job Creation**
+- **`src/lib/mockDataManager.ts`** - NEW: In-memory data manager singleton (~180 lines)
+  - `MockDataManager` class with CRUD operations for jobs and events
+  - `createJob()` - Creates unique job IDs (job_019, job_020, etc.) with initial events
+  - `updateJob()`, `addEvent()`, `completeInteraction()` methods
+  - Automatically adds 2 initial events on job creation:
+    - `job_created`: "We've received your request and will begin processing shortly."
+    - `driver_passenger_prompt`: Interactive prompt for client type
+
+- **`src/context/MockDataContext.tsx`** - NEW: React Context for global state (~140 lines)
+  - `MockDataProvider` wraps entire app with state management
+  - `useMockData()` hook exposes all data operations
+  - Triggers re-renders on mutations (createJob, updateJob, addEvent)
+  - V1-only: All data stays in browser memory, resets on refresh
+
+**Phase 2: Interactive Timeline**
+- **`src/components/ui/DriverPassengerChoice.tsx`** - NEW: Two-button selection component (~65 lines)
+  - Driver / Passenger buttons with glass-morphism dark styling
+  - Teal/cyan gradients, hover scale effects
+  - Mobile: 48px touch targets, responsive to 375px
+
+- **`src/components/ui/TimelineMessage.tsx`** - EXTENDED: Support for interactive content
+  - Added `children` prop for embedding forms/buttons
+  - Added `isInteractive` prop to disable hover effects
+  - Interactive content renders in separate div with mt-4 spacing
+  - Added icon/color mappings for 5 new event types
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Interactive timeline rendering (~80 lines added)
+  - Uses `useMockData()` context instead of direct imports
+  - `handleDriverPassengerSelect()` handler updates job and creates confirmation events
+  - Conditional rendering for interactive events (checks `metadata.isInteractive`)
+  - DriverPassengerChoice embedded when `eventType === 'driver_passenger_prompt'`
+
+- **`src/app/law/jobs/new/page.tsx`** - UPDATED: Dynamic job creation (~5 lines changed)
+  - Calls `createJob()` from context instead of routing to hardcoded job_001
+  - Routes to newly created job's unique ID (`/law/jobs/${newJob._id}`)
+
+**Phase 4: Passenger Mini Form**
+- **`src/components/ui/PassengerMiniForm.tsx`** - NEW: Compact passenger data form (~200 lines)
+  - Displays client name (static) + 3 optional fields (plate, driver license, VIN)
+  - Validation: At least 1 field must be filled to submit
+  - Dark glass-morphism styling matching existing design
+  - Mobile: 48px touch targets, responsive input fields
+  - Submit button with loading state and disabled state
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: Passenger form integration (~60 lines added)
+  - Added `handlePassengerFormSubmit()` handler
+  - Updates job with `passengerProvidedData` on submission
+  - Creates confirmation event with list of provided fields
+  - Conditional rendering when `eventType === 'page2_updated'` and `clientType === 'passenger'`
+
+**Phase 5: Staff Quick-Fill Buttons**
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Card 2 quick-fill banner (~60 lines added)
+  - Banner shows above Card 2 fields when `job.passengerProvidedData` exists
+  - Displays each provided field (plate, driverLicense, vin) conditionally
+  - Copy buttons fill corresponding Card 2 fields with passenger-provided data
+  - Teal background with border, matching design tokens
+  - Hover effects on copy buttons
+
+**Phase 6: CHP Nudge**
+- **`src/components/ui/CHPNudge.tsx`** - NEW: Dismissible info card (~60 lines)
+  - Phone icon with friendly message encouraging optional CHP call
+  - Displays report number in monospace teal text
+  - Dismissible via X button in top-right
+  - Dark glass-morphism with cyan border
+  - Plain-language copy: "Speed things up! Call CHP..."
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED: CHP nudge integration (~40 lines added)
+  - Added `handleDismissNudge()` handler
+  - Added `useEffect` to auto-hide nudge when status changes from NEW
+  - Shows when `status === 'NEW' && clientType !== null && !chpNudgeDismissed`
+  - Renders between Current Status Card and Timeline Section
+
+**Phase 7: Escalation Conditional**
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Card 6 conditional rendering (~2 lines added)
+  - Escalation card completely hidden when `facePageToken || fullReportToken` exists
+  - No "not needed" message - card simply doesn't render
+
+**Phase 8: Manual Completion Enhancement**
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Card 7 label updates (~3 lines changed)
+  - Label: "Guaranteed Name *" → "First Name *"
+  - Placeholder: "Client full name" → "Enter driver's first name only"
+  - Help text: "Required to unlock auto-checker" → "First name only - used to unlock auto-checker"
+
+### Changed
+
+- **`src/lib/types.ts`** - Extended interfaces (~30 lines added)
+  - `Job` interface:
+    - `clientType` now allows `null` for unset state
+    - `crashDate` now optional (not required for NEW jobs)
+    - Added `passengerProvidedData` object (plate, driverLicense, vin, providedAt)
+    - Added `interactiveState` object (driverPassengerAsked, chpNudgeDismissed)
+  - `EventType` union:
+    - Added 5 new types: `driver_passenger_prompt`, `driver_selected`, `passenger_selected`, `passenger_data_provided`, `chp_nudge_shown`
+
+- **`src/app/providers.tsx`** - Added MockDataProvider (~2 lines)
+  - Wraps `ToastProvider` with `MockDataProvider`
+  - Makes mock data context available to entire app
+
+- **`src/components/ui/index.ts`** - Added component exports
+  - DriverPassengerChoice, PassengerMiniForm, CHPNudge
+
+### Technical Notes
+
+**V1-Only Implementation:**
+- MockDataManager and Context are 100% frontend, in-memory only
+- No backend, no persistence - data resets on page refresh
+- Easy migration to Convex in V2 (swap context with queries/mutations)
+
+**Plain English Messaging:**
+- All new event types map to user-friendly messages
+- No technical jargon exposed to law firms
+- Interactive prompts use conversational language
+
+**Complete Feature Set:**
+- ✅ Dynamic job creation with unique IDs
+- ✅ Interactive driver/passenger selection in timeline
+- ✅ Passenger mini form for collecting verification data
+- ✅ Staff quick-fill buttons from passenger-provided data
+- ✅ CHP nudge for NEW status jobs (auto-hide on status change)
+- ✅ Escalation card conditional hiding (when reports obtained)
+- ✅ Manual completion labels clarified (first-name-only)
+
+**Files Modified:** 9 files
+**Files Created:** 5 files
+**Lines Added:** ~900 lines
+**Lines Changed:** ~300 lines
+
+---
+
+## [1.0.4] - 2025-12-11
+
+### Changed
+
+#### Root README Rewrite
+
+**`README.md`** - Complete rewrite for accuracy and clarity:
+
+- **Current Status section** - Explicit V1 vs "Not in V1 yet" bullet lists
+  - V1 (current): Frontend-only, mock data, simulated wrapper
+  - Not in V1: Convex, auth, real wrapper, file storage
+- **Quick Start** - Verified scripts from package.json (`dev`, `build`, `start`, `lint`)
+- **Documentation section** - New "Repo Doc Roles" table showing purpose of each doc
+- **Documentation Precedence** - Added 4-item hierarchy (CHANGELOG > DEV-ROADMAP > docs/prd > MASTER-PRD)
+- **Removed** - Outdated project structure, stale version number (0.1.0), "coming soon" references
+
+**`CLAUDE.md`** - Added README.md link to "See Also" section
+- Placed alongside other entry-point docs (AGENTS.md, DEV-ROADMAP.md, INSTATCR-MASTER-PRD.md)
+- Description: "Setup + quick start"
+
+---
+
+## [1.0.3] - 2025-12-11
+
+### Added
+
+#### Docs Notes System
+
+**New `docs/notes/` structure for milestone documentation:**
+
+- **`docs/notes/README.md`** - Index file with notes table
+  - Purpose: Preserve context for significant documentation milestones
+  - Prevents root-level markdown sprawl
+  - Links to all dated notes
+
+- **`docs/notes/2025-12-11-docs-reorg.md`** - First milestone note
+  - Documents the PRD reorganization (why, what changed, precedence rules)
+  - Includes maintenance rule for future notes
+  - Links to related documentation
+
+**Repo Hygiene rule added to AGENTS.md:**
+- Do not create new root-level markdown summary files
+- For major refactors/migrations, add dated notes under `docs/notes/`
+- Keep documentation organized under existing folders
+
+### Changed
+
+- **`INSTATCR-MASTER-PRD.md`** - Added link to `docs/notes/` in Development Documents section
+- **`AGENTS.md`** - Added "Repo Hygiene" subsection and link to `docs/notes/` in Additional Resources
+
+---
+
+## [1.0.2] - 2025-12-11
+
+### Added
+
+#### Documentation Reorganization (PRD Split)
+
+**New PRD Structure (`docs/prd/`):**
+Split the 5,275-line INSTATCR-MASTER-PRD.md into 6 focused, maintainable documents:
+
+- **`docs/prd/01-product-foundation.md`** (~335 lines)
+  - Executive summary, product vision, V1-V4 roadmap
+  - 3 system architecture diagrams (Mermaid)
+  - Audience: Product managers, stakeholders, designers
+
+- **`docs/prd/02-business-logic.md`** (~540 lines)
+  - 6 complete user flows (happy path, incomplete info, face page, auto-checker, escalation, VAPI)
+  - Status system architecture (13 internal → 8 public mapping)
+  - Data model reference (Job, WrapperRun, OfficeAttempt, JobEvent interfaces)
+  - Audience: Engineers, product designers, QA
+
+- **`docs/prd/03-screen-specifications.md`** (~801 lines)
+  - All 6 screen UI/UX specifications with wireframes
+  - Staff Job Detail with 7 control cards breakdown
+  - Audience: Frontend engineers, UI/UX designers
+
+- **`docs/prd/04-chp-wrapper.md`** (~515 lines)
+  - CHP Wrapper architecture and behavior patterns
+  - 5 detailed patterns (successful, face page, missing info, no records, error)
+  - Execution timeline with Gantt chart
+  - Audience: Backend engineers, DevOps
+
+- **`docs/prd/05-component-library.md`** (~826 lines)
+  - 10 UI components (StatusBadge, Button, Input, Card, FAB, TabBar, etc.)
+  - 8 helper functions with code examples
+  - Toast, Skeleton, Error State, Text utility systems
+  - Audience: Frontend engineers
+
+- **`docs/prd/06-implementation-guide.md`** (~1,840 lines)
+  - V1 frontend phases (6 phases, 13 days)
+  - V2 backend integration specs
+  - V3/V4 future roadmap (VAPI, Open Router)
+  - Validation rules, responsive design, accessibility (WCAG)
+  - Testing checklist, deployment architecture
+  - Audience: All engineers, QA, DevOps
+
+**AI Agent Documentation:**
+
+- **`AGENTS.md`** (NEW) - Comprehensive guide for all AI agents
+  - Documentation precedence rules: CHANGELOG > DEV-ROADMAP > docs/prd > MASTER-PRD
+  - Documentation map with quick lookup guide
+  - Common tasks and decision framework
+  - AI agent best practices (small diffs, plain English explanations)
+  - Common pitfalls to avoid
+
+- **`CLAUDE.md`** (UPGRADED) - Claude-specific quick reference
+  - Added precedence rules at top
+  - Quick links table to all docs/prd/* files
+  - Status mapping reference (all 13 statuses)
+  - Validation rules quick reference
+  - Common task patterns
+
+### Changed
+
+- **`INSTATCR-MASTER-PRD.md`** - Transformed into navigation hub
+  - Reduced from 5,275 lines → 166 lines (~97% reduction)
+  - Now serves as documentation index with role-based navigation
+  - Links to all 6 PRD files
+  - Contains precedence rules and "The Critical Rule"
+
+- **`DEV-ROADMAP.md`** - Updated Resources section
+  - Added links to AGENTS.md and docs/prd/
+  - Updated INSTATCR-MASTER-PRD.md description to "Documentation navigation hub"
+
+---
+
 ## [1.0.1] - 2025-12-11
 
 ### Added

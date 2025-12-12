@@ -105,6 +105,11 @@ export interface InteractiveState {
   rescueInfoProvided?: boolean;
   rescueInfoTimestamp?: number;
   rescueFormData?: RescueFormData;
+  // Collapse/decline tracking (V1.3.0+)
+  driverHelperCollapsed?: boolean;     // Driver declined, shows compact CTA
+  passengerHelperCollapsed?: boolean;  // Passenger declined, shows compact CTA
+  driverDeclineCount?: number;         // Times "No thanks" clicked (driver)
+  passengerDeclineCount?: number;      // Times "No thanks" clicked (passenger)
 }
 
 /**
@@ -238,7 +243,12 @@ export type EventType =
   | 'page1_not_found' // Page 1 failed - report not found
   | 'page2_verification_needed' // Page 1 passed, need more identifiers
   | 'rescue_info_saved' // Rescue form data saved
-  | 'rescue_wrapper_triggered'; // Re-running wrapper with rescue data
+  | 'rescue_wrapper_triggered' // Re-running wrapper with rescue data
+  // V1.3.0+ Decline tracking events
+  | 'driver_speedup_declined' // Driver clicked "No thanks"
+  | 'driver_speedup_reopened' // Driver re-opened collapsed CTA
+  | 'passenger_helper_declined' // Passenger clicked "No thanks/Skip"
+  | 'passenger_helper_reopened'; // Passenger re-opened collapsed CTA
 
 /**
  * Timeline event for job history

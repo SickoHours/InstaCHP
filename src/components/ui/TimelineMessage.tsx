@@ -73,6 +73,11 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   page2_verification_needed: AlertCircle,
   rescue_info_saved: CheckCircle2,
   rescue_wrapper_triggered: Sparkles,
+  // V1.3.0+ Decline tracking events
+  driver_speedup_declined: ArrowRight,
+  driver_speedup_reopened: Zap,
+  passenger_helper_declined: ArrowRight,
+  passenger_helper_reopened: UserCheck,
 };
 
 /**
@@ -113,6 +118,11 @@ const EVENT_COLORS: Record<EventType, string> = {
   page2_verification_needed: 'text-amber-400',
   rescue_info_saved: 'text-emerald-400',
   rescue_wrapper_triggered: 'text-purple-400',
+  // V1.3.0+ Decline tracking events
+  driver_speedup_declined: 'text-slate-400',
+  driver_speedup_reopened: 'text-amber-400',
+  passenger_helper_declined: 'text-slate-400',
+  passenger_helper_reopened: 'text-cyan-400',
 };
 
 const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(

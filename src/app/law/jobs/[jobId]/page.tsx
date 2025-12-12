@@ -20,12 +20,13 @@ import {
   formatPublicStatus,
   STATUS_COLORS,
 } from '@/lib/statusMapping';
-import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint } from '@/lib/types';
+import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint, Job, EventType } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
 import CHPNudge from '@/components/ui/CHPNudge';
 import InlineFieldsCard from '@/components/ui/InlineFieldsCard';
 import FlowWizard, { type FlowCompletionData } from '@/components/ui/FlowWizard';
 import DriverInfoRescueForm from '@/components/ui/DriverInfoRescueForm';
+import ContactingCHPBanner from '@/components/ui/ContactingCHPBanner';
 
 /**
  * Dark Mode Status Badge with glow effect
@@ -410,6 +411,60 @@ export default function JobDetailPage() {
     });
   };
 
+  // Helper to check if passenger verification info is missing
+  const isPassengerInfoMissing = (targetJob: Job): boolean => {
+    const pv = targetJob.interactiveState?.passengerVerification;
+    return !pv || (
+      !pv.plate &&
+      !pv.driverLicense &&
+      !pv.vin &&
+      (!pv.additionalNames || pv.additionalNames.length === 0)
+    );
+  };
+
+  // Handle helper collapse (soft dismiss "No thanks")
+  const handleHelperCollapse = (variant: 'driver' | 'passenger') => {
+    const eventType: EventType = variant === 'driver' ? 'driver_speedup_declined' : 'passenger_helper_declined';
+    const message = variant === 'driver'
+      ? "No problem! We'll handle it from here."
+      : "Got it! We'll work with what we have.";
+
+    addEvent(jobId, { eventType, message, isUserFacing: true });
+
+    const collapsedField = variant === 'driver' ? 'driverHelperCollapsed' : 'passengerHelperCollapsed';
+    const countField = variant === 'driver' ? 'driverDeclineCount' : 'passengerDeclineCount';
+
+    updateJob(jobId, {
+      interactiveState: {
+        ...job.interactiveState,
+        driverPassengerAsked: job.interactiveState?.driverPassengerAsked || false,
+        chpNudgeDismissed: job.interactiveState?.chpNudgeDismissed || false,
+        [collapsedField]: true,
+        [countField]: (job.interactiveState?.[countField] || 0) + 1,
+      },
+    });
+  };
+
+  // Handle helper expand (re-open collapsed CTA)
+  const handleHelperExpand = (variant: 'driver' | 'passenger') => {
+    const eventType: EventType = variant === 'driver' ? 'driver_speedup_reopened' : 'passenger_helper_reopened';
+    const message = variant === 'driver'
+      ? "Let's add those crash details."
+      : "Let's add that information.";
+
+    addEvent(jobId, { eventType, message, isUserFacing: true });
+
+    const collapsedField = variant === 'driver' ? 'driverHelperCollapsed' : 'passengerHelperCollapsed';
+
+    updateJob(jobId, {
+      interactiveState: {
+        ...job.interactiveState,
+        driverPassengerAsked: job.interactiveState?.driverPassengerAsked || false,
+        chpNudgeDismissed: job.interactiveState?.chpNudgeDismissed || false,
+        [collapsedField]: false,
+      },
+    });
+  };
 
   // Run auto-wrapper (V1 mock) with new result types
   const runAutoWrapper = async (targetJobId: string) => {
@@ -785,8 +840,14 @@ export default function JobDetailPage() {
         )}
 
         {/* Flow Wizard (active until completed) */}
+        {/* Driver: hide when CONTACTING_CHP (CALL_IN_PROGRESS or AUTOMATION_RUNNING) */}
+        {/* Passenger: show even during CONTACTING_CHP if info is missing */}
         {isWizardActive && !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'CANCELLED', 'WAITING_FOR_FULL_REPORT', 'FACE_PAGE_ONLY'].includes(
           job.internalStatus
+        ) && !(
+          // Hide driver wizard completely during CONTACTING_CHP
+          job.clientType === 'driver' &&
+          ['CALL_IN_PROGRESS', 'AUTOMATION_RUNNING'].includes(job.internalStatus)
         ) && (
           <div
             className="mb-6 animate-text-reveal"
@@ -796,6 +857,24 @@ export default function JobDetailPage() {
               job={job}
               onStepChange={handleFlowStepChange}
               onComplete={handleFlowComplete}
+              onCollapse={handleHelperCollapse}
+              onExpand={handleHelperExpand}
+              disabled={isInteracting}
+            />
+          </div>
+        )}
+
+        {/* Contacting CHP Banner (Passenger only, when info missing) */}
+        {publicStatus === 'CONTACTING_CHP' &&
+          job.clientType === 'passenger' &&
+          isPassengerInfoMissing(job) && (
+          <div
+            className="mb-6 animate-text-reveal"
+            style={{ animationDelay: '450ms' }}
+          >
+            <ContactingCHPBanner
+              onProvideInfo={() => handleHelperExpand('passenger')}
+              onDismiss={() => handleHelperCollapse('passenger')}
               disabled={isInteracting}
             />
           </div>

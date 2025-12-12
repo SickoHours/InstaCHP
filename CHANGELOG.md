@@ -5,6 +5,155 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-12-12
+
+### Added
+
+#### Soft-Dismiss Decline Behavior for Helper UIs (Complete Implementation)
+
+**Problem Solved:**
+Previously, when a law firm clicked "No thanks" on helper prompts (SpeedUpPrompt, PassengerVerificationForm, CrashDetailsForm), the UI would either complete the flow or hide entirely. This was suboptimal because:
+- Users who changed their mind had no way to re-access the helper
+- No tracking of decline behavior for staff-side escalation logic
+- Driver helpers should disappear at CONTACTING_CHP status, but passenger helpers should persist if info is missing
+
+**New Soft-Dismiss Pattern:**
+- "No thanks" / "Skip" now **collapses** the helper to a compact CTA instead of hiding
+- Collapsed CTA stays visible while status is `IN_PROGRESS`
+- Users can re-expand at any time by clicking the collapsed CTA
+- Driver CTA disappears when status = `CONTACTING_CHP`
+- Passenger CTA persists during `CONTACTING_CHP` if additional info is still missing
+
+**New Components Created (2 files):**
+
+- **`src/components/ui/CollapsedHelperCTA.tsx`** - NEW (~65 lines)
+  - Compact single-row CTA shown after "No thanks" decline
+  - Two variants: `driver` and `passenger`
+  - Driver: Zap icon, "Want to speed things up? Add details"
+  - Passenger: Users icon, "Have more info to share?"
+  - Glass-morphism styling matching theme
+  - Mobile: 48px touch targets
+
+- **`src/components/ui/ContactingCHPBanner.tsx`** - NEW (~75 lines)
+  - Amber-styled notification banner for passenger flow
+  - Shown when: `CONTACTING_CHP` status + passenger + info missing
+  - Copy: "We're contacting CHP now. If you have any additional identifiers, adding them can help us retrieve the report faster. It's still optional."
+  - Two buttons: "Add Info" (primary) + "No thanks" (secondary)
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - EXTENDED (~20 lines added)
+  - `InteractiveState` extended with collapse/decline tracking:
+    - `driverHelperCollapsed?: boolean` - Driver declined, shows compact CTA
+    - `passengerHelperCollapsed?: boolean` - Passenger declined, shows compact CTA
+    - `driverDeclineCount?: number` - Times "No thanks" clicked (driver)
+    - `passengerDeclineCount?: number` - Times "No thanks" clicked (passenger)
+  - `EventType` union extended with 4 new decline tracking events:
+    - `driver_speedup_declined` - Driver clicked "No thanks"
+    - `driver_speedup_reopened` - Driver re-opened collapsed CTA
+    - `passenger_helper_declined` - Passenger clicked "No thanks/Skip"
+    - `passenger_helper_reopened` - Passenger re-opened collapsed CTA
+
+**Timeline Event Support:**
+
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED (~15 lines added)
+  - Icon mappings for 4 new event types:
+    - `driver_speedup_declined`: ArrowRight (slate)
+    - `driver_speedup_reopened`: Zap (amber)
+    - `passenger_helper_declined`: ArrowRight (slate)
+    - `passenger_helper_reopened`: UserCheck (cyan)
+
+**Component Updates:**
+
+- **`src/components/ui/SpeedUpPrompt.tsx`** - UPDATED (~5 lines changed)
+  - Added `onCollapse?: () => void` prop for soft-dismiss behavior
+  - "No thanks" button now calls `onCollapse()` if provided, else `onChoice(false)`
+
+- **`src/components/ui/PassengerVerificationForm.tsx`** - UPDATED (~10 lines changed)
+  - Added `onCollapse?: () => void` prop for soft-dismiss behavior
+  - Skip button now calls `onCollapse()` if provided, else `onSkip()`
+  - Label changed: "Your Name" → "Client's Name"
+
+- **`src/components/ui/CrashDetailsForm.tsx`** - UPDATED (~5 lines changed)
+  - Added `onCollapse?: () => void` prop for soft-dismiss behavior
+  - "Skip this step" button now calls `onCollapse()` if provided, else `onSkip()`
+
+- **`src/components/ui/FlowWizard.tsx`** - MAJOR UPDATE (~60 lines changed)
+  - Added `onCollapse?: (variant: 'driver' | 'passenger') => void` prop
+  - Added `onExpand?: (variant: 'driver' | 'passenger') => void` prop
+  - Updated rendering logic for all three steps (verification, speedup, crash_details):
+    - If collapsed flag is true, show `CollapsedHelperCTA` instead of full form
+    - Pass `onCollapse` to child components for soft-dismiss behavior
+
+**Page Integration:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED (~100 lines changed)
+  - Added `isPassengerInfoMissing()` helper function to check if passenger has provided any identifiers
+  - Added `handleHelperCollapse()` handler:
+    - Logs decline event with appropriate message
+    - Sets collapsed flag in InteractiveState
+    - Increments decline count for staff-side tracking
+  - Added `handleHelperExpand()` handler:
+    - Logs reopen event with appropriate message
+    - Clears collapsed flag
+  - Updated FlowWizard rendering with new collapse/expand handlers
+  - Added ContactingCHPBanner rendering for passenger flow
+
+### Changed
+
+- **`src/components/ui/index.ts`** - Added CollapsedHelperCTA and ContactingCHPBanner exports
+  - New "Decline behavior components (V1.3.0+)" section
+
+### UX Flow Summary
+
+**Status-Based Visibility Rules:**
+
+| Public Status | Driver UI | Passenger UI |
+|---------------|-----------|--------------|
+| IN_PROGRESS | Show wizard OR collapsed CTA | Show wizard OR collapsed CTA |
+| CONTACTING_CHP | **Hide completely** | Show banner if info missing + collapsed CTA |
+| FACE_PAGE_READY | Hide | Hide |
+| WAITING_FOR_REPORT | Hide | Hide |
+| REPORT_READY | Hide | Hide |
+
+**Event Tracking:**
+
+| Action | Event Type | Message |
+|--------|------------|---------|
+| Driver declines speed-up | `driver_speedup_declined` | "No problem! We'll handle it from here." |
+| Driver re-expands CTA | `driver_speedup_reopened` | "Let's add those crash details." |
+| Passenger declines helper | `passenger_helper_declined` | "Got it! We'll work with what we have." |
+| Passenger re-expands CTA | `passenger_helper_reopened` | "Let's add that information." |
+
+### Fixed
+
+#### CrashDetailsForm Skip Behavior
+
+**Problem:**
+When a user clicked "Yes, I have details" on SpeedUpPrompt but then changed their mind and clicked "Skip this step" on CrashDetailsForm, the UI would hide completely instead of collapsing to the compact CTA.
+
+**Fix:**
+- Added `onCollapse` prop to CrashDetailsForm (same pattern as SpeedUpPrompt)
+- Updated FlowWizard to check `driverHelperCollapsed` for crash_details step
+- Updated FlowWizard to pass `onCollapse` handler to CrashDetailsForm
+
+**User Impact:**
+Users can now decline at the CrashDetailsForm step and still see a compact CTA to re-access the form if they change their mind.
+
+### Technical Notes
+
+- **Decline Count Tracking:** `driverDeclineCount` and `passengerDeclineCount` increment each time "No thanks" is clicked, enabling staff-side escalation logic to detect repeated declines
+- **Mobile-First:** All new components use 48px touch targets, responsive to 375px
+- **Plain English:** All timeline messages avoid technical jargon
+- **State Persistence:** Collapsed state persists in InteractiveState across page refreshes
+
+**Files Created:** 2 files
+**Files Modified:** 7 files
+**Lines Added:** ~250 lines
+**Lines Changed:** ~100 lines
+
+---
+
 ## [1.2.1] - 2025-12-12
 
 ### Fixed

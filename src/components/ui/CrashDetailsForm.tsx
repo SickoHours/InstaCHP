@@ -24,6 +24,7 @@ interface CrashDetailsFormProps {
   initialData?: Partial<CrashDetailsData>;
   onSubmit: (data: CrashDetailsData) => void;
   onSkip: () => void;
+  onCollapse?: () => void;  // Soft-dismiss handler for "No thanks" behavior
   disabled?: boolean;
 }
 
@@ -41,6 +42,7 @@ export default function CrashDetailsForm({
   initialData,
   onSubmit,
   onSkip,
+  onCollapse,
   disabled = false,
 }: CrashDetailsFormProps) {
   const [formData, setFormData] = useState<CrashDetailsData>({
@@ -218,7 +220,7 @@ export default function CrashDetailsForm({
 
       {/* Skip link */}
       <button
-        onClick={onSkip}
+        onClick={onCollapse || onSkip}
         disabled={disabled || isSubmitting}
         className={cn(
           'w-full mt-3 py-2',

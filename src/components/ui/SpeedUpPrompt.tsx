@@ -12,11 +12,13 @@ import { cn } from '@/lib/utils';
 
 interface SpeedUpPromptProps {
   onChoice: (wantsToProvide: boolean) => void;
+  onCollapse?: () => void;  // Soft-dismiss handler for "No thanks" behavior
   disabled?: boolean;
 }
 
 export default function SpeedUpPrompt({
   onChoice,
+  onCollapse,
   disabled = false,
 }: SpeedUpPromptProps) {
   return (
@@ -65,7 +67,7 @@ export default function SpeedUpPrompt({
 
         {/* No - Secondary action */}
         <button
-          onClick={() => onChoice(false)}
+          onClick={() => (onCollapse ? onCollapse() : onChoice(false))}
           disabled={disabled}
           className={cn(
             'flex-1 flex items-center justify-center gap-2 p-4 rounded-xl',

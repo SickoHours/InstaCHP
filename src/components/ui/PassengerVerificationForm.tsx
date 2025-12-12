@@ -21,6 +21,7 @@ interface PassengerVerificationFormProps {
   initialData?: Partial<PassengerVerificationData>;
   onSubmit: (data: PassengerVerificationData) => void;
   onSkip: () => void;
+  onCollapse?: () => void;  // Soft-dismiss handler for "No thanks" behavior
   disabled?: boolean;
 }
 
@@ -35,6 +36,7 @@ export default function PassengerVerificationForm({
   initialData,
   onSubmit,
   onSkip,
+  onCollapse,
   disabled = false,
 }: PassengerVerificationFormProps) {
   // Generate unique IDs for name rows
@@ -117,7 +119,7 @@ export default function PassengerVerificationForm({
         <div className="flex items-center gap-3">
           <User className="w-4 h-4 text-slate-500" />
           <div>
-            <span className="text-xs text-slate-500 uppercase tracking-wider">Your Name</span>
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Client's Name</span>
             <p className="text-slate-200 font-medium">{clientName}</p>
           </div>
         </div>
@@ -327,7 +329,7 @@ export default function PassengerVerificationForm({
 
       {/* Skip link */}
       <button
-        onClick={onSkip}
+        onClick={onCollapse || onSkip}
         disabled={disabled || isSubmitting}
         className={cn(
           'w-full mt-3 py-2',

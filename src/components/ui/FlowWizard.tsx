@@ -13,12 +13,13 @@
  * @version V1.1.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Job, FlowStep, PassengerVerificationData } from '@/lib/types';
 import DriverPassengerChoice from './DriverPassengerChoice';
 import SpeedUpPrompt from './SpeedUpPrompt';
 import CrashDetailsForm, { type CrashDetailsData } from './CrashDetailsForm';
 import PassengerVerificationForm from './PassengerVerificationForm';
+import CollapsedHelperCTA from './CollapsedHelperCTA';
 
 export interface FlowCompletionData {
   clientType: 'driver' | 'passenger';
@@ -31,6 +32,8 @@ interface FlowWizardProps {
   job: Job;
   onStepChange: (step: FlowStep, data?: Record<string, unknown>) => void;
   onComplete: (data: FlowCompletionData) => void;
+  onCollapse?: (variant: 'driver' | 'passenger') => void;  // Soft-dismiss handler
+  onExpand?: (variant: 'driver' | 'passenger') => void;    // Re-expand collapsed CTA
   disabled?: boolean;
 }
 
@@ -74,6 +77,8 @@ export default function FlowWizard({
   job,
   onStepChange,
   onComplete,
+  onCollapse,
+  onExpand,
   disabled = false,
 }: FlowWizardProps) {
   // Track collected data during the wizard
@@ -197,35 +202,62 @@ export default function FlowWizard({
 
       {/* Step: Passenger Verification */}
       {currentStep === 'verification' && (
-        <PassengerVerificationForm
-          clientName={job.clientName}
-          initialData={job.interactiveState?.passengerVerification}
-          onSubmit={handleVerificationSubmit}
-          onSkip={handleVerificationSkip}
-          disabled={disabled || isTransitioning}
-        />
+        job.interactiveState?.passengerHelperCollapsed ? (
+          <CollapsedHelperCTA
+            variant="passenger"
+            onExpand={() => onExpand?.('passenger')}
+            disabled={disabled || isTransitioning}
+          />
+        ) : (
+          <PassengerVerificationForm
+            clientName={job.clientName}
+            initialData={job.interactiveState?.passengerVerification}
+            onSubmit={handleVerificationSubmit}
+            onSkip={handleVerificationSkip}
+            onCollapse={onCollapse ? () => onCollapse('passenger') : undefined}
+            disabled={disabled || isTransitioning}
+          />
+        )
       )}
 
       {/* Step: Speed Up Prompt */}
       {currentStep === 'speedup' && (
-        <SpeedUpPrompt
-          onChoice={handleSpeedUpChoice}
-          disabled={disabled || isTransitioning}
-        />
+        job.interactiveState?.driverHelperCollapsed ? (
+          <CollapsedHelperCTA
+            variant="driver"
+            onExpand={() => onExpand?.('driver')}
+            disabled={disabled || isTransitioning}
+          />
+        ) : (
+          <SpeedUpPrompt
+            onChoice={handleSpeedUpChoice}
+            onCollapse={onCollapse ? () => onCollapse('driver') : undefined}
+            disabled={disabled || isTransitioning}
+          />
+        )
       )}
 
       {/* Step: Crash Details Form */}
       {currentStep === 'crash_details' && (
-        <CrashDetailsForm
-          initialData={{
-            crashDate: job.crashDate || '',
-            crashTime: job.crashTime || '',
-            officerId: job.officerId || '',
-          }}
-          onSubmit={handleCrashDetailsSubmit}
-          onSkip={handleCrashDetailsSkip}
-          disabled={disabled || isTransitioning}
-        />
+        job.interactiveState?.driverHelperCollapsed ? (
+          <CollapsedHelperCTA
+            variant="driver"
+            onExpand={() => onExpand?.('driver')}
+            disabled={disabled || isTransitioning}
+          />
+        ) : (
+          <CrashDetailsForm
+            initialData={{
+              crashDate: job.crashDate || '',
+              crashTime: job.crashTime || '',
+              officerId: job.officerId || '',
+            }}
+            onSubmit={handleCrashDetailsSubmit}
+            onSkip={handleCrashDetailsSkip}
+            onCollapse={onCollapse ? () => onCollapse('driver') : undefined}
+            disabled={disabled || isTransitioning}
+          />
+        )
       )}
     </div>
   );

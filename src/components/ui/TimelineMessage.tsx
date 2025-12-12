@@ -10,6 +10,7 @@ import {
   Send,
   XCircle,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { EventType } from '@/lib/types';
@@ -38,6 +39,7 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   wrapper_triggered: Sparkles,
   wrapper_completed: CheckCircle2,
   file_uploaded: FileText,
+  check_requested: RefreshCw,
   escalated: AlertCircle,
   completed: CheckCircle2,
   message: MessageCircle,
@@ -54,6 +56,7 @@ const EVENT_COLORS: Record<EventType, string> = {
   wrapper_triggered: 'text-purple-400',
   wrapper_completed: 'text-emerald-400',
   file_uploaded: 'text-teal-400',
+  check_requested: 'text-violet-400',
   escalated: 'text-amber-400',
   completed: 'text-emerald-400',
   message: 'text-slate-400',
@@ -114,6 +117,7 @@ const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(
                 eventType === 'status_change' && 'bg-cyan-500',
                 eventType === 'job_created' && 'bg-slate-500',
                 eventType === 'escalated' && 'bg-amber-500',
+                eventType === 'check_requested' && 'bg-violet-500',
               )}
             />
           </div>

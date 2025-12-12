@@ -117,6 +117,7 @@ Staff sees all technical details including internal statuses, wrapper results, j
 |-------|------------|------------|---------|
 | Frontend | Next.js 15 (App Router) | Vercel | Server Components, file-based routing |
 | Styling | Tailwind CSS | - | Mobile-first responsive design |
+| UI Components | focus-trap-react (v11.0.3) | npm | Focus trapping for modals/drawers (WCAG) |
 | Database | Convex | Convex Cloud | Real-time reactivity, TypeScript-first |
 | File Storage | Convex Storage | Convex Cloud | PDF upload/download |
 | CHP Automation | Playwright (CHP Wrapper) | Fly.io | Browser automation for CHP portal |
@@ -703,61 +704,62 @@ The primary data structure for crash report requests.
 
 ```typescript
 interface Job {
-  // === Identity ===
+  // ========== V1 MVP FIELDS ==========
+  // Identity
   _id: string;                      // Unique job ID (Convex ID)
-  
-  // === Law Firm Info ===
+
+  // Law Firm Info
   lawFirmId: string;                // Which law firm owns this job
   lawFirmName: string;              // Law firm display name
-  caseReference?: string;           // Law firm's internal case number
-  
-  // === Client Info ===
+
+  // Client Info (V1 basic tracking)
   clientName: string;               // Full name: "Dora Cruz-Arteaga"
-  clientType?: 'driver' | 'passenger';
-  additionalPartyInfo?: string;     // Other driver/passenger details
-  
-  // === Report Info ===
+
+  // Report Info
   reportNumber: string;             // Format: "9XXX-YYYY-ZZZZZ"
-  
-  // === Page 1 Data (Crash Details) ===
+
+  // Page 1 Data (Crash Details)
   crashDate?: string;               // Format: "mm/dd/yyyy"
   crashTime?: string;               // Format: "HHMM" (24-hour, e.g., "1430")
   ncic?: string;                    // 4 digits, starts with "9" (auto-derived from reportNumber)
   officerId?: string;               // 6 digits, starts with "0"
   locationDescription?: string;     // Optional location reference
-  
-  // === Page 2 Data (Verification) ===
+
+  // Page 2 Data (Verification)
   firstName?: string;               // Auto-split from clientName
   lastName?: string;                // Auto-split from clientName
   plate?: string;                   // License plate number
   driverLicense?: string;           // Driver's license number
   vin?: string;                     // Vehicle identification number
-  
-  // === Status ===
+
+  // Status & Files
   internalStatus: InternalStatus;   // Staff-facing status
-  wasAutoEscalated?: boolean;       // True if auto-escalated to manual
-  
-  // === Files ===
   facePageToken?: string;           // Convex storage ID for face page PDF
   fullReportToken?: string;         // Convex storage ID for full report PDF
-  guaranteedName?: string;          // Verified name from manually uploaded face page
-  
-  // === CHP Wrapper History ===
+
+  // CHP Wrapper History (V1 basic runs)
   wrapperRuns?: WrapperRun[];       // Array of all wrapper executions
-  lastWrapperRun?: number;          // Timestamp of most recent run
-  lastWrapperResult?: WrapperResultType; // Result of most recent run
-  
-  // === VAPI Fields (V3 - Schema Now, Implementation Later) ===
-  officeAttemptIndex?: number;      // Current office index for hopping
-  officeAttempts?: OfficeAttempt[]; // History of VAPI call attempts
-  
-  // === Escalation ===
-  escalationNotes?: string;         // Notes about why escalated
-  
-  // === Timestamps ===
+
+  // Timestamps
   createdAt: number;                // Unix timestamp (ms)
   updatedAt: number;                // Unix timestamp (ms)
-  createdBy: string;                // User ID who created job
+
+  // ========== V2 BACKEND FIELDS ==========
+  // Additional tracking for enhanced workflow
+  caseReference?: string;           // Law firm's internal case number
+  clientType?: 'driver' | 'passenger'; // Party involved in crash
+  additionalPartyInfo?: string;     // Other driver/passenger details
+  createdBy?: string;               // User ID who created job
+  wasAutoEscalated?: boolean;       // True if auto-escalated to manual
+  guaranteedName?: string;          // Verified name from manually uploaded face page
+  lastWrapperRun?: number;          // Timestamp of most recent run
+  lastWrapperResult?: WrapperResultType; // Result of most recent run
+  escalationNotes?: string;         // Notes about why escalated
+
+  // ========== V3 VAPI FIELDS ==========
+  // Voice AI caller integration
+  officeAttemptIndex?: number;      // Current office index for hopping
+  officeAttempts?: OfficeAttempt[]; // History of VAPI call attempts
 }
 ```
 
@@ -793,10 +795,21 @@ type PublicStatus =
 ### Wrapper Run Record
 
 ```typescript
+// ========== V1 MVP IMPLEMENTATION ==========
+// Minimal wrapper execution tracking for mock data
 interface WrapperRun {
+  runId: string;                    // Unique execution ID
   timestamp: number;                // When wrapper was executed
+  result: WrapperResult;            // FULL, FACE_PAGE, NO_RESULT, ERROR
   duration: number;                 // Execution time in ms
-  resultType: WrapperResultType;    // FULL, FACE_PAGE, NO_RESULT, ERROR
+  errorMessage?: string;            // Error details if result === ERROR
+}
+
+type WrapperResult = 'FULL' | 'FACE_PAGE' | 'NO_RESULT' | 'ERROR';
+
+// ========== V2+ EXTENDED IMPLEMENTATION ==========
+// Full tracking with debugging and reporting capabilities
+interface WrapperRunExtended extends WrapperRun {
   message: string;                  // Human-readable result message
   downloadToken?: string;           // Convex storage ID for downloaded PDF
   journeyLog: JourneyStep[];        // Step-by-step automation log
@@ -813,8 +826,6 @@ interface WrapperRun {
     vin?: string;
   };
 }
-
-type WrapperResultType = 'FULL' | 'FACE_PAGE' | 'NO_RESULT' | 'ERROR';
 
 interface JourneyStep {
   timestamp: string;                // ISO timestamp
@@ -865,6 +876,7 @@ interface JobEvent {
 }
 
 type EventType =
+  // V1 MVP Event Types
   | 'job_created'
   | 'status_change'
   | 'page1_updated'
@@ -872,13 +884,14 @@ type EventType =
   | 'wrapper_triggered'
   | 'wrapper_completed'
   | 'file_uploaded'
-  | 'check_requested'
+  | 'check_requested'        // Auto-checker run (V1)
   | 'escalated'
   | 'completed'
   | 'message'
-  | 'vapi_call_started'      // V3
-  | 'vapi_call_completed'    // V3
-  | 'vapi_call_failed';      // V3
+  // V3 VAPI Event Types (Future)
+  | 'vapi_call_started'
+  | 'vapi_call_completed'
+  | 'vapi_call_failed';
 ```
 
 ### User-Facing Events
@@ -1057,14 +1070,19 @@ Jobs sorted by `createdAt`, newest first.
 
 **Purpose:** Form for law firms to create a new crash report request.
 
-#### Form Fields
+#### Form Fields (V1 MVP)
+
+Law firms submit only 2 fields on the new request form. Client type and additional party information are collected later via the chat interface or by staff during Page 2 data entry.
 
 | Field | Type | Required | Validation | Placeholder |
 |-------|------|----------|------------|-------------|
 | Client Name | text | Yes | Min 2 chars | "Dora Cruz-Arteaga" |
 | Report Number | text | Yes | Format: 9XXX-YYYY-ZZZZZ | "9465-2025-02802" |
-| Client Type | radio | No | - | Driver / Passenger |
-| Additional Party Info | textarea | No | - | "Other driver information..." |
+
+**Note:** Client Type and Additional Party Info are collected later in the job workflow:
+- **Client Type:** Collected via chat interface once job is created
+- **Additional Party Info:** Entered by staff on Page 2 during verification setup
+- This minimalist design reduces law firm friction during initial submission
 
 #### Layout - Mobile (< 768px)
 
@@ -1093,6 +1111,17 @@ Full-screen form with sticky header and footer:
 │ [   Submit Request    ] │ ← Sticky footer
 └─────────────────────────┘
 ```
+
+**Visual Design Implementation Note:**
+
+The actual V1 implementation uses a distinctive dark mode aesthetic that deviates from the simple wireframe above:
+
+- **Dark Mode:** Deep slate background (`bg-slate-950`) with glass-morphism form card
+- **Glass-Morphism:** Form container uses `bg-slate-800/50 backdrop-blur-xl border border-slate-700/50`
+- **Animated Background:** Floating gradient orbs (teal, cyan, slate) create visual interest
+- **Focus Glow:** Input focus state shows teal ring (`ring-teal-500 ring-offset-slate-900`)
+- **Validation Feedback:** Green emerald glow for valid fields, red for errors
+- **Premium Aesthetic:** Creates modern, professional look that differentiates InstaTCR from generic CRM tools while maintaining WCAG accessibility and touch-target compliance
 
 #### Layout - Desktop (≥ 768px)
 
@@ -2534,6 +2563,182 @@ export function getPublicStatus(internalStatus: InternalStatus): PublicStatus {
   return statusMapping[internalStatus] || 'IN_PROGRESS';
 }
 ```
+
+---
+
+### Component System: Toast Notifications
+
+**Files:**
+- `src/context/ToastContext.tsx`
+- `src/components/ui/Toast/Toast.tsx`
+- `src/components/ui/Toast/ToastContainer.tsx`
+
+**Purpose:** Display user feedback for form submissions, file uploads, automation actions, and error states. Uses glass-morphism design with auto-dismiss and progress indicators.
+
+#### Toast Types & API
+
+```typescript
+type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+// Use the useToast hook
+const { toast } = useToast();
+
+// Convenience methods
+toast.success('Report submitted successfully');
+toast.error('Failed to upload file');
+toast.warning('This action cannot be undone');
+toast.info('Processing your request...');
+```
+
+#### Features
+- **4 Toast Types:** success (green), error (red), warning (amber), info (blue)
+- **Auto-Dismiss:** Configurable duration (default 4000ms) with progress bar animation
+- **Action Button:** Optional button for toast-triggered actions
+- **Glass-Morphism:** Frosted glass effect (`bg-slate-800/50 backdrop-blur-xl`)
+- **Portal-Based:** Renders outside DOM flow to avoid z-index issues
+- **Responsive:** Bottom-center (mobile) / top-right (desktop)
+- **Accessible:** ARIA labels, keyboard-dismissible, screen reader announcements
+
+#### Usage Examples
+
+**Form Submission:**
+```typescript
+try {
+  await submitForm(formData);
+  toast.success('Request submitted successfully');
+  router.push('/law');
+} catch (error) {
+  toast.error('Failed to submit request. Please try again.');
+}
+```
+
+**Staff Actions:**
+```typescript
+toast.info('Running wrapper...');
+await runWrapper(jobId);
+toast.success('Wrapper completed');
+```
+
+---
+
+### Component System: Skeleton Loading States
+
+**Files:** `src/components/ui/Skeleton/` (SkeletonBase, SkeletonText, SkeletonCard, JobCardSkeleton, StatCardSkeleton, TimelineItemSkeleton)
+
+**Purpose:** Provide composable skeleton components for loading states, improving perceived performance while data loads.
+
+#### Composable Primitives
+
+```typescript
+// Base shimmer element
+<SkeletonBase width="100%" height={20} rounded="md" />
+
+// Text placeholders (1-4 lines)
+<SkeletonText lines={3} gap="md" width="80%" />
+
+// Card container
+<SkeletonCard>
+  <SkeletonBase height={100} />
+  <SkeletonText lines={2} />
+</SkeletonCard>
+```
+
+#### Pre-Built Variants
+- **JobCardSkeleton:** Mobile card and table-row variants for job lists
+- **StatCardSkeleton:** Dashboard stat card placeholders
+- **TimelineItemSkeleton:** Timeline message placeholders
+
+#### Integration
+```typescript
+{isLoading ? (
+  [1,2,3,4].map(i => <JobCardSkeleton key={i} />)
+) : (
+  jobs.map(job => <MobileJobCard key={job._id} job={job} />)
+)}
+```
+
+---
+
+### Component System: Error State Components
+
+**File:** `src/components/ui/ErrorState.tsx`
+
+**Purpose:** Display user-friendly error messages for various failure scenarios with consistent UI.
+
+#### Error Variants
+
+| Variant | Icon | Title | Use Case |
+|---------|------|-------|----------|
+| default | AlertTriangle (amber) | "Something went wrong" | Generic errors |
+| network | WifiOff (red) | "Connection lost" | Network/offline errors |
+| notFound | FileX (slate) | "Not found" | 404 errors |
+| server | ServerCrash (red) | "Server error" | 5xx server errors |
+
+#### Usage
+
+```typescript
+// Specific error types
+<NetworkError onRetry={handleRetry} />
+<NotFoundError />
+<ServerError />
+
+// Generic with variant
+<ErrorState variant="network" onRetry={handleRetry} />
+
+// Custom error
+<ErrorState
+  title="Submission Failed"
+  message={apiError}
+  onRetry={handleRetry}
+  compact
+/>
+```
+
+#### Styling
+- Glass-morphism container (`glass-card-dark rounded-2xl`)
+- Icon background (`bg-slate-800/50`)
+- Accessible (`role="alert"`, `aria-live="polite"`)
+
+---
+
+### Component System: Text Utilities
+
+#### Component: Tooltip
+
+**File:** `src/components/ui/Tooltip.tsx`
+
+Display additional context on hover/focus with viewport-aware positioning.
+
+```typescript
+<Tooltip content="This is a helpful tip" position="top" delay={300}>
+  <button>Hover me</button>
+</Tooltip>
+```
+
+**Features:**
+- Portal-based rendering (avoids overflow clipping)
+- Keyboard-accessible (shows on focus, hides on blur)
+- Viewport-aware (repositions if near screen edge)
+- Customizable delay, position, max-width
+
+#### Component: TruncatedText
+
+**File:** `src/components/ui/TruncatedText.tsx`
+
+Display text with line truncation and automatic tooltip on overflow.
+
+```typescript
+// Single-line truncation with tooltip
+<TruncatedText text={job.clientName} lines={1} />
+
+// Multi-line truncation (2-3 lines max)
+<TruncatedText text={job.escalationNotes} lines={2} />
+```
+
+**Features:**
+- Smart truncation (only shows tooltip if text overflows)
+- Multi-line support (1, 2, or 3 line clamp)
+- Resize-aware (rechecks truncation on window resize)
 
 ---
 
@@ -4143,7 +4348,252 @@ This is the primary transition point between mobile and desktop layouts:
 
 ---
 
-## 22. Testing Checklist
+## 22. Accessibility Guidelines (WCAG 2.1 AA/AAA Compliance)
+
+InstaTCR is designed to be accessible to all users, including those with disabilities. The application meets WCAG 2.1 Level AA standards with several Level AAA enhancements.
+
+### Keyboard Navigation
+
+#### Tab Order & Arrow Keys
+- All interactive elements are keyboard-accessible in logical tab order
+- **TabBar Component:** Arrow keys navigate between tabs (Left/Right), Home goes to first tab, End goes to last tab
+- **Modals:** Escape key closes, focus returns to trigger button on close
+
+#### ARIA Implementation
+
+```tsx
+// TabBar with full ARIA support
+<div role="tablist">
+  <button
+    role="tab"
+    aria-selected={isActive}
+    aria-controls={panelId}
+    tabIndex={isActive ? 0 : -1}
+  >
+    Tab Label
+  </button>
+</div>
+<div role="tabpanel" id={panelId} aria-labelledby={tabId}>
+  Content
+</div>
+
+// Status badges with live updates
+<span role="status" aria-live="polite" aria-atomic="true">
+  {publicStatus}
+</span>
+
+// Form validation
+<input
+  id="reportNumber"
+  aria-invalid={hasError}
+  aria-describedby={hasError ? 'error-reportNumber' : undefined}
+/>
+{hasError && (
+  <span id="error-reportNumber" role="alert">
+    {errorMessage}
+  </span>
+)}
+
+// Toast notifications
+<div role="status" aria-live="polite" aria-atomic="true">
+  {toastMessage}
+</div>
+```
+
+### Focus Management
+
+#### Focus Trapping
+
+Modals and drawers use `focus-trap-react` to prevent focus from escaping:
+
+```tsx
+import FocusTrap from 'focus-trap-react';
+
+<FocusTrap active={isOpen} onDeactivate={handleClose}>
+  <div role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Modal Title</h2>
+    {/* Focus cannot escape to content behind modal */}
+  </div>
+</FocusTrap>
+```
+
+#### Focus Visible Styling
+
+All interactive elements have visible focus indicators:
+
+```css
+/* Teal ring with offset for dark backgrounds */
+focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-slate-900
+```
+
+#### Focus Restoration
+
+When modals close, focus returns to the element that opened them:
+
+```tsx
+const triggerRef = useRef<HTMLButtonElement>(null);
+
+const handleClose = () => {
+  setIsOpen(false);
+  // Restore focus after modal closes
+  setTimeout(() => triggerRef.current?.focus(), 0);
+};
+```
+
+### Color Contrast
+
+#### WCAG Compliance Table
+
+| Element | Minimum Ratio | WCAG Level | Implementation |
+|---------|---------------|-----------|----------------|
+| Normal Text | 4.5:1 | AA | All body text meets 4.5:1 |
+| Large Text (≥18pt) | 3:1 | AA | Headings and large UI elements |
+| UI Components | 3:1 | AA | Buttons, inputs, badges |
+| Focus Indicators | 3:1 | AA | Teal ring on slate background |
+| Status Badges | 7:1 | AAA | Enhanced contrast (200-level colors) |
+
+#### Status Badge Colors (WCAG AAA)
+
+Dark mode badge text uses 200-level colors for 7:1 contrast ratio:
+
+```typescript
+// Enhanced contrast in DARK_STATUS_COLORS
+{
+  gray: { text: 'text-slate-200' },    // 7.2:1 contrast
+  blue: { text: 'text-blue-200' },     // 7.3:1 contrast
+  green: { text: 'text-emerald-200' }, // 7.2:1 contrast
+  amber: { text: 'text-amber-200' },   // 7.1:1 contrast
+  red: { text: 'text-red-200' },       // 7.8:1 contrast
+}
+```
+
+### Semantic HTML
+
+Use semantic elements for proper screen reader navigation:
+
+```tsx
+// Good: Semantic form elements
+<form onSubmit={handleSubmit}>
+  <label htmlFor="clientName">Client Name</label>
+  <input id="clientName" type="text" required />
+  <button type="submit">Submit</button>
+</form>
+
+// Good: Semantic landmarks
+<header role="banner">
+  {/* Site header */}
+</header>
+
+<main id="main-content">
+  {/* Primary content */}
+</main>
+
+<footer role="contentinfo">
+  {/* Site footer */}
+</footer>
+
+// Avoid: Non-semantic divs with onClick
+<div onClick={handleSubmit} className="button-like">
+  Submit  {/* Not accessible */}
+</div>
+```
+
+### Screen Reader Support
+
+#### Meaningful Text
+
+```tsx
+// Good: Descriptive button text
+<button>Download Report PDF</button>
+
+// Avoid: Generic text
+<button>Click here</button>
+
+// Icon-only buttons need aria-label
+<button aria-label="Download report PDF">
+  <Download className="w-5 h-5" />
+</button>
+
+// Hidden context for screen readers
+<span className="sr-only">
+  Status: {publicStatus} (updated {relativeTime})
+</span>
+```
+
+#### Alt Text for Images
+
+```tsx
+// Descriptive alt text
+<img
+  src="/logo.png"
+  alt="InstaTCR logo - CHP crash report management system"
+/>
+
+// Decorative images: empty alt
+<img src="/divider.png" alt="" role="presentation" />
+```
+
+### Font & Input Sizing
+
+#### Font Size Table
+
+| Context | Mobile | Desktop | Reasoning |
+|---------|--------|---------|-----------|
+| Body Text | 16px | 14px | 16px prevents iOS zoom on inputs |
+| Headings (H1) | 24px | 28px | Sufficient hierarchy |
+| Button Text | 16px | 14px | Matches input sizing |
+| Small Text | 14px | 12px | Not smaller than 12px |
+| Minimum (Captions) | 12px | 12px | Only for non-critical info |
+
+#### Input Size Table
+
+| Breakpoint | Height | Min Width | Touch Target |
+|------------|--------|-----------|--------------|
+| Mobile (< 768px) | 48px | Full-width | WCAG 2.5 Spacing (44px minimum) |
+| Desktop (≥ 768px) | 40px | Varies | Mouse precision allows smaller |
+
+**Why 48px on mobile?** Meets WCAG 2.5.5 Target Size (Level AAA) and prevents iOS zoom with 16px font.
+
+### Skip Navigation
+
+Keyboard-accessible skip link at document start:
+
+```tsx
+<a
+  href="#main-content"
+  className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-[9999] focus:bg-teal-600 focus:text-white focus:px-4 focus:py-2"
+>
+  Skip to main content
+</a>
+```
+
+### Testing Accessibility
+
+```bash
+# Install accessibility testing tools
+npm install --save-dev @testing-library/jest-dom axe-core
+
+# Run automated tests
+npm run test:a11y
+```
+
+**Manual Testing Checklist:**
+- [ ] Keyboard-only navigation (no mouse)
+- [ ] Screen reader testing (VoiceOver on macOS/iOS, NVDA on Windows)
+- [ ] Color contrast check (WebAIM Contrast Checker)
+- [ ] Font sizing at 200% zoom
+- [ ] Focus visible on all interactive elements
+- [ ] ARIA attributes validated (axe DevTools)
+
+**Recommended Tools:**
+- **axe DevTools** (Chrome Extension) - Automated accessibility testing
+- **WAVE** (Web Accessibility Evaluation Tool) - Visual accessibility checker
+- **WebAIM Contrast Checker** - Color contrast validation
+- **Color Oracle** - Color blindness simulator
+
+---
+
+## 23. Testing Checklist
 
 ### General UI Tests
 

@@ -57,7 +57,7 @@ src/
 │       ├── MobileNav.tsx
 │       └── MobileDrawer.tsx
 └── lib/
-    ├── mockData.ts                 # 15 sample jobs
+    ├── mockData.ts                 # 18 sample jobs (all 13 statuses)
     ├── statusMapping.ts            # Internal → public conversion
     ├── utils.ts                    # Helper functions
     └── types.ts                    # TypeScript interfaces
@@ -67,17 +67,21 @@ src/
 
 | Internal Status | Public Status | Color | Law Firm Message |
 |-----------------|---------------|-------|------------------|
-| `NEW` | `SUBMITTED` | Gray | "We've received your request" |
-| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report" |
-| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report" |
-| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy (face page)" |
-| `COMPLETED_FULL_REPORT` | `REPORT_READY` | Green | "Your report is ready to download" |
-| `COMPLETED_MANUAL` | `REPORT_READY` | Green | "Your report is ready to download" |
-| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information" |
-| `NEEDS_IN_PERSON_PICKUP` | `IN_PROGRESS` | Blue | "We're working on your request" |
-| `AUTOMATION_ERROR` | `IN_PROGRESS` | Blue | "We're working on your request" |
+| `NEW` | `SUBMITTED` | Gray | "We've received your request and will begin processing shortly." |
+| `NEEDS_CALL` | `IN_PROGRESS` | Blue | "We're working on your request." |
+| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
+| `READY_FOR_AUTOMATION` | `IN_PROGRESS` | Blue | "We're working on your request." |
+| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
+| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy (face page). The full report will follow." |
+| `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | "We're waiting for the full report to become available." |
+| `COMPLETED_FULL_REPORT` | `REPORT_READY` | Green | "Your report is ready to download." |
+| `COMPLETED_MANUAL` | `REPORT_READY` | Green | "Your report is ready to download." |
+| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information to locate your report." |
+| `NEEDS_IN_PERSON_PICKUP` | `IN_PROGRESS` | Blue | "We're working on your request." |
+| `AUTOMATION_ERROR` | `IN_PROGRESS` | Blue | "We're working on your request." |
+| `CANCELLED` | `CANCELLED` | Red | "This request has been cancelled." |
 
-**Full mapping (13 statuses):** See `src/lib/statusMapping.ts`
+> **Canonical source:** `STATUS_MESSAGES` in `src/lib/statusMapping.ts`
 
 ## Validation Rules Quick Reference
 

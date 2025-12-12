@@ -5,6 +5,108 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-12-11
+
+### Added
+
+#### Documentation Audit Implementation
+
+**EventType Expansion:**
+- **`src/lib/types.ts`** - Added `check_requested` EventType for auto-checker runs
+- **`src/components/ui/TimelineMessage.tsx`** - Added RefreshCw icon and violet-400 color for `check_requested` events
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Added `check_requested` to eventTypeColors mapping
+
+**Mock Data Coverage:**
+- **`src/lib/mockData.ts`** - Expanded from 15 to 18 sample jobs
+  - Added `job_016` (NEEDS_CALL) - Patricia Gonzalez
+  - Added `job_017` (READY_FOR_AUTOMATION) - Thomas Anderson
+  - Added `job_018` (WAITING_FOR_FULL_REPORT) - Rebecca Martinez
+  - Added corresponding events for all new jobs
+  - Added `check_requested` event (evt_005_4) for job_005
+  - Now covers all 13 internal status types
+
+**Status Message Centralization:**
+- **`src/lib/statusMapping.ts`** - Added `STATUS_MESSAGES` export as single source of truth
+  - Canonical messages for all 8 public statuses
+  - Ensures consistent messaging across the entire application
+
+**Documentation Audit Fixes (~600 lines):**
+- **`DEV-ROADMAP.md`** - Fixed status count error (line 492)
+  - Changed "7 public statuses" → "8 public statuses"
+
+- **`INSTATCR-MASTER-PRD.md`** - Applied 10 comprehensive documentation fixes
+
+  **Form Specification Update (PRD-FORM-001):**
+  - Updated Screen 3 form fields from 4 fields to 2 fields (lines 1060-1085)
+  - Removed Client Type and Additional Party Info from initial form
+  - Added explanatory note about deferred field collection via chat/staff
+  - Reflects actual V1 implementation: Client Name + Report Number only
+
+  **Data Model Annotations (PRD-MODEL-002, PRD-MODEL-001):**
+  - Annotated Job interface with V1/V2/V3 section labels (lines 704-762)
+    - V1 MVP Fields: Core tracking fields matching types.ts
+    - V2 Backend Fields: Enhanced workflow (createdBy, wasAutoEscalated, etc.)
+    - V3 VAPI Fields: Voice AI integration (officeAttemptIndex, officeAttempts)
+  - Split WrapperRun interface into V1 base and V2+ extended (lines 796-835)
+    - V1 MVP: runId, timestamp, result, duration, errorMessage
+    - V2+ Extended: message, downloadToken, journeyLog, inputSent
+
+  **EventType Definition Update (PRD-EVENT-001):**
+  - Kept `check_requested` as V1 event type (lines 877-893)
+  - Grouped and labeled VAPI events as V3/future only
+  - Added inline comments for version clarity
+
+  **Component Library Documentation (PRD-FEATURE-001, 002, 003, 005):**
+  - Toast Notification System (lines 2555-2610)
+    - ToastContext hook with `useToast()` API
+    - 4 toast types: success, error, warning, info
+    - Glass-morphism styling, auto-dismiss, action buttons
+    - Usage examples for forms and staff actions
+  - Skeleton Loading System (lines 2612-2668)
+    - Composable primitives: SkeletonBase, SkeletonText, SkeletonCard
+    - Pre-built variants: JobCardSkeleton, StatCardSkeleton, TimelineItemSkeleton
+    - Animation keyframes and integration examples
+  - Error State Components (lines 2670-2730)
+    - 4 error variants: default, network, notFound, server
+    - ErrorState props and API documentation
+    - Convenience exports and usage examples
+  - Text Utilities (lines 2732-2775)
+    - Tooltip component with viewport-aware positioning
+    - TruncatedText with smart overflow detection
+    - Keyboard accessibility features
+
+  **Tech Stack Update (PRD-FEATURE-006):**
+  - Added focus-trap-react dependency to tech stack table (lines 116-125)
+  - Version: ^11.0.3
+  - Purpose: Focus trapping for modals/drawers (WCAG compliance)
+
+  **Visual Design Note (PRD-MESSAGE-001):**
+  - Added implementation note after form wireframe (lines 1115-1125)
+  - Documents dark mode aesthetic: glass-morphism, floating orbs, teal focus glow
+
+  **Accessibility Guidelines (PRD-FEATURE-004):**
+  - Added comprehensive section "22. Accessibility Guidelines" (lines 4351-4594)
+  - Renamed old section 22 to section 23
+  - Coverage:
+    - Keyboard navigation (TabBar arrow keys, focus trapping)
+    - ARIA attributes (status badges, forms, toasts, loading states)
+    - Focus management (visible indicators, trapping, restoration)
+    - Color contrast (WCAG AA/AAA compliance tables)
+    - Semantic HTML examples
+    - Screen reader support
+    - Font and input sizing tables (mobile/desktop)
+    - Testing checklist
+
+### Changed
+
+- **`CLAUDE.md`** - Updated Status Mapping Quick Reference table
+  - Shows all 13 internal statuses (previously showed 9)
+  - Displays full canonical messages instead of truncated versions
+  - Added note pointing to `STATUS_MESSAGES` as authoritative source
+  - Updated mock data count (15 → 18 jobs)
+
+---
+
 ## [1.0.0] - 2025-12-11
 
 ### Added

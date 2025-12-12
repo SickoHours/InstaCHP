@@ -90,6 +90,28 @@ export const STATUS_MAP: Record<InternalStatus, StatusConfig> = {
 };
 
 // ============================================
+// CANONICAL STATUS MESSAGES - SINGLE SOURCE OF TRUTH
+// ============================================
+
+/**
+ * Canonical status messages keyed by PublicStatus
+ * These are the exact messages shown to law firms.
+ * Import this constant to ensure consistent messaging across the app.
+ */
+export const STATUS_MESSAGES: Record<PublicStatus, string> = {
+  SUBMITTED: "We've received your request and will begin processing shortly.",
+  IN_PROGRESS: "We're working on your request.",
+  CONTACTING_CHP: "We're contacting CHP about your report.",
+  FACE_PAGE_READY:
+    "We've received a preliminary copy (face page). The full report will follow.",
+  WAITING_FOR_REPORT:
+    "We're waiting for the full report to become available.",
+  REPORT_READY: 'Your report is ready to download.',
+  NEEDS_INFO: 'We need a bit more information to locate your report.',
+  CANCELLED: 'This request has been cancelled.',
+};
+
+// ============================================
 // STATUS COLOR CLASSES
 // ============================================
 

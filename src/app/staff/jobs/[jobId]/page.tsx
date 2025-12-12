@@ -407,6 +407,7 @@ function AllEventsCard({ jobId }: { jobId: string }) {
     wrapper_triggered: 'text-purple-400',
     wrapper_completed: 'text-emerald-400',
     file_uploaded: 'text-green-400',
+    check_requested: 'text-violet-400',
     escalated: 'text-amber-400',
     completed: 'text-emerald-400',
     message: 'text-slate-400',

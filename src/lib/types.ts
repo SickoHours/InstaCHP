@@ -139,6 +139,7 @@ export type EventType =
   | 'wrapper_triggered'
   | 'wrapper_completed'
   | 'file_uploaded'
+  | 'check_requested' // Auto-checker run
   | 'escalated'
   | 'completed'
   | 'message';

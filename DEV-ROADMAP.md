@@ -489,7 +489,7 @@ Add AI-powered assistance features.
 ### Status System
 
 - 13 internal statuses (staff sees all)
-- 7 public statuses (law firms see simplified)
+- 8 public statuses (law firms see simplified)
 - Status mapping in `src/lib/statusMapping.ts`
 - Color-coded badges for quick scanning
 

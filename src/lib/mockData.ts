@@ -1,6 +1,6 @@
 /**
  * Mock data for InstaTCR V1 MVP
- * 15 sample jobs covering all status types
+ * 18 sample jobs covering all 13 status types
  */
 
 import type { Job } from './types';
@@ -429,6 +429,79 @@ export const mockJobs: Job[] = [
     createdAt: now - days(25),
     updatedAt: now - days(5),
   },
+
+  // ========================================
+  // NEEDS_CALL (1 job) - Awaiting staff call
+  // ========================================
+  {
+    _id: 'job_016',
+    lawFirmId: LAW_FIRMS.CHEN.id,
+    lawFirmName: LAW_FIRMS.CHEN.name,
+    clientName: 'Patricia Gonzalez',
+    clientType: 'driver',
+    reportNumber: '9213-2025-03456',
+    crashDate: '12/05/2025',
+    ncic: '9213',
+    internalStatus: 'NEEDS_CALL',
+    wrapperRuns: [],
+    createdAt: now - hours(4),
+    updatedAt: now - hours(3),
+  },
+
+  // ========================================
+  // READY_FOR_AUTOMATION (1 job) - Page 1+2 complete, ready to run
+  // ========================================
+  {
+    _id: 'job_017',
+    lawFirmId: LAW_FIRMS.RIVERA.id,
+    lawFirmName: LAW_FIRMS.RIVERA.name,
+    caseReference: 'RLS-2025-0045',
+    clientName: 'Thomas Anderson',
+    clientType: 'passenger',
+    reportNumber: '9465-2025-03012',
+    crashDate: '12/03/2025',
+    crashTime: '0915',
+    ncic: '9465',
+    officerId: '078901',
+    firstName: 'Thomas',
+    lastName: 'Anderson',
+    plate: '3PQR567',
+    internalStatus: 'READY_FOR_AUTOMATION',
+    wrapperRuns: [],
+    createdAt: now - hours(8),
+    updatedAt: now - hours(2),
+  },
+
+  // ========================================
+  // WAITING_FOR_FULL_REPORT (1 job) - Has face page, checking periodically
+  // ========================================
+  {
+    _id: 'job_018',
+    lawFirmId: LAW_FIRMS.MARTINEZ.id,
+    lawFirmName: LAW_FIRMS.MARTINEZ.name,
+    caseReference: 'MART-2025-0101',
+    clientName: 'Rebecca Martinez',
+    clientType: 'driver',
+    reportNumber: '9312-2025-02567',
+    crashDate: '11/28/2025',
+    crashTime: '1730',
+    ncic: '9312',
+    officerId: '089012',
+    firstName: 'Rebecca',
+    lastName: 'Martinez',
+    internalStatus: 'WAITING_FOR_FULL_REPORT',
+    facePageToken: 'fp_token_018',
+    wrapperRuns: [
+      {
+        runId: 'run_013',
+        timestamp: now - days(2),
+        result: 'FACE_PAGE',
+        duration: 10200,
+      },
+    ],
+    createdAt: now - days(4),
+    updatedAt: now - days(1),
+  },
 ];
 
 // ============================================
@@ -647,6 +720,87 @@ export const mockJobEvents: JobEvent[] = [
     message: 'This request has been cancelled.',
     isUserFacing: true,
     timestamp: now - days(8),
+  },
+
+  // Job 005 - check_requested event (Sarah Kim - FACE_PAGE_ONLY)
+  {
+    _id: 'evt_005_4',
+    jobId: 'job_005',
+    eventType: 'check_requested',
+    message: 'Checked if full report is available.',
+    isUserFacing: false, // Staff-only event
+    timestamp: now - hours(12),
+  },
+
+  // Job 016 - NEEDS_CALL (Patricia Gonzalez)
+  {
+    _id: 'evt_016_1',
+    jobId: 'job_016',
+    eventType: 'job_created',
+    message: "We've received your request and will begin processing shortly.",
+    isUserFacing: true,
+    timestamp: now - hours(4),
+  },
+  {
+    _id: 'evt_016_2',
+    jobId: 'job_016',
+    eventType: 'status_change',
+    message: "We're working on your request.",
+    isUserFacing: true,
+    timestamp: now - hours(3),
+  },
+
+  // Job 017 - READY_FOR_AUTOMATION (Thomas Anderson)
+  {
+    _id: 'evt_017_1',
+    jobId: 'job_017',
+    eventType: 'job_created',
+    message: "We've received your request and will begin processing shortly.",
+    isUserFacing: true,
+    timestamp: now - hours(8),
+  },
+  {
+    _id: 'evt_017_2',
+    jobId: 'job_017',
+    eventType: 'status_change',
+    message: "We're working on your request.",
+    isUserFacing: true,
+    timestamp: now - hours(2),
+  },
+
+  // Job 018 - WAITING_FOR_FULL_REPORT (Rebecca Martinez)
+  {
+    _id: 'evt_018_1',
+    jobId: 'job_018',
+    eventType: 'job_created',
+    message: "We've received your request and will begin processing shortly.",
+    isUserFacing: true,
+    timestamp: now - days(4),
+  },
+  {
+    _id: 'evt_018_2',
+    jobId: 'job_018',
+    eventType: 'status_change',
+    message: "We're contacting CHP about your report.",
+    isUserFacing: true,
+    timestamp: now - days(3),
+  },
+  {
+    _id: 'evt_018_3',
+    jobId: 'job_018',
+    eventType: 'file_uploaded',
+    message:
+      "We've received a preliminary copy (face page). The full report will follow.",
+    isUserFacing: true,
+    timestamp: now - days(2),
+  },
+  {
+    _id: 'evt_018_4',
+    jobId: 'job_018',
+    eventType: 'status_change',
+    message: "We're waiting for the full report to become available.",
+    isUserFacing: true,
+    timestamp: now - days(1),
   },
 ];
 

@@ -10,6 +10,7 @@ import {
   FloatingActionButton,
   JobCardSkeleton,
   SkeletonBase,
+  NotificationBell,
 } from '@/components/ui';
 import { mockJobs, DEFAULT_LAW_FIRM_ID } from '@/lib/mockData';
 import {
@@ -87,48 +88,58 @@ export default function LawFirmDashboard() {
           <div className="py-6 md:py-10 animate-page-entrance">
             {/* Title row with desktop CTA */}
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1
-                  className="text-2xl md:text-3xl font-bold text-white font-serif animate-text-reveal"
-                  style={{ animationDelay: '100ms' }}
-                >
-                  Your Requests
-                </h1>
-                <p
-                  className="text-sm text-slate-400 mt-1 animate-text-reveal"
-                  style={{ animationDelay: '200ms' }}
-                >
-                  {jobs.length} total request{jobs.length !== 1 ? 's' : ''}
-                </p>
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1
+                    className="text-2xl md:text-3xl font-bold text-white font-serif animate-text-reveal"
+                    style={{ animationDelay: '100ms' }}
+                  >
+                    Your Requests
+                  </h1>
+                  <p
+                    className="text-sm text-slate-400 mt-1 animate-text-reveal"
+                    style={{ animationDelay: '200ms' }}
+                  >
+                    {jobs.length} total request{jobs.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
               </div>
 
-              {/* Desktop CTA buttons */}
-              <div
-                className="hidden md:flex items-center gap-3 animate-text-reveal"
-                style={{ animationDelay: '200ms' }}
-              >
-                <Link href="/law/jobs/new">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    icon={<Plus className="w-5 h-5" />}
-                    iconPosition="left"
-                    className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
-                  >
-                    New Request
-                  </Button>
-                </Link>
-                <Link href="/law/jobs/new-fatal">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
-                    iconPosition="left"
-                    className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
-                  >
-                    Fatal Report
-                  </Button>
-                </Link>
+              {/* Right side: Notification bell + Desktop CTA buttons */}
+              <div className="flex items-center gap-3">
+                {/* Notification Bell (visible on all screen sizes) */}
+                <div className="animate-text-reveal" style={{ animationDelay: '200ms' }}>
+                  <NotificationBell userType="law_firm" />
+                </div>
+
+                {/* Desktop CTA buttons */}
+                <div
+                  className="hidden md:flex items-center gap-3 animate-text-reveal"
+                  style={{ animationDelay: '200ms' }}
+                >
+                  <Link href="/law/jobs/new">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      icon={<Plus className="w-5 h-5" />}
+                      iconPosition="left"
+                      className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
+                    >
+                      New Request
+                    </Button>
+                  </Link>
+                  <Link href="/law/jobs/new-fatal">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+                      iconPosition="left"
+                      className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
+                    >
+                      Fatal Report
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
 

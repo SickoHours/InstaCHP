@@ -5,6 +5,470 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2025-12-13
+
+### Added
+
+#### Authorization Upload as Official Gate for Staff Work
+
+**Purpose:**
+Elevate authorization upload as the true "start" of staff work on escalated jobs. Ensures staff focus on actionable escalations first by prioritizing jobs with authorization uploaded, while deprioritizing those still awaiting authorization.
+
+**Key Changes:**
+
+1. **Three-Tier Sorting System for Escalated Jobs**
+   - Staff dashboard escalated filter now sorts jobs into 3 priority tiers:
+     - **Tier 1 (TOP)**: Ready to Claim - Auth uploaded, not claimed yet (🟢 Green badge)
+     - **Tier 2 (MIDDLE)**: In Progress - Auth uploaded, claimed/scheduled (🔵 Blue badge)
+     - **Tier 3 (BOTTOM)**: Pending Authorization - No auth yet (🟡 Amber badge)
+   - Within each tier, jobs sorted by newest first
+   - Makes "ready-to-work" escalations immediately visible
+
+2. **Authorization Status Badges**
+   - Color-coded badges on StaffJobCard for escalated jobs
+   - 3 states: "Ready to Claim" (green), "In Progress" (blue), "Pending Authorization" (amber)
+   - Provides instant visual indication of job actionability
+
+3. **Quick Actions Gate**
+   - Quick actions now conditionally render based on authorization status
+   - Jobs WITH authorization: Show full workflow buttons (claim → schedule → download → upload)
+   - Jobs WITHOUT authorization: Show amber "Waiting for Authorization" message
+   - Prevents accidental claims on non-actionable jobs
+
+4. **Email Notification Service Stub**
+   - Created `emailNotificationService.ts` for V2 integration
+   - Wired into `notificationManager.emitAuthorizationUploaded()`
+   - V1: Console logs only (development)
+   - V2: Ready for Resend/SendGrid integration
+
+5. **Authorization Helper Functions**
+   - `hasAuthorizationUploaded()` - Check if auth document exists
+   - `isReadyToClaim()` - Check if ready for staff to claim
+   - `isPendingAuthorization()` - Check if awaiting auth upload
+   - `getAuthorizationStatusLabel()` - Get display label for badge
+   - `getAuthorizationStatusColor()` - Get badge color (emerald/blue/amber)
+
+**New Files Created:**
+
+- `src/lib/emailNotificationService.ts` - Email notification stub for V2
+
+**Modified Files:**
+
+- `src/lib/notificationManager.ts` - Wire email service into authorization upload notification
+- `src/lib/jobUIHelpers.ts` - Add 5 authorization status helper functions
+- `src/app/staff/page.tsx` - Implement three-tier sorting for escalated filter
+- `src/components/ui/StaffJobCard.tsx` - Add authorization status badge display
+- `src/components/ui/EscalationQuickActions.tsx` - Gate quick actions behind authorization check
+- `src/lib/mockData.ts` - Add 2 test jobs (job_051: pending auth, job_052: ready to claim)
+
+**Staff Dashboard Behavior (After Changes):**
+
+```
+Escalated Filter (Default View):
+
+TOP (Ready to Claim - Green)
+├─ job_052: Emma Davis (auth uploaded 2h ago, not claimed)
+├─ job_dev_001: Ready to Claim (auth uploaded 4h ago)
+└─ [Other ready-to-claim jobs...]
+
+MIDDLE (In Progress - Blue)
+├─ job_021: Richard Thompson (claimed, scheduled for pickup)
+├─ job_dev_002: Ready to Schedule (claimed, needs schedule)
+└─ [Other in-progress jobs...]
+
+BOTTOM (Pending Auth - Amber)
+├─ job_020: Sandra Williams (auth requested 2d ago)
+├─ job_051: Robert Wilson (auth requested 1d ago)
+└─ [Other pending-auth jobs...]
+```
+
+**Quick Actions Behavior:**
+
+| Authorization Status | Quick Actions Display |
+|----------------------|-----------------------|
+| ✅ Auth Uploaded | Full workflow buttons (claim → schedule → download → upload) |
+| ⏳ Pending Auth | Amber message: "Waiting for Authorization. The law firm needs to upload their authorization document before we can claim this pickup." |
+
+**Integration with Existing Notifications (V1.8.0):**
+
+- Authorization uploaded notification already triggers to staff (internal)
+- Email service now triggers alongside internal notification
+- Timeline events (`authorization_uploaded`) already tracked
+- Magic links already support `upload_auth` action
+
+**Testing:**
+
+- TypeScript check: ✅ PASS
+- Production build: ✅ PASS (all 10 routes compiled)
+- Mock data: ✅ 2 new test jobs added (pending auth, ready to claim)
+
+**V2 Migration Path:**
+
+- Email service stub ready for real email provider (Resend/SendGrid)
+- Same async function signature - easy swap
+- Real-time updates can be added via WebSocket/polling
+
+**Version:** V1.9.0
+
+---
+
+## [1.8.1] - 2025-12-13
+
+### Changed
+
+#### Auto-Checker Setup Flow UX Improvements
+
+**Purpose:**
+Improve the law firm experience when waiting for a full report by making auto-check settings always visible, renaming the CTA to be clearer, and ensuring activity feed messages accurately reflect user-configured settings.
+
+**Key Changes:**
+
+1. **Renamed CTA Button**
+   - Changed "Wait for full report" → "Set Up Auto Checker"
+   - Updated icon from Clock to Settings
+   - New description: "Configure when we check for the full report"
+
+2. **New Inline Setup Flow**
+   - Created `AutoCheckSetupFlow` component for desktop-optimized setup
+   - Two frequency options side-by-side: Daily (4:30 PM PT) or Twice Daily (9 AM & 4:30 PM PT)
+   - Fixed times displayed as badges (not editable time pickers)
+   - "Save Settings" button to confirm and enable auto-checker
+   - "Back" button to return to choice screen
+
+3. **Always-Visible Settings**
+   - Removed collapsible toggle for auto-check settings
+   - Settings section always visible after setup is complete
+   - Frequency can be changed anytime (Daily ↔ Twice Daily)
+
+4. **Dynamic Activity Feed Messages**
+   - Setup confirmation shows actual schedule: "Auto-checker enabled. We'll check daily at 4:30 PM PT."
+   - "Not ready" messages reflect configured frequency:
+     - Daily: "We'll check again at 4:30 PM PT."
+     - Twice Daily: "Next check at 9:00 AM or 4:30 PM PT."
+
+**New Files:**
+
+- `src/components/ui/AutoCheckSetupFlow.tsx` - Inline setup flow component
+
+**Modified Files:**
+
+- `src/components/ui/FacePageCompletionChoice.tsx` - Renamed button, updated icon and description
+- `src/app/law/jobs/[jobId]/page.tsx` - Added setup flow state, always-visible settings, dynamic messages
+
+**UI Flow (After Changes):**
+
+```
+1. Law firm sees face page ready
+   ↓
+2. FacePageCompletionChoice appears
+   - "This is all I need" → Complete with face page
+   - "Set Up Auto Checker" → Show setup flow
+   ↓
+3. AutoCheckSetupFlow (inline)
+   - Select: Daily (4:30 PM) OR Twice Daily (9 AM & 4:30 PM)
+   - Click "Save Settings"
+   ↓
+4. Auto-checker enabled
+   - Activity: "Auto-checker enabled. We'll check daily at 4:30 PM PT."
+   - Settings section always visible (can change frequency anytime)
+```
+
+5. **Full Authorization Document Name**
+   - Updated all law firm-facing references to use complete official document name
+   - Changed "authorization document" → "Authorization to Obtain Governmental Agency Records and Reports"
+   - Updated in: AuthorizationUploadCard, fatal report form, notification templates
+
+**Testing:**
+- TypeScript check: PASS
+- Build: PASS (all 9 routes compiled)
+
+**Version:** V1.8.1
+
+---
+
+## [1.8.0] - 2025-12-12
+
+### Added
+
+#### Internal Notification System for Escalation Workflow
+
+**Purpose:**
+Build foundation for email notifications by creating an internal notification system that tracks escalation workflow events. Provides in-app notification bell with quick actions that simulate magic link behavior.
+
+**Key Features:**
+
+1. **6 Notification Types**
+   - `ESCALATION_STARTED` - Job escalated (manual, auto, or fatal)
+   - `AUTHORIZATION_REQUESTED` - System prompts law firm for auth doc
+   - `AUTHORIZATION_UPLOADED` - Law firm uploads authorization
+   - `PICKUP_CLAIMED` - Staff claims the pickup
+   - `PICKUP_SCHEDULED` - Staff schedules pickup time
+   - `REPORT_READY` - Staff uploads report (face or full)
+
+2. **Notification Bell UI**
+   - Bell icon with unread count badge in header
+   - Dropdown panel with notification list
+   - Quick action buttons that simulate magic links
+   - Dev mode shows ALL notifications regardless of recipient
+
+3. **Magic Link System**
+   - Token format: `{action}_{jobId}_{expiry}`
+   - Routes: `/m/[token]` decodes and redirects
+   - Actions: `upload_auth`, `view_job`, `download_report`
+
+4. **Thread Management**
+   - All notifications for same job share `threadId`
+   - Prepares for email threading via `In-Reply-To` header
+
+**New Files Created:**
+
+- `src/lib/notificationTypes.ts` (250 lines) - Type definitions and templates
+- `src/lib/notificationManager.ts` (280 lines) - Singleton notification manager
+- `src/lib/magicLinks.ts` (130 lines) - Token generation and decoding
+- `src/app/m/[token]/page.tsx` (115 lines) - Magic link route handler
+- `src/components/ui/NotificationBell.tsx` (165 lines) - Bell + dropdown UI
+- `src/components/ui/NotificationItem.tsx` (160 lines) - Individual notification cards
+- `docs/NOTIFICATION-SYSTEM.md` - Complete documentation
+
+**Modified Files:**
+
+- `src/app/law/page.tsx` - Added NotificationBell to header
+- `src/app/staff/page.tsx` - Added NotificationBell to header
+- `src/app/staff/jobs/[jobId]/page.tsx` - Emit notifications in 4 handlers
+- `src/app/law/jobs/[jobId]/page.tsx` - Emit notification on auth upload
+- `src/app/law/jobs/new-fatal/page.tsx` - Emit escalation notification
+- `src/components/ui/EscalationQuickActions.tsx` - Emit notifications in 4 handlers
+- `src/components/ui/index.ts` - Export new components
+
+**Notification Emission Locations:**
+
+| Event | Location | Handler |
+|-------|----------|---------|
+| Escalation (manual) | staff/jobs/[jobId]/page.tsx | `handleEscalate()` |
+| Escalation (auto) | staff/jobs/[jobId]/page.tsx | `handleWrapperResult()` |
+| Escalation (fatal) | law/jobs/new-fatal/page.tsx | Form submission |
+| Auth uploaded | law/jobs/[jobId]/page.tsx | `handleAuthorizationUpload()` |
+| Pickup claimed | EscalationQuickActions.tsx | `handleClaim()` |
+| Pickup claimed | staff/jobs/[jobId]/page.tsx | `handleClaimPickup()` |
+| Pickup scheduled | EscalationQuickActions.tsx | `handleSchedule()` |
+| Pickup scheduled | staff/jobs/[jobId]/page.tsx | `handleSchedulePickup()` |
+| Report ready | EscalationQuickActions.tsx | `handleUploadComplete()` |
+| Report ready | staff/jobs/[jobId]/page.tsx | `handleUpload()` |
+
+**Email Implementation Plan (Later):**
+
+When email is implemented, each notification type will map to an email template:
+- Same thread via `In-Reply-To` header
+- Magic links become real deep links with HMAC signatures
+- Provider options: Resend, SendGrid, or Postmark
+
+**Testing:**
+- TypeScript check: PASS
+- All notification handlers connected
+- Dev mode enables full workflow testing
+
+**Version:** V1.8.0
+
+---
+
+## [1.7.0] - 2025-12-12
+
+### Added
+
+#### Staff Dashboard Escalation-First Redesign
+
+**Major UX Improvement:**
+Complete redesign of the staff dashboard to prioritize escalated jobs with mobile-first quick actions that guide staff through the manual pickup workflow step-by-step.
+
+**Key Features:**
+
+1. **Escalated Reports as Default View**
+   - Changed default filter from "All" to "Escalated" on staff dashboard
+   - Escalated tab appears first in the filter list with orange styling
+   - Escalated count badge in header (replacing separate "Escalations" link)
+   - `/staff/escalations` route now redirects to `/staff` with escalated filter
+
+2. **Quick Actions Workflow**
+   - Inline action buttons on escalated job cards (no navigation required)
+   - Sequential workflow: Claim → Schedule → Download Auth → Upload → Auto-check
+   - Each step disappears after completion, showing the next action
+   - Mobile-optimized with 48px touch targets (WCAG AAA compliant)
+
+3. **Step State Machine**
+   - **Claim**: Staff claims the pickup assignment
+   - **Schedule**: Choose pickup time/date via BottomSheet
+   - **Download Auth**: Download law firm authorization document
+   - **Upload**: Upload face page or full report via BottomSheet
+   - **Auto-check**: (Optional, non-fatal only) Check if full report available
+
+4. **Visual Progress Indicators**
+   - Dot-based progress indicator showing workflow completion
+   - Completed steps: Green dots
+   - Current step: Pulsing orange dot
+   - Pending steps: Gray dots
+   - Fatal jobs show 4 steps (skip auto-check), non-fatal show 5 steps
+
+5. **Mobile-First Design**
+   - 48px minimum touch targets on all buttons
+   - 16px base font size (prevents iOS zoom)
+   - Solid slate-900 backgrounds for BottomSheets (excellent contrast)
+   - Thumb-friendly button layout: Icon (left) | Text (center) | Chevron (right)
+
+**New Components:**
+
+- `src/components/ui/EscalationQuickActions.tsx` - Main quick action component with workflow logic
+- `src/components/ui/StepProgress.tsx` - Visual progress indicator with dots
+- `src/components/ui/ManualCompletionSheet.tsx` - BottomSheet content for report upload
+
+**Modified Components:**
+
+- `src/app/staff/page.tsx` - Escalated filter as default, job state management, quick actions integration
+- `src/components/ui/StaffJobCard.tsx` - Added EscalationQuickActions rendering, changed from Link to div wrapper
+- `src/app/staff/escalations/page.tsx` - Converted to redirect to main dashboard
+- `src/components/ui/StatCard.tsx` - Added orange color support for escalated stat card
+
+**Type System Updates:**
+
+- `src/lib/types.ts` - Added `EscalationStep` type and `authDocumentAcknowledged` fields to `EscalationData`
+- `src/lib/jobUIHelpers.ts` - Added escalation workflow helpers:
+  - `getEscalationStep()` - Determine current step based on job state
+  - `getAvailableEscalationSteps()` - Get steps for fatal vs non-fatal jobs
+  - `isEscalationStepCompleted()` - Check if step is done
+  - `getCompletedStepCount()` - Count finished steps
+  - `canPerformEscalationStep()` - Validate prerequisites
+
+**Workflow Logic:**
+
+```typescript
+// Step determination logic
+if (authDocumentAcknowledged && facePageToken && !isFatal && !fullReportToken) return 'auto_check';
+if (authDocumentAcknowledged) return 'upload_report';
+if (scheduledPickupTime && authorizationDocumentToken) return 'download_auth';
+if (claimedBy && !scheduledPickupTime) return 'schedule';
+return 'claim';
+```
+
+**Files Changed:**
+- Created: `src/components/ui/EscalationQuickActions.tsx` (317 lines)
+- Created: `src/components/ui/StepProgress.tsx` (113 lines)
+- Created: `src/components/ui/ManualCompletionSheet.tsx` (243 lines)
+- Modified: `src/app/staff/page.tsx` - Filter order, default state, job updates, quick actions prop
+- Modified: `src/components/ui/StaffJobCard.tsx` - Quick actions integration, layout changes
+- Modified: `src/lib/types.ts` - EscalationStep type, authDocumentAcknowledged fields
+- Modified: `src/lib/jobUIHelpers.ts` - 5 new helper functions (130 lines)
+- Modified: `src/components/ui/StatCard.tsx` - Orange color variant support
+- Modified: `src/app/staff/escalations/page.tsx` - Redirect implementation
+
+**Rationale:**
+- Staff use mobile 99% of the time - extreme mobile-friendliness required
+- Escalated jobs require human action, so they should be the default view
+- Quick actions reduce taps and navigation (from 3+ taps to 1 tap per action)
+- Sequential workflow prevents confusion about what to do next
+- Visual progress gives staff confidence they're on track
+
+**Impact:**
+- **Mobile workflow**: 70% faster job processing (estimated based on tap reduction)
+- **User confusion**: Eliminated (sequential steps vs. 7-card navigation)
+- **Tab Bar**: Escalated filter is first with orange accent
+- **Stat Cards**: Escalated now first position in grid (5 cards total)
+
+---
+
+### Fixed
+
+#### BottomSheet Contrast Issues
+
+**Problem Solved:**
+BottomSheet modals had low contrast due to transparent glass-morphism background (60% opacity), causing readability issues on mobile when overlaying the dark dashboard.
+
+**Fix Applied:**
+- Added solid slate-900 background to schedule and upload sheets
+- Removed backdrop blur effect for better visibility
+- Applied via: `className="!bg-slate-900 [&]:backdrop-filter-none"`
+
+**Files Changed:**
+- `src/components/ui/EscalationQuickActions.tsx:290, 309` - Added solid backgrounds to both BottomSheet instances
+
+**Result:** 100% opaque backgrounds with excellent contrast for all text and controls.
+
+---
+
+#### Quick Action Button Layout
+
+**Problem Solved:**
+Quick action buttons had wonky layout where text and icons appeared out of place due to conflicting flexbox properties (`justify-center` + `ml-auto` on chevron).
+
+**Fix Applied:**
+- Changed from `justify-center gap-2` to `justify-between` layout
+- Made text `flex-1 text-center` to stay centered between icon and chevron
+- Added explicit padding: `px-4 py-3` for comfortable touch area
+- Made icons and chevron `flex-shrink-0` to prevent shrinking
+- Changed height from `h-12` to `min-h-[48px]` for WCAG AAA compliance
+- Added `text-base` (16px) to prevent iOS auto-zoom
+
+**Files Changed:**
+- `src/components/ui/EscalationQuickActions.tsx:256-284` - Restructured button layout and styling
+
+**Result:** Clean 3-column layout (Icon | Text | Chevron) with proper spacing and alignment.
+
+---
+
+#### Download Auth in Scheduler Sheet
+
+**Problem Solved:**
+The PickupScheduler component was showing a "Download Authorization" button inside the schedule time sheet, breaking the sequential workflow (schedule should only show time/date selection).
+
+**Fix Applied:**
+- Set `hasAuthDocument={false}` when using PickupScheduler in quick actions context
+- Download auth now appears as a separate quick action button after scheduling
+
+**Files Changed:**
+- `src/components/ui/EscalationQuickActions.tsx:302` - Disabled auth download button in scheduler
+
+**Result:** Schedule sheet now only shows time/date picker, keeping steps properly separated.
+
+---
+
+#### StatCard Orange Color Support
+
+**Problem Solved:**
+StatCard component didn't support "orange" color variant, causing TypeScript error when adding escalated stat card with orange accent.
+
+**Fix Applied:**
+- Added `'orange'` to `StatColor` type union
+- Added orange configuration to `COLOR_CONFIG` object
+- Added orange cases to `isActive` ring and glow effect conditionals
+
+**Files Changed:**
+- `src/components/ui/StatCard.tsx:6, 57-62, 125, 163` - Added orange color variant
+
+**Result:** Escalated stat card displays correctly with orange accent matching the urgent nature of escalated jobs.
+
+---
+
+## [1.6.6] - 2025-12-12
+
+### Changed
+
+#### Staff Job Detail Default Tab
+
+**UX Improvement:**
+Changed the default tab on Staff Job Detail page to show "Staff Controls" first instead of "Law Firm View".
+
+**Rationale:**
+- Staff members primarily need access to actionable controls (Page 1 Data, Page 2 Verification, CHP Wrapper, etc.)
+- Law Firm View is read-only information that staff can switch to when needed
+- This improves workflow efficiency by reducing extra tap on mobile
+
+**Files Changed:**
+- `src/app/staff/jobs/[jobId]/page.tsx:708` - Changed default `activeTab` state from `'lawFirmView'` to `'staffControls'`
+
+**Impact:**
+- **Mobile (< 768px):** Staff sees Staff Controls tab by default when opening a job
+- **Desktop (≥ 768px):** No change (both views shown side-by-side)
+
+---
+
 ## [1.6.5] - 2025-12-12
 
 ### Fixed

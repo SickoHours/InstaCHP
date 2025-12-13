@@ -225,6 +225,17 @@ export type EscalationStatus =
 export type PickupTimeSlot = '9am' | 'afternoon' | '4pm';
 
 /**
+ * Escalation workflow step for quick actions (V1.7.0+)
+ * Used to determine which action button to show on staff dashboard
+ */
+export type EscalationStep =
+  | 'claim'           // Staff needs to claim the pickup
+  | 'schedule'        // Claimed, needs to schedule time
+  | 'download_auth'   // Scheduled, needs to download auth doc
+  | 'upload_report'   // Auth acknowledged, ready to upload
+  | 'auto_check';     // Face page uploaded (non-fatal), can check for full
+
+/**
  * Escalation data tracking (V1.6.0+)
  * Tracks the full escalation workflow for manual pickup
  */
@@ -239,6 +250,10 @@ export interface EscalationData {
   authorizationRequestedAt?: number;
   authorizationDocumentToken?: string;
   authorizationUploadedAt?: number;
+
+  // Authorization acknowledgment (V1.7.0+ - staff downloaded the auth doc)
+  authDocumentAcknowledged?: boolean;
+  authDocumentAcknowledgedAt?: number;
 
   // Staff claiming
   claimedBy?: string;       // Staff member ID or name

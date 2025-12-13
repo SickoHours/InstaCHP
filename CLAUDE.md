@@ -60,11 +60,12 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 
 ## 📊 Current Status: V1 Complete (Frontend Only)
 
-**V1 MVP:** ✅ COMPLETE (V1.6.2)
+**V1 MVP:** ✅ COMPLETE (V1.9.0)
 - All 8 screens functional (6 core + 2 V1.6.0)
-- Mock data: 27 jobs (22 production + 5 dev)
+- Mock data: 29 jobs (24 production + 5 dev)
 - No backend (wrapper simulated with delays)
 - Dark mode + glass-morphism
+- Authorization-first workflow with smart sorting
 
 **V2-V4:** ⚪ Not started
 - V2: Convex + real wrapper
@@ -91,8 +92,11 @@ src/
 │       └── jobs/[jobId]/page.tsx   # Staff job detail (7 cards)
 ├── components/ui/                   # Reusable components
 ├── lib/
-│   ├── mockData.ts                 # 27 sample jobs (22 prod + 5 dev)
+│   ├── mockData.ts                 # 29 sample jobs (24 prod + 5 dev)
 │   ├── statusMapping.ts            # Status conversion (CANONICAL)
+│   ├── jobUIHelpers.ts             # UI visibility helpers + auth status
+│   ├── notificationManager.ts      # Notification system (V1.8.0+)
+│   ├── emailNotificationService.ts # Email service stub (V1.9.0+)
 │   ├── utils.ts                    # Helper functions
 │   └── types.ts                    # TypeScript interfaces
 ```
@@ -197,6 +201,13 @@ src/
 // Status conversion (ALWAYS use this for law firm views)
 getPublicStatus(internalStatus: InternalStatus): PublicStatus
 
+// Authorization status helpers (V1.9.0+)
+hasAuthorizationUploaded(job: Job): boolean         // Check if auth doc exists
+isReadyToClaim(job: Job): boolean                   // Auth uploaded, not claimed
+isPendingAuthorization(job: Job): boolean           // Awaiting auth upload
+getAuthorizationStatusLabel(job: Job): string       // Badge label
+getAuthorizationStatusColor(job: Job): string       // Badge color
+
 // NCIC extraction
 deriveNcic(reportNumber: string): string  // First 4 chars
 
@@ -210,7 +221,7 @@ convertDateForApi(htmlDate: string): string  // YYYY-MM-DD → MM/DD/YYYY
 formatRelativeTime(timestamp: number): string  // "2 hours ago"
 ```
 
-👉 **Source:** `src/lib/utils.ts` and `src/lib/statusMapping.ts`
+👉 **Source:** `src/lib/utils.ts`, `src/lib/statusMapping.ts`, and `src/lib/jobUIHelpers.ts`
 
 ---
 
@@ -331,5 +342,5 @@ Check: src/lib/utils.ts for existing validators
 
 ---
 
-*Last Updated: 2025-12-12*
+*Last Updated: 2025-12-13*
 *Quick reference for Claude Code - see [AGENTS.md](AGENTS.md) for full guidance*

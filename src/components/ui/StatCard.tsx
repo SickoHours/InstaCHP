@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-type StatColor = 'slate' | 'amber' | 'blue' | 'green';
+type StatColor = 'slate' | 'amber' | 'blue' | 'green' | 'orange';
 
 interface StatCardProps extends React.HTMLAttributes<HTMLButtonElement> {
   /** The metric value to display */
@@ -53,6 +53,12 @@ const COLOR_CONFIG: Record<
     text: 'text-emerald-400',
     border: 'border-emerald-500/30',
     activeBg: 'bg-emerald-500/10',
+  },
+  orange: {
+    glow: 'shadow-orange-500/30',
+    text: 'text-orange-400',
+    border: 'border-orange-500/30',
+    activeBg: 'bg-orange-500/10',
   },
 };
 
@@ -122,6 +128,7 @@ const StatCard = forwardRef<HTMLButtonElement, StatCardProps>(
             color === 'amber' && 'ring-amber-500/50',
             color === 'blue' && 'ring-blue-500/50',
             color === 'green' && 'ring-emerald-500/50',
+            color === 'orange' && 'ring-orange-500/50',
           ],
 
           // Animation
@@ -159,7 +166,8 @@ const StatCard = forwardRef<HTMLButtonElement, StatCardProps>(
               color === 'slate' && 'bg-slate-500/20',
               color === 'amber' && 'bg-amber-500/20',
               color === 'blue' && 'bg-blue-500/20',
-              color === 'green' && 'bg-emerald-500/20'
+              color === 'green' && 'bg-emerald-500/20',
+              color === 'orange' && 'bg-orange-500/20'
             )}
           />
         )}

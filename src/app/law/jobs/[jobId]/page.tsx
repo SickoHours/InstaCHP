@@ -37,6 +37,7 @@ import FlowWizard, { type FlowCompletionData } from '@/components/ui/FlowWizard'
 import DriverInfoRescueForm from '@/components/ui/DriverInfoRescueForm';
 import ContactingCHPBanner from '@/components/ui/ContactingCHPBanner';
 import FacePageCompletionChoice from '@/components/ui/FacePageCompletionChoice';
+import AutoCheckSetupFlow from '@/components/ui/AutoCheckSetupFlow';
 import FacePageReopenBanner from '@/components/ui/FacePageReopenBanner';
 import AuthorizationUploadCard from '@/components/ui/AuthorizationUploadCard';
 import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
@@ -46,6 +47,7 @@ import {
   shouldShowWrapperUI,
   shouldShowAutoChecker,
 } from '@/lib/jobUIHelpers';
+import { notificationManager } from '@/lib/notificationManager';
 
 /**
  * Dark Mode Status Badge with glow effect
@@ -224,7 +226,7 @@ export default function JobDetailPage() {
   // Auto-checker state (V1.4.0+)
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [autoCheckResult, setAutoCheckResult] = useState<'found' | 'not_found' | null>(null);
-  const [showAutoCheckSettings, setShowAutoCheckSettings] = useState(false);
+  const [showAutoCheckSetup, setShowAutoCheckSetup] = useState(false);
 
   // Timeline visibility for closed jobs (V1.5.0+)
   const [timelineExpanded, setTimelineExpanded] = useState(false);
@@ -356,9 +358,14 @@ export default function JobDetailPage() {
         },
       });
 
+      // Dynamic message based on frequency settings
+      const notFoundMessage = autoCheckSettings.frequency === 'daily'
+        ? "The full report isn't ready yet. We'll check again at 4:30 PM PT."
+        : "The full report isn't ready yet. Next check at 9:00 AM or 4:30 PM PT.";
+
       addEvent(jobId, {
         eventType: 'auto_check_not_found',
-        message: "The full report isn't ready yet. We'll keep checking automatically.",
+        message: notFoundMessage,
         isUserFacing: true,
       });
 
@@ -382,7 +389,7 @@ export default function JobDetailPage() {
 
   /**
    * Handle face page completion choice (V1.6.0+)
-   * Law firm chooses to complete with face page or wait for full report
+   * Law firm chooses to complete with face page or set up auto-checker
    */
   const handleFacePageChoice = (choice: 'complete' | 'wait') => {
     const now = Date.now();
@@ -401,23 +408,54 @@ export default function JobDetailPage() {
         isUserFacing: true,
       });
     } else {
-      // Wait for full report - enable auto-checker
-      updateJob(jobId, {
-        internalStatus: 'WAITING_FOR_FULL_REPORT',
-        facePageChoiceMade: 'wait',
-        facePageChoiceTimestamp: now,
-        autoCheckSettings: {
-          ...DEFAULT_AUTO_CHECK_SETTINGS,
-          enabled: true,
-        },
-      });
-
-      addEvent(jobId, {
-        eventType: 'face_page_wait_chosen',
-        message: "We'll automatically check for the full report and notify you when it's ready.",
-        isUserFacing: true,
-      });
+      // Show auto-checker setup flow instead of immediately enabling
+      setShowAutoCheckSetup(true);
     }
+  };
+
+  /**
+   * Handle auto-checker setup save (V1.6.0+)
+   * Called when user saves their frequency selection from AutoCheckSetupFlow
+   */
+  const handleAutoCheckSetupSave = (frequency: 'daily' | 'twice_daily') => {
+    const now = Date.now();
+    const scheduledTimes = frequency === 'daily'
+      ? [{ hour: 16, minute: 30 }]
+      : [{ hour: 9, minute: 0 }, { hour: 16, minute: 30 }];
+
+    // Save settings and update status
+    updateJob(jobId, {
+      internalStatus: 'WAITING_FOR_FULL_REPORT',
+      facePageChoiceMade: 'wait',
+      facePageChoiceTimestamp: now,
+      autoCheckSettings: {
+        enabled: true,
+        frequency,
+        scheduledTimes,
+        scheduledChecksToday: 0,
+      },
+    });
+
+    // Add activity feed message reflecting actual settings
+    const message = frequency === 'daily'
+      ? "Auto-checker enabled. We'll check daily at 4:30 PM PT."
+      : "Auto-checker enabled. We'll check twice daily at 9:00 AM and 4:30 PM PT.";
+
+    addEvent(jobId, {
+      eventType: 'auto_check_settings_updated',
+      message,
+      isUserFacing: true,
+    });
+
+    // Hide setup flow
+    setShowAutoCheckSetup(false);
+  };
+
+  /**
+   * Handle auto-checker setup cancel
+   */
+  const handleAutoCheckSetupCancel = () => {
+    setShowAutoCheckSetup(false);
   };
 
   /**
@@ -477,7 +515,7 @@ export default function JobDetailPage() {
 
       addEvent(jobId, {
         eventType: 'auto_check_not_found',
-        message: "The full report isn't ready yet. We'll keep checking automatically and notify you when it's available.",
+        message: "The full report isn't ready yet. We'll check again at 4:30 PM PT.",
         isUserFacing: true,
       });
 
@@ -497,14 +535,25 @@ export default function JobDetailPage() {
     await new Promise((resolve) => setTimeout(resolve, getDelay('fileUpload')));
 
     // Update job with authorization received
+    const updatedEscalationData = {
+      ...job.escalationData!,
+      status: 'authorization_received' as const,
+      authorizationDocumentToken: `auth_${Date.now()}`,
+      authorizationUploadedAt: Date.now(),
+    };
+
     updateJob(jobId, {
-      escalationData: {
-        ...job.escalationData!,
-        status: 'authorization_received',
-        authorizationDocumentToken: `auth_${Date.now()}`,
-        authorizationUploadedAt: Date.now(),
-      },
+      escalationData: updatedEscalationData,
     });
+
+    // Create updated job for notification
+    const updatedJob = {
+      ...job,
+      escalationData: updatedEscalationData,
+    };
+
+    // Emit notification: authorization uploaded
+    notificationManager.emitAuthorizationUploaded(updatedJob);
 
     // Add user-facing event
     addEvent(jobId, {
@@ -1343,11 +1392,19 @@ export default function JobDetailPage() {
             style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
           >
             <div className="glass-card-dark rounded-xl p-5 border border-emerald-500/20">
-              <FacePageCompletionChoice
-                onSelect={handleFacePageChoice}
-                clientName={job.clientName}
-                disabled={isInteracting}
-              />
+              {showAutoCheckSetup ? (
+                <AutoCheckSetupFlow
+                  onSave={handleAutoCheckSetupSave}
+                  onCancel={handleAutoCheckSetupCancel}
+                  disabled={isInteracting}
+                />
+              ) : (
+                <FacePageCompletionChoice
+                  onSelect={handleFacePageChoice}
+                  clientName={job.clientName}
+                  disabled={isInteracting}
+                />
+              )}
             </div>
           </div>
         )}
@@ -1450,7 +1507,9 @@ export default function JobDetailPage() {
                   )}>
                     {autoCheckResult === 'found'
                       ? 'Full report is now available! Check downloads below.'
-                      : "Not ready yet. We'll keep checking automatically."}
+                      : autoCheckSettings.frequency === 'daily'
+                        ? "Not ready yet. We'll check again at 4:30 PM PT."
+                        : "Not ready yet. Next check at 9:00 AM or 4:30 PM PT."}
                   </p>
                 </div>
               )}
@@ -1465,128 +1524,114 @@ export default function JobDetailPage() {
                 </div>
               )}
 
-              {/* Settings Toggle */}
-              <button
-                onClick={() => setShowAutoCheckSettings(!showAutoCheckSettings)}
-                className={cn(
-                  'mt-4 flex items-center gap-2 text-sm text-slate-400',
-                  'transition-colors duration-200',
-                  'hover:text-slate-300'
-                )}
-              >
-                <Settings className="w-4 h-4" />
-                <span>Auto-check settings</span>
-                {showAutoCheckSettings ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
+              {/* Auto-Check Settings (Always Visible) */}
+              <div className="mt-4 pt-4 border-t border-slate-700/50">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-teal-400" />
+                  Auto-Check Settings
+                </h4>
 
-              {/* Settings Panel (Expandable) */}
-              {showAutoCheckSettings && (
-                <div className="mt-4 pt-4 border-t border-slate-700/50 animate-text-reveal">
-                  <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-teal-400" />
-                    Automatic Check Schedule
-                  </h4>
-
-                  <p className="text-xs text-slate-500 mb-4">
-                    We&apos;ll automatically check for the full report at these times (California time).
-                    Max 2 scheduled checks per day.
-                  </p>
-
-                  {/* Frequency Selection */}
-                  <div className="space-y-3 mb-4">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Check Frequency
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleUpdateAutoCheckSettings({
-                          frequency: 'daily',
-                          scheduledTimes: [autoCheckSettings.scheduledTimes[0] || { hour: 16, minute: 30 }]
-                        })}
-                        className={cn(
-                          'flex-1 flex flex-col items-center gap-1 p-3 rounded-lg',
-                          'border transition-all duration-200',
-                          autoCheckSettings.frequency === 'daily'
-                            ? 'bg-teal-500/10 border-teal-500/30 text-teal-400'
-                            : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
-                        )}
-                      >
-                        <span className="text-sm font-medium">Daily</span>
-                        <span className="text-xs opacity-70">Once a day</span>
-                        {autoCheckSettings.frequency === 'daily' && <Check className="w-4 h-4 mt-1" />}
-                      </button>
-                      <button
-                        onClick={() => handleUpdateAutoCheckSettings({
-                          frequency: 'twice_daily',
-                          scheduledTimes: [
-                            { hour: 9, minute: 0 },
-                            { hour: 16, minute: 30 }
-                          ]
-                        })}
-                        className={cn(
-                          'flex-1 flex flex-col items-center gap-1 p-3 rounded-lg',
-                          'border transition-all duration-200',
-                          autoCheckSettings.frequency === 'twice_daily'
-                            ? 'bg-teal-500/10 border-teal-500/30 text-teal-400'
-                            : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
-                        )}
-                      >
-                        <span className="text-sm font-medium">Twice Daily</span>
-                        <span className="text-xs opacity-70">Morning & afternoon</span>
-                        {autoCheckSettings.frequency === 'twice_daily' && <Check className="w-4 h-4 mt-1" />}
-                      </button>
+                {/* Frequency Selection - Side by Side */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => handleUpdateAutoCheckSettings({
+                      frequency: 'daily',
+                      scheduledTimes: [{ hour: 16, minute: 30 }]
+                    })}
+                    className={cn(
+                      'flex flex-col items-center gap-2 p-3 rounded-lg',
+                      'border transition-all duration-200',
+                      'hover:scale-[1.01] active:scale-[0.99]',
+                      autoCheckSettings.frequency === 'daily'
+                        ? 'bg-teal-500/15 border-teal-500/40'
+                        : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center',
+                      autoCheckSettings.frequency === 'daily'
+                        ? 'border-teal-400 bg-teal-400'
+                        : 'border-slate-500'
+                    )}>
+                      {autoCheckSettings.frequency === 'daily' && (
+                        <Check className="w-2.5 h-2.5 text-slate-900" />
+                      )}
                     </div>
-                  </div>
+                    <span className={cn(
+                      'text-sm font-medium',
+                      autoCheckSettings.frequency === 'daily' ? 'text-teal-300' : 'text-slate-400'
+                    )}>
+                      Daily
+                    </span>
+                    <span className={cn(
+                      'text-xs px-2 py-1 rounded',
+                      autoCheckSettings.frequency === 'daily'
+                        ? 'bg-teal-500/20 text-teal-300'
+                        : 'bg-slate-700/50 text-slate-500'
+                    )}>
+                      4:30 PM PT
+                    </span>
+                  </button>
 
-                  {/* Time Display */}
-                  <div className="space-y-3 mb-4">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Scheduled Times
-                    </label>
-                    <div className="space-y-2">
-                      {autoCheckSettings.scheduledTimes.map((time, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <span className="text-xs text-slate-500 w-20">
-                            {autoCheckSettings.frequency === 'twice_daily'
-                              ? (index === 0 ? 'Morning' : 'Afternoon')
-                              : 'Daily check'}
-                          </span>
-                          <input
-                            type="time"
-                            value={`${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`}
-                            onChange={(e) => {
-                              const [hours, minutes] = e.target.value.split(':').map(Number);
-                              const newTimes = [...autoCheckSettings.scheduledTimes];
-                              newTimes[index] = { hour: hours, minute: minutes };
-                              handleUpdateAutoCheckSettings({ scheduledTimes: newTimes });
-                            }}
-                            className={cn(
-                              'flex-1 h-10 px-3 rounded-lg',
-                              'bg-slate-800/50 border border-slate-700/50',
-                              'text-slate-200 text-sm',
-                              'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
-                              'transition-all duration-200'
-                            )}
-                          />
-                          <span className="text-xs text-slate-500">PT</span>
-                        </div>
-                      ))}
+                  <button
+                    onClick={() => handleUpdateAutoCheckSettings({
+                      frequency: 'twice_daily',
+                      scheduledTimes: [{ hour: 9, minute: 0 }, { hour: 16, minute: 30 }]
+                    })}
+                    className={cn(
+                      'flex flex-col items-center gap-2 p-3 rounded-lg',
+                      'border transition-all duration-200',
+                      'hover:scale-[1.01] active:scale-[0.99]',
+                      autoCheckSettings.frequency === 'twice_daily'
+                        ? 'bg-teal-500/15 border-teal-500/40'
+                        : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center',
+                      autoCheckSettings.frequency === 'twice_daily'
+                        ? 'border-teal-400 bg-teal-400'
+                        : 'border-slate-500'
+                    )}>
+                      {autoCheckSettings.frequency === 'twice_daily' && (
+                        <Check className="w-2.5 h-2.5 text-slate-900" />
+                      )}
                     </div>
-                  </div>
-
-                  {/* V1 Mock Notice */}
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <p className="text-xs text-amber-400">
-                      <strong>V1 Demo:</strong> Schedule settings are saved but actual automated
-                      checks will be enabled in V2 with the Convex backend.
-                    </p>
-                  </div>
+                    <span className={cn(
+                      'text-sm font-medium',
+                      autoCheckSettings.frequency === 'twice_daily' ? 'text-teal-300' : 'text-slate-400'
+                    )}>
+                      Twice Daily
+                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className={cn(
+                        'text-xs px-2 py-0.5 rounded',
+                        autoCheckSettings.frequency === 'twice_daily'
+                          ? 'bg-teal-500/20 text-teal-300'
+                          : 'bg-slate-700/50 text-slate-500'
+                      )}>
+                        9:00 AM PT
+                      </span>
+                      <span className={cn(
+                        'text-xs px-2 py-0.5 rounded',
+                        autoCheckSettings.frequency === 'twice_daily'
+                          ? 'bg-teal-500/20 text-teal-300'
+                          : 'bg-slate-700/50 text-slate-500'
+                      )}>
+                        4:30 PM PT
+                      </span>
+                    </div>
+                  </button>
                 </div>
-              )}
+
+                {/* V1 Mock Notice */}
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <p className="text-xs text-amber-400">
+                    <strong>V1 Demo:</strong> Schedule settings are saved but actual automated
+                    checks will be enabled in V2 with the Convex backend.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

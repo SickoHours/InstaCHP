@@ -855,6 +855,62 @@ export const mockJobs: Job[] = [
     createdAt: now - days(3),
     updatedAt: now - hours(12),
   },
+
+  // V1.9.0: Test case - Pending auth (tests Tier 3: BOTTOM)
+  {
+    _id: 'job_051',
+    lawFirmId: LAW_FIRMS.JOHNSON.id,
+    lawFirmName: LAW_FIRMS.JOHNSON.name,
+    clientName: 'Robert Wilson',
+    clientType: null,
+    reportNumber: '9201-2025-03456',
+    ncic: '9201',
+    internalStatus: 'NEEDS_IN_PERSON_PICKUP',
+    wrapperRuns: [],
+    escalationData: {
+      status: 'pending_authorization',
+      escalatedAt: now - days(1),
+      escalationReason: 'auto_exhausted',
+      authorizationRequested: true,
+      authorizationRequestedAt: now - days(1),
+      // NO authorizationDocumentToken - law firm hasn't uploaded yet
+    },
+    interactiveState: {
+      driverPassengerAsked: true,
+      chpNudgeDismissed: true,
+    },
+    createdAt: now - days(1),
+    updatedAt: now - hours(18),
+  },
+
+  // V1.9.0: Test case - Ready to claim (tests Tier 1: TOP)
+  {
+    _id: 'job_052',
+    lawFirmId: LAW_FIRMS.CHEN.id,
+    lawFirmName: LAW_FIRMS.CHEN.name,
+    clientName: 'Emma Davis',
+    clientType: null,
+    reportNumber: '9201-2025-03457',
+    ncic: '9201',
+    internalStatus: 'NEEDS_IN_PERSON_PICKUP',
+    wrapperRuns: [],
+    escalationData: {
+      status: 'authorization_received',
+      escalatedAt: now - days(2),
+      escalationReason: 'manual',
+      authorizationRequested: true,
+      authorizationRequestedAt: now - days(2),
+      authorizationDocumentToken: 'auth_token_052',
+      authorizationUploadedAt: now - hours(2),
+      // NO claimedBy - ready to claim
+    },
+    interactiveState: {
+      driverPassengerAsked: true,
+      chpNudgeDismissed: true,
+    },
+    createdAt: now - days(2),
+    updatedAt: now - hours(2),
+  },
 ];
 
 // ============================================

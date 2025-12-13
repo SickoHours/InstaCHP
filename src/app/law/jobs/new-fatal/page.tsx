@@ -30,6 +30,7 @@ import { cn, isValidReportNumber } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
 import { useMockData } from '@/context/MockDataContext';
 import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
+import { notificationManager } from '@/lib/notificationManager';
 
 // Form state interface
 interface FormState {
@@ -317,6 +318,9 @@ export default function NewFatalReportPage() {
         },
       });
 
+      // Emit notification: escalation started (fatal report)
+      notificationManager.emitEscalationStarted(newJob, 'fatal_report');
+
       setIsSubmitting(false);
       setIsSuccess(true);
       toast.success('Fatal report submitted successfully!');
@@ -406,7 +410,7 @@ export default function NewFatalReportPage() {
                     Additional documentation required
                   </p>
                   <p className="text-xs text-amber-300/70 mt-1">
-                    Fatal reports require an authorization document to process your request.
+                    Fatal reports require an Authorization to Obtain Governmental Agency Records and Reports to process your request.
                   </p>
                 </div>
               </div>
@@ -473,7 +477,7 @@ export default function NewFatalReportPage() {
                   {/* Authorization Document Upload */}
                   <div className="animate-slide-up" style={{ animationDelay: '560ms' }}>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Authorization Document
+                      Authorization to Obtain Governmental Agency Records and Reports
                       <span className="text-red-400 ml-1">*</span>
                     </label>
 
@@ -505,7 +509,7 @@ export default function NewFatalReportPage() {
                       >
                         <Upload className="w-8 h-8 text-slate-400" />
                         <p className="text-sm text-slate-400">
-                          Click to upload authorization document
+                          Click to upload your authorization form
                         </p>
                         <p className="text-xs text-slate-500">PDF only, max 10MB</p>
                       </div>

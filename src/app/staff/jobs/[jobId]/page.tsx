@@ -56,6 +56,7 @@ import {
   shouldShowAutoChecker,
   canResumeFromEscalated,
 } from '@/lib/jobUIHelpers';
+import { notificationManager } from '@/lib/notificationManager';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -705,7 +706,7 @@ export default function StaffJobDetailPage() {
   }
 
   // Tab state for mobile
-  const [activeTab, setActiveTab] = useState<'lawFirmView' | 'staffControls'>('lawFirmView');
+  const [activeTab, setActiveTab] = useState<'lawFirmView' | 'staffControls'>('staffControls');
 
   // Local job state (for simulating updates)
   const [localJob, setLocalJob] = useState<Job>(job);
@@ -949,6 +950,15 @@ export default function StaffJobDetailPage() {
             authorizationRequested: true,
             authorizationRequestedAt: Date.now(),
           };
+
+          // Emit notification: auto-escalation
+          const escalatedJob = {
+            ...prev,
+            internalStatus: newStatus as InternalStatus,
+            escalationData,
+          };
+          notificationManager.emitEscalationStarted(escalatedJob, 'auto_exhausted');
+
           toast.warning('Auto-escalated: All verification fields exhausted. Manual pickup required.');
         } else {
           newStatus = 'NEEDS_MORE_INFO';
@@ -1013,12 +1023,25 @@ export default function StaffJobDetailPage() {
   };
 
   const handleEscalate = () => {
-    setLocalJob((prev) => ({
-      ...prev,
-      internalStatus: 'NEEDS_IN_PERSON_PICKUP',
-    }));
+    const updatedJob = {
+      ...localJob,
+      internalStatus: 'NEEDS_IN_PERSON_PICKUP' as InternalStatus,
+      escalationData: {
+        ...localJob.escalationData,
+        status: 'pending_authorization' as const,
+        escalatedAt: Date.now(),
+        escalationReason: 'manual' as const,
+        escalationNotes: escalationNotes || undefined,
+      },
+    };
+
+    setLocalJob(updatedJob);
     setShowEscalationDialog(false);
     setEscalationNotes('');
+
+    // Emit notification: escalation started
+    notificationManager.emitEscalationStarted(updatedJob, 'manual');
+
     toast.success('Job escalated for in-person pickup');
   };
 
@@ -1039,24 +1062,34 @@ export default function StaffJobDetailPage() {
     // Check if this is an escalated job receiving a face page (resume flow)
     const isEscalatedFacePageUpload = isEscalatedJob(localJob) && uploadType === 'face';
 
-    setLocalJob((prev) => ({
-      ...prev,
-      facePageToken: `fp_token_${generateId()}`,
-      fullReportToken: uploadType === 'full' ? `fr_token_${generateId()}` : prev.fullReportToken,
-      internalStatus: uploadType === 'full' ? 'COMPLETED_MANUAL' : prev.internalStatus,
-      firstName: uploadType === 'face' ? guaranteedName.split(' ')[0] : prev.firstName,
+    // Generate tokens
+    const facePageToken = `fp_token_${generateId()}`;
+    const fullReportToken = uploadType === 'full' ? `fr_token_${generateId()}` : localJob.fullReportToken;
+
+    const updatedJob = {
+      ...localJob,
+      facePageToken,
+      fullReportToken,
+      internalStatus: (uploadType === 'full' ? 'COMPLETED_MANUAL' : localJob.internalStatus) as InternalStatus,
+      firstName: uploadType === 'face' ? guaranteedName.split(' ')[0] : localJob.firstName,
       lastName:
-        uploadType === 'face' ? guaranteedName.split(' ').slice(1).join(' ') : prev.lastName,
+        uploadType === 'face' ? guaranteedName.split(' ').slice(1).join(' ') : localJob.lastName,
       // For escalated jobs, also save guaranteedName to escalationData
-      escalationData: isEscalatedFacePageUpload && prev.escalationData
+      escalationData: isEscalatedFacePageUpload && localJob.escalationData
         ? {
-            ...prev.escalationData,
+            ...localJob.escalationData,
             guaranteedName: guaranteedName,
           }
-        : prev.escalationData,
-    }));
+        : localJob.escalationData,
+    };
 
+    setLocalJob(updatedJob);
     setIsUploading(false);
+
+    // Emit notification for full report upload (report ready)
+    if (uploadType === 'full' && fullReportToken) {
+      notificationManager.emitReportReady(updatedJob, 'full_report', fullReportToken);
+    }
 
     if (uploadType === 'full') {
       toast.success('Full report uploaded. Job marked as complete.');
@@ -1084,15 +1117,20 @@ export default function StaffJobDetailPage() {
     // Mock delay
     await new Promise((resolve) => setTimeout(resolve, getDelay('formSubmit')));
 
-    setLocalJob((prev) => ({
-      ...prev,
+    const updatedJob = {
+      ...localJob,
       escalationData: {
-        ...prev.escalationData!,
+        ...localJob.escalationData!,
         status: 'claimed' as EscalationStatus,
         claimedBy: 'Current Staff',
         claimedAt: Date.now(),
       },
-    }));
+    };
+
+    setLocalJob(updatedJob);
+
+    // Emit notification: pickup claimed
+    notificationManager.emitPickupClaimed(updatedJob, 'Current Staff');
 
     setIsClaimingPickup(false);
     toast.success('Pickup claimed successfully');
@@ -1107,15 +1145,20 @@ export default function StaffJobDetailPage() {
     // Mock delay
     await new Promise((resolve) => setTimeout(resolve, getDelay('formSubmit')));
 
-    setLocalJob((prev) => ({
-      ...prev,
+    const updatedJob = {
+      ...localJob,
       escalationData: {
-        ...prev.escalationData!,
+        ...localJob.escalationData!,
         status: 'pickup_scheduled' as EscalationStatus,
         scheduledPickupTime: time,
         scheduledPickupDate: date,
       },
-    }));
+    };
+
+    setLocalJob(updatedJob);
+
+    // Emit notification: pickup scheduled
+    notificationManager.emitPickupScheduled(updatedJob, time, date);
 
     setIsSchedulingPickup(false);
     toast.success(`Pickup scheduled for ${time} on ${date}`);

@@ -71,3 +71,7 @@ export { default as TruncatedText } from './TruncatedText';
 
 // Error states
 export { default as ErrorState, NetworkError, NotFoundError, ServerError } from './ErrorState';
+
+// Notification system (V1.8.0+)
+export { default as NotificationBell } from './NotificationBell';
+export { default as NotificationItem } from './NotificationItem';

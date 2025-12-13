@@ -120,7 +120,7 @@ export default function AuthorizationUploadCard({
             We need your help
           </h3>
           <p className="text-sm text-slate-400 mt-1">
-            To complete your request, please upload an authorization document.
+            To complete your request, please upload your Authorization to Obtain Governmental Agency Records and Reports.
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function AuthorizationUploadCard({
                   <span className="text-amber-400">browse</span>
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  Authorization to Obtain Governmental Records
+                  Authorization to Obtain Governmental Agency Records and Reports
                 </p>
               </div>
             </>

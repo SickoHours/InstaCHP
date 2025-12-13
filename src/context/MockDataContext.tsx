@@ -8,7 +8,7 @@
  * Zero backend implications.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Job, JobEvent, NewJobFormData, EventType } from '@/lib/types';
 import { mockDataManager } from '@/lib/mockDataManager';
 

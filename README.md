@@ -6,11 +6,11 @@ A web application for managing California Highway Patrol (CHP) crash report requ
 
 ## Current Status
 
-**V1 (current):**
+**V1.6.2 (current):**
 - Frontend-only (Next.js App Router)
-- Mock data (18 sample jobs in `src/lib/mockData.ts`)
-- Wrapper behavior simulated (8-13s delay)
-- All 6 screens functional
+- Mock data: 27 jobs (22 production + 5 dev in `src/lib/mockData.ts`)
+- Wrapper behavior simulated with configurable delays
+- All 8 screens functional (6 core + 2 V1.6.0)
 
 **Not in V1 yet:**
 - Convex database

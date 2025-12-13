@@ -1,6 +1,6 @@
 # Component Library
 
-**Version:** 2.1 (Updated for V1.2.0)
+**Version:** 2.5 (Updated for V1.6.2)
 **Last Updated:** 2025-12-12
 **Status:** Complete
 **Audience:** Frontend engineers, component library maintainers
@@ -39,7 +39,13 @@
 5. [Unified Form Components (V1.0.7+)](#unified-form-components-v107)
    - [InlineFieldsCard](#component-inlinefieldscard)
 
-6. [Helper Functions & Utilities](#helper-functions--utilities)
+6. [Manual Pickup & Fatal Report Components (V1.6.0+)](#manual-pickup--fatal-report-components-v160)
+   - [FacePageCompletionChoice](#component-facepagecompletionchoice)
+   - [FacePageReopenBanner](#component-facepagereopenbanner)
+   - [AuthorizationUploadCard](#component-authorizationuploadcard)
+   - [PickupScheduler](#component-pickupscheduler)
+
+7. [Helper Functions & Utilities](#helper-functions--utilities)
    - [getPublicStatus](#function-getpublicstatus)
    - [formatRelativeTime](#function-formatrelativetime)
    - [splitClientName](#function-splitclientname)
@@ -735,6 +741,127 @@ interface InlineFieldsCardProps {
 - Single "Save & Check for Report" button
 - HHMM time validation (0000-2359)
 - Disabled state for flow gate
+
+---
+
+## Manual Pickup & Fatal Report Components (V1.6.0+)
+
+### Component: FacePageCompletionChoice
+
+**File:** `src/components/ui/FacePageCompletionChoice.tsx`
+
+**Purpose:** Offers law firms two options when face page is received: complete with face page only, or wait for full report.
+
+#### Props
+
+```typescript
+interface FacePageCompletionChoiceProps {
+  onComplete: () => void;       // "This is all I need"
+  onWaitForFull: () => void;    // "Wait for full report"
+  isSubmitting: boolean;
+}
+```
+
+#### Features
+- Two-button choice card with glass-morphism styling
+- "This is all I need" (emerald gradient) → Completes job with `COMPLETED_FACE_PAGE_ONLY`
+- "Wait for full report" (blue gradient) → Sets up auto-checker
+- Mobile: Stacked buttons, Desktop: Side-by-side
+- Loading states during submission
+
+---
+
+### Component: FacePageReopenBanner
+
+**File:** `src/components/ui/FacePageReopenBanner.tsx`
+
+**Purpose:** Compact banner allowing law firms to reopen completed-with-face-page jobs to check for full report.
+
+#### Props
+
+```typescript
+interface FacePageReopenBannerProps {
+  lastCheckedAt: number;        // Timestamp of last check
+  onCheckNow: () => void;
+  isChecking: boolean;
+}
+```
+
+#### Features
+- Shows relative time since last check
+- "Check Now" button to search for full report
+- Amber/yellow theme for visibility
+- Conditional rendering based on job status
+- Auto-hides after 7 days or if full report found
+
+---
+
+### Component: AuthorizationUploadCard
+
+**File:** `src/components/ui/AuthorizationUploadCard.tsx`
+
+**Purpose:** Law firm-facing card for uploading authorization documents for escalated/fatal jobs. **CRITICAL:** Uses ONLY friendly messaging (no technical jargon like "escalation" or "in-person pickup").
+
+#### Props
+
+```typescript
+interface AuthorizationUploadCardProps {
+  onUpload: (file: File) => void;
+  isUploading: boolean;
+}
+```
+
+#### Features
+- Amber glass card with Upload icon
+- Friendly heading: "We Need Your Help"
+- Message: "To complete your request, we need an authorization document"
+- PDF drag-and-drop upload with validation
+- File preview with remove button
+- Upload state management
+- Mobile-responsive design
+
+#### Design Notes
+- **NO** mention of "escalation", "manual pickup", "in-person retrieval", or other internal terms
+- Focuses on partnership: "help us help you" framing
+- Simple, stress-free language
+
+---
+
+### Component: PickupScheduler
+
+**File:** `src/components/ui/PickupScheduler.tsx`
+
+**Purpose:** Staff-only component for claiming and scheduling in-person pickups at CHP offices.
+
+#### Props
+
+```typescript
+interface PickupSchedulerProps {
+  escalationData: EscalationData;
+  onClaim: () => void;
+  onSchedule: (time: PickupTimeSlot, date: string, notes?: string) => void;
+  onDownloadAuth: () => void;
+  isClaiming: boolean;
+  isScheduling: boolean;
+}
+```
+
+#### Features
+- Two-phase UI: Claim button → Scheduling form
+- Quick time slots: "9am", "afternoon", "4pm"
+- Date options: Today, Next Business Day, Custom picker
+- Mon-Fri only validation (government building hours)
+- Download authorization document button
+- Pickup notes textarea
+- Confirm Schedule button
+- Shows current status (claimed by, scheduled time/date)
+
+#### Workflow States
+1. **Pending Authorization**: Waiting for law firm to upload auth doc
+2. **Authorization Received**: Ready for staff to claim
+3. **Claimed**: Staff claimed, needs scheduling
+4. **Pickup Scheduled**: Time/date set, ready for pickup
+5. **Completed**: Pickup completed, report uploaded
 
 ---
 

@@ -556,14 +556,14 @@ export default function NewFatalReportPage() {
                             handleChange('clientWasDeceased', !formState.clientWasDeceased)
                           }
                           className={cn(
-                            'relative w-12 h-7 rounded-full transition-colors duration-200',
+                            'relative w-12 h-7 rounded-full transition-colors duration-200 overflow-hidden',
                             formState.clientWasDeceased ? 'bg-red-500' : 'bg-slate-600'
                           )}
                         >
                           <span
                             className={cn(
-                              'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform duration-200',
-                              formState.clientWasDeceased ? 'translate-x-6' : 'translate-x-1'
+                              'absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform duration-200',
+                              formState.clientWasDeceased && 'translate-x-5'
                             )}
                           />
                         </button>

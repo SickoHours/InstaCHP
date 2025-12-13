@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react';
-import { AlertCircle, Users, User, Car, CreditCard, Plus, Trash2, Search } from 'lucide-react';
+import { AlertCircle, Users, Car, CreditCard, Plus, Trash2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { RescueFormData } from '@/lib/types';
 
@@ -152,7 +152,7 @@ export default function DriverInfoRescueForm({
           {/* Driver License */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Driver's License Number
+              Driver&apos;s License Number
             </label>
             <div className="relative">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />

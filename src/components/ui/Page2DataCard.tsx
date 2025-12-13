@@ -150,7 +150,7 @@ export default function Page2DataCard({
       {/* Display Mode - Empty State */}
       {!isEditing && !hasData && (
         <p className="text-xs text-slate-500">
-          No driver information yet. Click "Add Details" to provide information.
+          No driver information yet. Click &quot;Add Details&quot; to provide information.
         </p>
       )}
 

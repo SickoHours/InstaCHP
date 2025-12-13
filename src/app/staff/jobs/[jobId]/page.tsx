@@ -29,7 +29,6 @@ import {
   Car,
   CreditCard,
   Hash,
-  MapPin,
   Copy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,13 +41,21 @@ import {
   formatPublicStatus,
   isCompletedStatus,
 } from '@/lib/statusMapping';
-import type { Job, WrapperRun, WrapperResult, InternalStatus, JobEvent } from '@/lib/types';
+import type { Job, WrapperRun, WrapperResult, InternalStatus } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
 import TabBar from '@/components/ui/TabBar';
 import PickupScheduler from '@/components/ui/PickupScheduler';
 import { formatRelativeTime } from '@/lib/utils';
-import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
+import { getDelay } from '@/lib/devConfig';
 import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
+import {
+  isFatalJob,
+  isEscalatedJob,
+  shouldShowWrapperUI,
+  shouldShowManualCompletion,
+  shouldShowAutoChecker,
+  canResumeFromEscalated,
+} from '@/lib/jobUIHelpers';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -769,8 +776,6 @@ export default function StaffJobDetailPage() {
     return !!(localJob.facePageToken && (page2Data.firstName || page2Data.lastName));
   }, [localJob.facePageToken, page2Data.firstName, page2Data.lastName]);
 
-  const isEscalated = localJob.internalStatus === 'NEEDS_IN_PERSON_PICKUP';
-
   // Closed job state (completed or cancelled)
   const isCompleted = isCompletedStatus(localJob.internalStatus);
   const isCancelled = localJob.internalStatus === 'CANCELLED';
@@ -1031,6 +1036,9 @@ export default function StaffJobDetailPage() {
     const fileName = uploadType === 'face' ? 'face_page.pdf' : 'full_report.pdf';
     setUploadedFile(fileName);
 
+    // Check if this is an escalated job receiving a face page (resume flow)
+    const isEscalatedFacePageUpload = isEscalatedJob(localJob) && uploadType === 'face';
+
     setLocalJob((prev) => ({
       ...prev,
       facePageToken: `fp_token_${generateId()}`,
@@ -1039,12 +1047,21 @@ export default function StaffJobDetailPage() {
       firstName: uploadType === 'face' ? guaranteedName.split(' ')[0] : prev.firstName,
       lastName:
         uploadType === 'face' ? guaranteedName.split(' ').slice(1).join(' ') : prev.lastName,
+      // For escalated jobs, also save guaranteedName to escalationData
+      escalationData: isEscalatedFacePageUpload && prev.escalationData
+        ? {
+            ...prev.escalationData,
+            guaranteedName: guaranteedName,
+          }
+        : prev.escalationData,
     }));
 
     setIsUploading(false);
 
     if (uploadType === 'full') {
       toast.success('Full report uploaded. Job marked as complete.');
+    } else if (isEscalatedFacePageUpload) {
+      toast.success('Face page uploaded. Verification flow resumed - auto-checker now available.');
     } else {
       toast.success('Face page uploaded. Auto-checker now available.');
     }
@@ -1123,7 +1140,6 @@ export default function StaffJobDetailPage() {
   // RENDER
   // ============================================
 
-  const publicStatus = getPublicStatus(localJob.internalStatus);
   const statusMessage = getStatusMessage(localJob.internalStatus);
   const hasDownloads = localJob.facePageToken || localJob.fullReportToken;
 
@@ -1352,6 +1368,202 @@ export default function StaffJobDetailPage() {
                 isWrapperRunning={isWrapperRunning}
               />
             ) : (
+              <>
+            {/* ESCALATED JOBS: Show banner + pickup scheduler + manual completion at top */}
+            {isEscalatedJob(localJob) && (
+              <>
+                {/* Escalation Status Banner */}
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 animate-slide-up">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    <span className="font-medium text-amber-400">
+                      ESCALATED - Manual Pickup Required
+                    </span>
+                  </div>
+                  {!canResumeFromEscalated(localJob) && !isFatalJob(localJob) && (
+                    <p className="text-xs text-amber-400/70 mt-2">
+                      Upload face page with driver name to unlock verification tools.
+                    </p>
+                  )}
+                </div>
+
+                {/* Pickup Scheduler - Always at top for escalated */}
+                {localJob.escalationData && (
+                  <StaffControlCard title="Pickup Scheduler" icon={Calendar} animationDelay={50}>
+                    <PickupScheduler
+                      onClaim={handleClaimPickup}
+                      onSchedule={handleSchedulePickup}
+                      onDownloadAuth={handleDownloadAuth}
+                      claimed={
+                        localJob.escalationData.status !== 'pending_authorization' &&
+                        localJob.escalationData.status !== 'authorization_received'
+                      }
+                      claimedBy={localJob.escalationData.claimedBy}
+                      scheduledTime={localJob.escalationData.scheduledPickupTime}
+                      scheduledDate={localJob.escalationData.scheduledPickupDate}
+                      hasAuthDocument={!!localJob.escalationData.authorizationDocumentToken}
+                      disabled={isClaimingPickup || isSchedulingPickup}
+                    />
+
+                    {/* Escalation Info */}
+                    <div className="mt-4 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
+                        Escalation Info
+                      </p>
+                      <div className="space-y-1 text-sm text-slate-400">
+                        <p>
+                          Reason:{' '}
+                          <span className="text-slate-300">
+                            {localJob.escalationData.escalationReason || 'manual'}
+                          </span>
+                        </p>
+                        <p>
+                          Status:{' '}
+                          <span className="text-slate-300">{localJob.escalationData.status}</span>
+                        </p>
+                        {localJob.escalationData.escalatedAt && (
+                          <p>
+                            Escalated:{' '}
+                            <span className="text-slate-300">
+                              {formatDateTime(localJob.escalationData.escalatedAt)}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </StaffControlCard>
+                )}
+
+                {/* Manual Completion - Always at top for escalated */}
+                {shouldShowManualCompletion(localJob) && (
+                  <StaffControlCard title="Manual Completion" icon={Upload} animationDelay={100}>
+                    {/* File Type Selection */}
+                    <div className="space-y-2 mb-4">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider">File Type</p>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="uploadType"
+                            checked={uploadType === 'face'}
+                            onChange={() => setUploadType('face')}
+                            className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                          />
+                          <span className="text-sm text-slate-300">Face Page</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="uploadType"
+                            checked={uploadType === 'full'}
+                            onChange={() => setUploadType('full')}
+                            className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                          />
+                          <span className="text-sm text-slate-300">Full Report</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Conditional Fields */}
+                    {uploadType === 'face' && (
+                      <div className="mb-4">
+                        <DarkInput
+                          label="First Name *"
+                          value={guaranteedName}
+                          onChange={setGuaranteedName}
+                          placeholder="Enter driver's first name only"
+                          icon={User}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          First name only - used to unlock auto-checker
+                        </p>
+                      </div>
+                    )}
+
+                    {uploadType === 'full' && (
+                      <div className="mb-4 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                        <p className="text-xs text-slate-400">
+                          Note: Job will auto-complete when uploaded.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Upload Button */}
+                    <button
+                      onClick={handleUpload}
+                      disabled={isUploading || (uploadType === 'face' && !guaranteedName)}
+                      className={cn(
+                        'w-full h-12 md:h-10 rounded-lg font-medium mb-3',
+                        'transition-all duration-200',
+                        'flex items-center justify-center gap-2',
+                        !isUploading && (uploadType === 'full' || guaranteedName)
+                          ? 'bg-slate-700 text-white hover:bg-slate-600 active:scale-98'
+                          : 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                      )}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span>Upload File</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Uploaded File */}
+                    {uploadedFile && (
+                      <div className="mb-3 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-emerald-400" />
+                        <span className="text-sm text-emerald-400">{uploadedFile}</span>
+                      </div>
+                    )}
+
+                    {/* Completion Notes */}
+                    <div className="space-y-1.5 mb-4">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Completion Notes
+                      </label>
+                      <textarea
+                        value={completionNotes}
+                        onChange={(e) => setCompletionNotes(e.target.value)}
+                        placeholder="Optional notes..."
+                        className={cn(
+                          'w-full h-20 rounded-lg border bg-slate-800/50 text-slate-200',
+                          'text-base md:text-sm p-3',
+                          'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                          'placeholder:text-slate-500',
+                          'resize-none'
+                        )}
+                      />
+                    </div>
+
+                    {/* Mark Complete Button */}
+                    {uploadType === 'full' && uploadedFile && (
+                      <button
+                        onClick={handleMarkComplete}
+                        className={cn(
+                          'w-full h-12 md:h-10 rounded-lg font-medium',
+                          'bg-emerald-600 text-white hover:bg-emerald-500',
+                          'transition-all duration-200',
+                          'flex items-center justify-center gap-2',
+                          'active:scale-98'
+                        )}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Mark as Completed</span>
+                      </button>
+                    )}
+                  </StaffControlCard>
+                )}
+              </>
+            )}
+
+            {/* Cards 1-4: Wrapper-related UI (hidden for fatal/terminal escalations AND for non-fatal escalations without resume capability) */}
+            {shouldShowWrapperUI(localJob) && (
               <>
             {/* Card 1: Page 1 Data */}
             <StaffControlCard title="Page 1 Data" icon={FileText} animationDelay={100}>
@@ -1661,7 +1873,7 @@ export default function StaffJobDetailPage() {
                 </p>
               ) : (
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-                  {[...localJob.wrapperRuns].reverse().map((run, index) => {
+                  {[...localJob.wrapperRuns].reverse().map((run) => {
                     const borderColor =
                       run.result === 'FULL'
                         ? 'border-l-emerald-500'
@@ -1715,9 +1927,11 @@ export default function StaffJobDetailPage() {
             </StaffControlCard>
               </>
             )}
+              </>
+            )}
 
-            {/* Card 5: Auto-Checker - Hide when full report exists */}
-            {!localJob.fullReportToken && (
+            {/* Card 5: Auto-Checker - Hide when full report exists OR when auto-checker not applicable */}
+            {shouldShowAutoChecker(localJob) && (
             <StaffControlCard
               title="Auto-Checker"
               icon={canRunAutoChecker ? Unlock : Lock}
@@ -1829,8 +2043,8 @@ export default function StaffJobDetailPage() {
             </StaffControlCard>
             )}
 
-            {/* Card 6: Escalation - Only show if NO reports obtained */}
-            {!localJob.facePageToken && !localJob.fullReportToken && (
+            {/* Card 6: Escalation Button - Only show for NON-escalated jobs without reports */}
+            {!isEscalatedJob(localJob) && !isFatalJob(localJob) && !localJob.facePageToken && !localJob.fullReportToken && (
               <StaffControlCard title="Escalation" icon={AlertTriangle} animationDelay={600}>
                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
                   <p className="text-xs text-amber-400">
@@ -1841,18 +2055,15 @@ export default function StaffJobDetailPage() {
 
                 <button
                   onClick={() => setShowEscalationDialog(true)}
-                  disabled={isEscalated}
                   className={cn(
                     'w-full h-12 md:h-10 rounded-lg font-medium',
                     'transition-all duration-200',
                     'flex items-center justify-center gap-2',
-                    isEscalated
-                      ? 'bg-amber-600/30 text-amber-400 cursor-not-allowed'
-                      : 'bg-amber-600 text-white hover:bg-amber-500 active:scale-98'
+                    'bg-amber-600 text-white hover:bg-amber-500 active:scale-98'
                   )}
                 >
                   <AlertTriangle className="w-4 h-4" />
-                  <span>{isEscalated ? 'Already Escalated' : 'Escalate to Manual Pickup'}</span>
+                  <span>Escalate to Manual Pickup</span>
                 </button>
 
                 <p className="text-xs text-slate-500 mt-3">
@@ -1861,40 +2072,8 @@ export default function StaffJobDetailPage() {
               </StaffControlCard>
             )}
 
-            {/* Pickup Scheduler - For escalated jobs (V1.6.0+) */}
-            {isEscalated && localJob.escalationData && (
-              <StaffControlCard title="Pickup Scheduler" icon={Calendar} animationDelay={650}>
-                <PickupScheduler
-                  onClaim={handleClaimPickup}
-                  onSchedule={handleSchedulePickup}
-                  onDownloadAuth={handleDownloadAuth}
-                  claimed={
-                    localJob.escalationData.status !== 'pending_authorization' &&
-                    localJob.escalationData.status !== 'authorization_received'
-                  }
-                  claimedBy={localJob.escalationData.claimedBy}
-                  scheduledTime={localJob.escalationData.scheduledPickupTime}
-                  scheduledDate={localJob.escalationData.scheduledPickupDate}
-                  hasAuthDocument={!!localJob.escalationData.authorizationDocumentToken}
-                  disabled={isClaimingPickup || isSchedulingPickup}
-                />
-
-                {/* Escalation Info */}
-                <div className="mt-4 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
-                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Escalation Info</p>
-                  <div className="space-y-1 text-sm text-slate-400">
-                    <p>Reason: <span className="text-slate-300">{localJob.escalationData.escalationReason || 'manual'}</span></p>
-                    <p>Status: <span className="text-slate-300">{localJob.escalationData.status}</span></p>
-                    {localJob.escalationData.escalatedAt && (
-                      <p>Escalated: <span className="text-slate-300">{formatDateTime(localJob.escalationData.escalatedAt)}</span></p>
-                    )}
-                  </div>
-                </div>
-              </StaffControlCard>
-            )}
-
-            {/* Card 7: Manual Completion - Only show if NO reports obtained */}
-            {!localJob.facePageToken && !localJob.fullReportToken && (
+            {/* Manual Completion for NON-escalated jobs */}
+            {!isEscalatedJob(localJob) && shouldShowManualCompletion(localJob) && (
               <StaffControlCard title="Manual Completion" icon={Upload} animationDelay={700}>
               {/* File Type Selection */}
               <div className="space-y-2 mb-4">

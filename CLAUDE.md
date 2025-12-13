@@ -52,7 +52,7 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 | **Staff** | All technical details | "Wrapper running", "Automation error", "Journey log" |
 
 **Status Mapping:**
-- 13 internal statuses (staff)
+- 14 internal statuses (staff)
 - 8 public statuses (law firms)
 - **Source of truth:** `src/lib/statusMapping.ts` → `STATUS_MESSAGES`
 
@@ -60,10 +60,10 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 
 ## 📊 Current Status: V1 Complete (Frontend Only)
 
-**V1 MVP:** ✅ COMPLETE
-- All 6 screens functional
-- Mock data only (18 sample jobs)
-- No backend (wrapper simulated 8-13s)
+**V1 MVP:** ✅ COMPLETE (V1.6.2)
+- All 8 screens functional (6 core + 2 V1.6.0)
+- Mock data: 27 jobs (22 production + 5 dev)
+- No backend (wrapper simulated with delays)
 - Dark mode + glass-morphism
 
 **V2-V4:** ⚪ Not started
@@ -91,7 +91,7 @@ src/
 │       └── jobs/[jobId]/page.tsx   # Staff job detail (7 cards)
 ├── components/ui/                   # Reusable components
 ├── lib/
-│   ├── mockData.ts                 # 18 sample jobs (V1)
+│   ├── mockData.ts                 # 27 sample jobs (22 prod + 5 dev)
 │   ├── statusMapping.ts            # Status conversion (CANONICAL)
 │   ├── utils.ts                    # Helper functions
 │   └── types.ts                    # TypeScript interfaces
@@ -128,16 +128,17 @@ src/
 
 | Internal Status | Public Status | Color | Law Firm Message |
 |-----------------|---------------|-------|------------------|
-| `NEW` | `SUBMITTED` | Gray | "We've received your request..." |
+| `NEW` | `IN_PROGRESS` | Blue | "We're working on your request." |
 | `NEEDS_CALL` | `IN_PROGRESS` | Blue | "We're working on your request." |
-| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP..." |
+| `CALL_IN_PROGRESS` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
 | `READY_FOR_AUTOMATION` | `IN_PROGRESS` | Blue | "We're working on your request." |
-| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP..." |
-| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy..." |
-| `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | "We're waiting for the full report..." |
+| `AUTOMATION_RUNNING` | `CONTACTING_CHP` | Blue | "We're contacting CHP about your report." |
+| `FACE_PAGE_ONLY` | `FACE_PAGE_READY` | Yellow | "We've received a preliminary copy (face page). The full report will follow." |
+| `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | "We're waiting for the full report to become available." |
 | `COMPLETED_FULL_REPORT` | `REPORT_READY` | Green | "Your report is ready to download." |
 | `COMPLETED_MANUAL` | `REPORT_READY` | Green | "Your report is ready to download." |
-| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information..." |
+| `COMPLETED_FACE_PAGE_ONLY` | `REPORT_READY` | Green | "Your report is ready to download." |
+| `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | "We need a bit more information to locate your report." |
 | `NEEDS_IN_PERSON_PICKUP` | `IN_PROGRESS` | Blue | "We're working on your request." |
 | `AUTOMATION_ERROR` | `IN_PROGRESS` | Blue | "We're working on your request." |
 | `CANCELLED` | `CANCELLED` | Red | "This request has been cancelled." |
@@ -330,5 +331,5 @@ Check: src/lib/utils.ts for existing validators
 
 ---
 
-*Last Updated: 2025-12-11*
+*Last Updated: 2025-12-12*
 *Quick reference for Claude Code - see [AGENTS.md](AGENTS.md) for full guidance*

@@ -162,8 +162,8 @@ export default function PassengerMiniForm({
       {showSkipNudge && (
         <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 animate-text-reveal">
           <p className="text-sm text-amber-300 mb-3 leading-relaxed">
-            Not having this extra information could delay your report. We'll still work it, but
-            there's a higher chance of delay.
+            Not having this extra information could delay your report. We&apos;ll still work it, but
+            there&apos;s a higher chance of delay.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <button
@@ -208,7 +208,7 @@ export default function PassengerMiniForm({
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          I don't have this information
+          I don&apos;t have this information
         </button>
       )}
 

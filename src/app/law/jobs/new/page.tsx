@@ -173,7 +173,7 @@ export default function NewRequestPage() {
       // Navigate to new job's chat view
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push(`/law/jobs/${newJob._id}`);
-    } catch (error) {
+    } catch {
       setIsSubmitting(false);
       const errorMessage = 'Failed to submit request. Please try again.';
       setApiError(errorMessage);

@@ -252,6 +252,9 @@ export interface EscalationData {
   // Completion
   completedAt?: number;
   completedBy?: string;
+
+  // Resume flow (V1.6.1+)
+  guaranteedName?: string;  // Name from face page upload during escalation (unlocks auto-checker)
 }
 
 // ============================================

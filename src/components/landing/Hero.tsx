@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils';
 export default function Hero() {
   const [mounted, setMounted] = useState(false);
 
+  // SSR hydration pattern - intentionally set state on mount for animation
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   return (

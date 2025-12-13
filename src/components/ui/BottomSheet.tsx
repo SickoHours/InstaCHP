@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import FocusTrap from 'focus-trap-react';
 import { cn } from '@/lib/utils';
-import { useIsDesktop, usePrefersReducedMotion } from '@/hooks/useMediaQuery';
+import { usePrefersReducedMotion } from '@/hooks/useMediaQuery';
 
 interface BottomSheetProps {
   /** Whether the sheet is open */
@@ -61,7 +61,6 @@ export default function BottomSheet({
   showCloseButton = true,
 }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
-  const isDesktop = useIsDesktop();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   // Handle escape key

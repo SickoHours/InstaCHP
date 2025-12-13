@@ -9,7 +9,6 @@ import {
   Download,
   Sparkles,
   FileCheck,
-  ExternalLink,
   RefreshCw,
   Clock,
   Settings,
@@ -27,10 +26,9 @@ import {
   getStatusColor,
   getStatusMessage,
   formatPublicStatus,
-  STATUS_COLORS,
   isCompletedStatus,
 } from '@/lib/statusMapping';
-import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint, Job, EventType, AutoCheckSettings, AutoCheckTime } from '@/lib/types';
+import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint, Job, EventType, AutoCheckSettings, InternalStatus } from '@/lib/types';
 import { DEFAULT_AUTO_CHECK_SETTINGS } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
 import CHPNudge from '@/components/ui/CHPNudge';
@@ -42,6 +40,12 @@ import FacePageCompletionChoice from '@/components/ui/FacePageCompletionChoice';
 import FacePageReopenBanner from '@/components/ui/FacePageReopenBanner';
 import AuthorizationUploadCard from '@/components/ui/AuthorizationUploadCard';
 import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
+import {
+  shouldShowDriverPassengerQuestions,
+  shouldShowPage2Verification,
+  shouldShowWrapperUI,
+  shouldShowAutoChecker,
+} from '@/lib/jobUIHelpers';
 
 /**
  * Dark Mode Status Badge with glow effect
@@ -49,10 +53,10 @@ import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
 function DarkStatusBadge({
   internalStatus,
 }: {
-  internalStatus: string;
+  internalStatus: InternalStatus;
 }) {
-  const publicStatus = getPublicStatus(internalStatus as any);
-  const color = getStatusColor(internalStatus as any);
+  const publicStatus = getPublicStatus(internalStatus);
+  const color = getStatusColor(internalStatus);
 
   const glowColors: Record<string, string> = {
     gray: 'shadow-slate-500/20',
@@ -206,7 +210,6 @@ export default function JobDetailPage() {
     getUserFacingEvents,
     updateJob,
     addEvent,
-    completeInteraction,
   } = useMockData();
 
   // Get job data (will re-render when data changes via context)
@@ -293,9 +296,6 @@ export default function JobDetailPage() {
   const isCompleted = isCompletedStatus(job.internalStatus);
   const isCancelled = job.internalStatus === 'CANCELLED';
   const isClosedJob = isCompleted || isCancelled;
-
-  // Timeline visibility: always show for active jobs, toggle for closed jobs
-  const shouldShowTimeline = !isClosedJob || timelineExpanded;
 
   // Mock download handler
   const handleDownload = (type: 'face' | 'full') => {
@@ -491,8 +491,9 @@ export default function JobDetailPage() {
    * Handle authorization document upload for escalated jobs (V1.6.0+)
    * Called when law firm uploads auth document for manual pickup
    */
-  const handleAuthorizationUpload = async (file: File) => {
-    // Mock upload delay
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleAuthorizationUpload = async (_file: File) => {
+    // Mock upload delay (file not used in V1 mock - will be uploaded to storage in V2)
     await new Promise((resolve) => setTimeout(resolve, getDelay('fileUpload')));
 
     // Update job with authorization received
@@ -591,6 +592,9 @@ export default function JobDetailPage() {
   const handleFlowComplete = async (data: FlowCompletionData) => {
     setIsInteracting(true);
 
+    // Capture timestamp at handler invocation (not during render)
+    const completedAt = Date.now(); // eslint-disable-line react-hooks/purity
+
     // Build update object
     const updateData: Record<string, unknown> = {
       clientType: data.clientType,
@@ -603,7 +607,7 @@ export default function JobDetailPage() {
         speedUpAccepted: data.speedUpAccepted,
         passengerVerification: data.passengerVerification,
         crashDetailsProvided: !!data.crashDetails,
-        flowCompletedAt: Date.now(),
+        flowCompletedAt: completedAt,
       },
     };
 
@@ -1176,7 +1180,8 @@ export default function JobDetailPage() {
         {/* Flow Wizard (active until completed) */}
         {/* Driver: hide when CONTACTING_CHP (CALL_IN_PROGRESS or AUTOMATION_RUNNING) */}
         {/* Passenger: show even during CONTACTING_CHP if info is missing */}
-        {isWizardActive && !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'CANCELLED', 'WAITING_FOR_FULL_REPORT', 'FACE_PAGE_ONLY'].includes(
+        {/* Fatal/Escalated: NEVER show questions (handled by shouldShowDriverPassengerQuestions) */}
+        {shouldShowDriverPassengerQuestions(job) && isWizardActive && !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'CANCELLED', 'WAITING_FOR_FULL_REPORT', 'FACE_PAGE_ONLY'].includes(
           job.internalStatus
         ) && !(
           // Hide driver wizard completely during CONTACTING_CHP
@@ -1198,8 +1203,9 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Contacting CHP Banner (Passenger only, when info missing) */}
-        {publicStatus === 'CONTACTING_CHP' &&
+        {/* Contacting CHP Banner (Passenger only, when info missing, NOT fatal/escalated) */}
+        {shouldShowDriverPassengerQuestions(job) &&
+          publicStatus === 'CONTACTING_CHP' &&
           job.clientType === 'passenger' &&
           isPassengerInfoMissing(job) && (
           <div
@@ -1214,8 +1220,8 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Unified Inline Fields Card - Shown only for Page 1 corrections */}
-        {showInlineFieldsCard && (
+        {/* Unified Inline Fields Card - Shown only for Page 1 corrections (NOT fatal/escalated) */}
+        {shouldShowWrapperUI(job) && showInlineFieldsCard && (
           <div className="mb-8">
             <InlineFieldsCard
               page1Data={{
@@ -1236,8 +1242,8 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Driver Info Rescue Form - Shown when Page 2 verification fails */}
-        {needsRescue && (
+        {/* Driver Info Rescue Form - Shown when Page 2 verification fails (NOT fatal/escalated) */}
+        {shouldShowPage2Verification(job) && needsRescue && (
           <div className="mb-8 animate-text-reveal" style={{ animationDelay: '450ms' }}>
             <DriverInfoRescueForm
               initialData={job.interactiveState?.rescueFormData}
@@ -1386,7 +1392,8 @@ export default function JobDetailPage() {
         )}
 
         {/* Auto-Check Section - For face page jobs without full report (V1.4.0+) */}
-        {shouldShowCheckButton && (
+        {/* Also gated by shouldShowAutoChecker to hide for fatal/terminal escalations */}
+        {shouldShowAutoChecker(job) && shouldShowCheckButton && (
           <div
             className="mb-8 animate-text-reveal"
             style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
@@ -1485,7 +1492,7 @@ export default function JobDetailPage() {
                   </h4>
 
                   <p className="text-xs text-slate-500 mb-4">
-                    We'll automatically check for the full report at these times (California time).
+                    We&apos;ll automatically check for the full report at these times (California time).
                     Max 2 scheduled checks per day.
                   </p>
 

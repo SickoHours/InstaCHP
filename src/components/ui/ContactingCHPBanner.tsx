@@ -59,8 +59,8 @@ export default function ContactingCHPBanner({
         </div>
         <div className="flex-1">
           <p className="text-sm text-amber-200 leading-relaxed mb-3">
-            We're contacting CHP now. If you have any additional identifiers, adding them can help us retrieve the report faster.{' '}
-            <span className="text-amber-300/60">It's still optional.</span>
+            We&apos;re contacting CHP now. If you have any additional identifiers, adding them can help us retrieve the report faster.{' '}
+            <span className="text-amber-300/60">It&apos;s still optional.</span>
           </p>
 
           {/* Add info button */}

@@ -10,7 +10,7 @@ import { getPublicStatus, formatPublicStatus } from '@/lib/statusMapping';
 import StatCard from '@/components/ui/StatCard';
 import TabBar from '@/components/ui/TabBar';
 import StaffJobCard from '@/components/ui/StaffJobCard';
-import { StatCardSkeleton, JobCardSkeleton, SkeletonBase } from '@/components/ui';
+import { StatCardSkeleton, JobCardSkeleton } from '@/components/ui';
 
 /**
  * Filter configuration for job statuses

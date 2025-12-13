@@ -123,7 +123,7 @@ export default function Page1DataCard({
       {/* Display Mode - Empty State */}
       {!isEditing && !hasData && (
         <p className="text-xs text-slate-500">
-          No crash details yet. Click "Add Details" to provide information.
+          No crash details yet. Click &quot;Add Details&quot; to provide information.
         </p>
       )}
 

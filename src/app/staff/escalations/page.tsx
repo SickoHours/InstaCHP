@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { mockJobs } from '@/lib/mockData';
-import type { Job, EscalationStatus } from '@/lib/types';
+import type { Job } from '@/lib/types';
 
 // Filter options for escalation status
 type EscalationFilter = 'all' | 'awaiting_auth' | 'ready' | 'scheduled';

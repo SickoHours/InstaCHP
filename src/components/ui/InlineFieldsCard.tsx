@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import { Calendar, Clock, Shield, User, Car, CreditCard, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatOfficerIdError } from '@/lib/utils';
 
 interface Page1Data {
   crashDate: string;
@@ -59,6 +59,8 @@ export default function InlineFieldsCard({
 
   const [isSaving, setIsSaving] = useState(false);
   const [showTimeError, setShowTimeError] = useState(false);
+  const [showOfficerIdError, setShowOfficerIdError] = useState(false);
+  const [officerIdErrorMsg, setOfficerIdErrorMsg] = useState<string>('');
 
   // Check if any data has been entered
   const hasAnyData = !!(
@@ -75,8 +77,11 @@ export default function InlineFieldsCard({
   // Validate crash time if entered
   const isCrashTimeValid = !formData.page1.crashTime || isValidCrashTime(formData.page1.crashTime);
 
-  // Save button enabled when: has data AND time is valid (if entered)
-  const canSave = hasAnyData && isCrashTimeValid && !disabled;
+  // Validate officer ID if entered
+  const isOfficerIdValid = !formatOfficerIdError(formData.page1.officerId);
+
+  // Save button enabled when: has data AND time is valid AND officer ID is valid (if entered)
+  const canSave = hasAnyData && isCrashTimeValid && isOfficerIdValid && !disabled;
 
   const handleCrashTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4); // Only digits, max 4
@@ -90,6 +95,30 @@ export default function InlineFieldsCard({
       setShowTimeError(!isValidCrashTime(value));
     } else {
       setShowTimeError(false);
+    }
+  };
+
+  const handleOfficerIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only digits, max 6
+    setFormData({
+      ...formData,
+      page1: { ...formData.page1, officerId: value },
+    });
+    // Clear error when typing
+    if (showOfficerIdError) {
+      setShowOfficerIdError(false);
+      setOfficerIdErrorMsg('');
+    }
+  };
+
+  const handleOfficerIdBlur = () => {
+    const error = formatOfficerIdError(formData.page1.officerId);
+    if (error) {
+      setShowOfficerIdError(true);
+      setOfficerIdErrorMsg(error);
+    } else {
+      setShowOfficerIdError(false);
+      setOfficerIdErrorMsg('');
     }
   };
 
@@ -185,25 +214,27 @@ export default function InlineFieldsCard({
               <input
                 type="text"
                 value={formData.page1.officerId}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    page1: { ...formData.page1, officerId: e.target.value },
-                  })
-                }
+                onChange={handleOfficerIdChange}
+                onBlur={handleOfficerIdBlur}
                 placeholder="e.g., 012345"
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
+                  'bg-slate-800/50 border',
                   'text-slate-200 text-base md:text-sm',
                   'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'focus:outline-none focus:ring-2',
                   'transition-all duration-200',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  showOfficerIdError
+                    ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
+                    : 'border-slate-700/50 focus:border-teal-500/50 focus:ring-teal-500/20'
                 )}
               />
             </div>
+            {showOfficerIdError && (
+              <p className="text-xs text-red-400 mt-1">{officerIdErrorMsg}</p>
+            )}
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 import { Calendar, Clock, Shield, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatOfficerIdError } from '@/lib/utils';
 
 export interface CrashDetailsData {
   crashDate: string;
@@ -53,11 +53,16 @@ export default function CrashDetailsForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTimeError, setShowTimeError] = useState(false);
+  const [showOfficerIdError, setShowOfficerIdError] = useState(false);
+  const [officerIdErrorMsg, setOfficerIdErrorMsg] = useState<string>('');
 
   // Time validation only if 4 digits entered
   const isCrashTimeValid = !formData.crashTime ||
     formData.crashTime.length < 4 ||
     isValidCrashTime(formData.crashTime);
+
+  // Officer ID validation
+  const isOfficerIdValid = !formatOfficerIdError(formData.officerId);
 
   const handleCrashTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4); // Only digits, max 4
@@ -71,9 +76,30 @@ export default function CrashDetailsForm({
     }
   };
 
+  const handleOfficerIdBlur = () => {
+    const error = formatOfficerIdError(formData.officerId);
+    if (error) {
+      setShowOfficerIdError(true);
+      setOfficerIdErrorMsg(error);
+    } else {
+      setShowOfficerIdError(false);
+      setOfficerIdErrorMsg('');
+    }
+  };
+
+  const handleOfficerIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only digits, max 6
+    setFormData({ ...formData, officerId: value });
+    // Clear error when typing
+    if (showOfficerIdError) {
+      setShowOfficerIdError(false);
+      setOfficerIdErrorMsg('');
+    }
+  };
+
   const handleSubmit = async () => {
-    // Don't submit if time is invalid
-    if (!isCrashTimeValid) return;
+    // Don't submit if time or officer ID is invalid
+    if (!isCrashTimeValid || !isOfficerIdValid) return;
 
     setIsSubmitting(true);
     try {
@@ -171,27 +197,34 @@ export default function CrashDetailsForm({
             <input
               type="text"
               value={formData.officerId}
-              onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+              onChange={handleOfficerIdChange}
+              onBlur={handleOfficerIdBlur}
               placeholder="e.g., 012345"
               disabled={disabled || isSubmitting}
               className={cn(
                 'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                'bg-slate-800/50 border border-slate-700/50',
+                'bg-slate-800/50 border',
                 'text-slate-200 text-base md:text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:ring-2',
                 'transition-all duration-200',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                showOfficerIdError
+                  ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
+                  : 'border-slate-700/50 focus:border-teal-500/50 focus:ring-teal-500/20'
               )}
             />
           </div>
+          {showOfficerIdError && (
+            <p className="text-xs text-red-400 mt-1">{officerIdErrorMsg}</p>
+          )}
         </div>
       </div>
 
       {/* Primary CTA - Save & Check for Report */}
       <button
         onClick={handleSubmit}
-        disabled={disabled || isSubmitting || !isCrashTimeValid}
+        disabled={disabled || isSubmitting || !isCrashTimeValid || !isOfficerIdValid}
         className={cn(
           'w-full h-12 md:h-10 rounded-xl font-medium text-base md:text-sm',
           'flex items-center justify-center gap-2',

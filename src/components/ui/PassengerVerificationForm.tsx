@@ -119,7 +119,7 @@ export default function PassengerVerificationForm({
         <div className="flex items-center gap-3">
           <User className="w-4 h-4 text-slate-500" />
           <div>
-            <span className="text-xs text-slate-500 uppercase tracking-wider">Client's Name</span>
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Client&apos;s Name</span>
             <p className="text-slate-200 font-medium">{clientName}</p>
           </div>
         </div>
@@ -339,7 +339,7 @@ export default function PassengerVerificationForm({
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}
       >
-        I don't have any of this information
+        I don&apos;t have any of this information
       </button>
     </div>
   );

@@ -4,7 +4,6 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { SkeletonBase } from '../SkeletonBase';
 import { SkeletonText } from '../SkeletonText';
-import { SkeletonCard } from '../SkeletonCard';
 
 // ============================================
 // TYPES

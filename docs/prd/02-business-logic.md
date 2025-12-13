@@ -374,10 +374,11 @@ This separation is critical: law firms should never know about automation, manua
 | `WAITING_FOR_FULL_REPORT` | `WAITING_FOR_REPORT` | Yellow | Checking if full report available | "We're waiting for the full report from CHP" |
 | `COMPLETED_FULL_REPORT` | `REPORT_READY` | Green | Full report successfully downloaded | "Your report is ready to download" |
 | `COMPLETED_MANUAL` | `REPORT_READY` | Green | Manually completed by specialist | "Your report is ready to download" |
+| `COMPLETED_FACE_PAGE_ONLY` | `REPORT_READY` | Green | Law firm completed with face page only (V1.6.0) | "Your report is ready to download" |
 | `NEEDS_MORE_INFO` | `NEEDS_INFO` | Amber | Missing verification info (driver name) | "We need a bit more information to continue" |
 | `NEEDS_IN_PERSON_PICKUP` | `IN_PROGRESS` | Blue | Requires manual retrieval from CHP office | "We're working on your request" |
 | `AUTOMATION_ERROR` | `IN_PROGRESS` | Blue | Wrapper encountered error | "We're working on your request" |
-| `CANCELLED` | `CANCELLED` | Red | Request cancelled | "This request has been closed" |
+| `CANCELLED` | `CANCELLED` | Red | Request cancelled | "This request has been cancelled" |
 
 ### Status Badge Colors
 

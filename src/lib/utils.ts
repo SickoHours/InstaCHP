@@ -147,6 +147,43 @@ export function formatRelativeTime(timestamp: number): string {
 }
 
 // ============================================
+// OFFICER ID UTILITIES
+// ============================================
+
+/**
+ * Regular expression for officer ID validation
+ * Format: 6 digits starting with 0
+ * @example "012345" - valid
+ */
+export const OFFICER_ID_REGEX = /^0\d{5}$/;
+
+/**
+ * Validate officer ID format
+ * @param value - The officer ID to validate
+ * @returns true if valid format (6 digits starting with 0), false otherwise
+ * @example isValidOfficerId('012345') => true
+ * @example isValidOfficerId('12345') => false (missing leading 0)
+ * @example isValidOfficerId('0123456') => false (too long)
+ */
+export function isValidOfficerId(value: string): boolean {
+  return OFFICER_ID_REGEX.test(value);
+}
+
+/**
+ * Get a descriptive error message for invalid officer ID
+ * Returns undefined if value is empty (field is optional) or valid
+ * @param value - The officer ID to validate
+ * @returns Error message string or undefined if valid/empty
+ */
+export function formatOfficerIdError(value: string): string | undefined {
+  if (!value) return undefined; // Empty is OK (field is optional)
+  if (value.length !== 6) return 'Must be exactly 6 digits';
+  if (!value.startsWith('0')) return 'Must start with 0';
+  if (!/^\d+$/.test(value)) return 'Must contain only digits';
+  return undefined; // Valid
+}
+
+// ============================================
 // ID UTILITIES
 // ============================================
 

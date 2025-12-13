@@ -1,6 +1,6 @@
 /**
  * Mock data for InstaTCR V1 MVP
- * 18 sample jobs covering all 13 status types
+ * 27 sample jobs (22 production + 5 dev) covering all 14 status types
  */
 
 import type { Job } from './types';
@@ -29,7 +29,7 @@ const hours = (n: number) => n * 60 * 60 * 1000;
 const days = (n: number) => n * 24 * hours(1);
 
 // ============================================
-// MOCK JOBS (15 total)
+// MOCK JOBS (27 total: 22 production + 5 dev)
 // ============================================
 
 export const mockJobs: Job[] = [

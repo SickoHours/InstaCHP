@@ -94,7 +94,7 @@ When product behavior is unclear or documents disagree, follow this precedence:
 | **Staff** | All technical details, internal statuses, journey logs | (Nothing hidden) |
 
 ### Status Mapping
-- **13 internal statuses** (staff sees all)
+- **14 internal statuses** (staff sees all)
 - **8 public statuses** (law firms see simplified)
 - **Canonical source:** `src/lib/statusMapping.ts` → `STATUS_MESSAGES` export
 
@@ -107,10 +107,10 @@ When product behavior is unclear or documents disagree, follow this precedence:
 
 ## 🏗️ Current Implementation Status
 
-### V1 MVP (Frontend Only) - ✅ COMPLETE
-- All 6 screens functional
-- Mock data in `src/lib/mockData.ts` (18 sample jobs)
-- No backend (wrapper execution simulated 8-13 seconds)
+### V1 MVP (Frontend Only) - ✅ COMPLETE (V1.6.2)
+- All 8 screens functional (6 core + 2 V1.6.0)
+- Mock data in `src/lib/mockData.ts` (27 jobs: 22 production + 5 dev)
+- No backend (wrapper execution simulated with delays)
 - Dark mode aesthetic with glass-morphism
 
 ### V2 Backend Integration - ⚪ Not Started

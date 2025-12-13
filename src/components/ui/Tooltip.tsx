@@ -50,7 +50,7 @@ export function Tooltip({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle SSR
+  // SSR hydration pattern - detect client-side for portal rendering
   useEffect(() => {
     setIsMounted(true);
     return () => {
@@ -114,6 +114,7 @@ export function Tooltip({
       // Use requestAnimationFrame to ensure tooltip is rendered before calculating
       requestAnimationFrame(calculatePosition);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible, position]);
 
   const handleMouseEnter = () => {

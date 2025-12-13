@@ -7,7 +7,6 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { Job, InternalStatus, PublicStatus } from '@/lib/types';
 import {
   getPublicStatus,
-  getStatusColor,
   formatPublicStatus,
 } from '@/lib/statusMapping';
 

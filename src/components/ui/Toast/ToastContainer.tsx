@@ -20,8 +20,9 @@ export function ToastContainer() {
   // Track exiting toasts for animation
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
 
+  // SSR hydration pattern - detect client-side for portal rendering
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const handleDismiss = (id: string) => {

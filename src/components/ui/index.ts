@@ -75,3 +75,6 @@ export { default as ErrorState, NetworkError, NotFoundError, ServerError } from 
 // Notification system (V1.8.0+)
 export { default as NotificationBell } from './NotificationBell';
 export { default as NotificationItem } from './NotificationItem';
+
+// Sidebar components (V2.0.0+)
+export { SidebarJobCard } from './SidebarJobCard';

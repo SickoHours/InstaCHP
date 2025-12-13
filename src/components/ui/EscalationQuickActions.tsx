@@ -97,28 +97,7 @@ export default function EscalationQuickActions({
   // V1.9.0: Check if job has authorization uploaded (gate for all staff work)
   const hasAuth = hasAuthorizationUploaded(job);
 
-  // If no authorization, show waiting message instead of actions
-  if (!hasAuth) {
-    return (
-      <div className={cn('border-t border-slate-700/50 px-4 pb-4 pt-3', className)}>
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
-            <HelpCircle className="w-5 h-5 text-amber-400" />
-          </div>
-          <div className="flex-1">
-            <h4 className="text-amber-200 font-medium text-sm">
-              Waiting for Authorization
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              The law firm needs to upload their authorization document before we can claim this pickup.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Determine current step (only if auth present)
+  // Determine current step (computed regardless of hasAuth for hook consistency)
   const currentStep = getEscalationStep(job);
   const isFatal = isFatalJob(job);
   const config = STEP_CONFIG[currentStep];
@@ -130,6 +109,7 @@ export default function EscalationQuickActions({
 
   // ============================================
   // ACTION HANDLERS (V1 Mock - Simulate delays)
+  // All hooks must be defined before any conditional returns
   // ============================================
 
   // Handle claim action
@@ -283,6 +263,31 @@ export default function EscalationQuickActions({
         break;
     }
   }, [currentStep, handleClaim, handleDownloadAuth, handleAutoCheck]);
+
+  // ============================================
+  // CONDITIONAL RETURNS (after all hooks)
+  // ============================================
+
+  // If no authorization, show waiting message instead of actions
+  if (!hasAuth) {
+    return (
+      <div className={cn('border-t border-slate-700/50 px-4 pb-4 pt-3', className)}>
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
+            <HelpCircle className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-amber-200 font-medium text-sm">
+              Waiting for Authorization
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              The law firm needs to upload their authorization document before we can claim this pickup.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render if all steps completed
   if (allCompleted) {

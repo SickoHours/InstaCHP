@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, notFound } from 'next/navigation';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   FileText,
   Download,
   Sparkles,
@@ -1054,48 +1052,9 @@ export default function JobDetailPage() {
     !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus);
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
-      {/* Animated Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="orb-dark w-[500px] h-[500px] bg-teal-600/20 top-[-10%] left-[-10%]"
-          style={{ animationDelay: '0s' }}
-        />
-        <div
-          className="orb-dark w-[400px] h-[400px] bg-cyan-600/15 bottom-[20%] right-[-5%]"
-          style={{ animationDelay: '5s' }}
-        />
-        <div
-          className="orb-dark w-[600px] h-[600px] bg-slate-700/20 bottom-[-20%] left-[30%]"
-          style={{ animationDelay: '10s' }}
-        />
-      </div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 header-blur border-b border-slate-800/50">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="flex items-center h-16">
-            <Link
-              href="/law"
-              className={cn(
-                'flex items-center justify-center w-10 h-10 -ml-2 rounded-full',
-                'text-slate-400 hover:text-white',
-                'hover:bg-slate-800/50',
-                'transition-all duration-200',
-                'active:scale-95'
-              )}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <span className="ml-3 text-slate-400 text-sm font-medium">
-              Back to requests
-            </span>
-          </div>
-        </div>
-      </header>
-
+    <div className="h-full overflow-auto">
       {/* Main Content */}
-      <main className="relative z-10 max-w-3xl mx-auto px-4 py-6 md:py-10 animate-page-entrance">
+      <main className="max-w-3xl mx-auto px-4 py-6 md:py-10 animate-page-entrance">
         {/* Client Info Header - Elevated Hero Section */}
         <div className="glass-elevated p-6 md:p-8 mb-6 md:mb-8">
           {/* Client Name */}

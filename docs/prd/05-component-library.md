@@ -1,6 +1,6 @@
 # Component Library
 
-**Version:** 2.9 (Updated for V1.9.0)
+**Version:** 3.0 (Updated for V2.1.0 Liquid Glass)
 **Last Updated:** 2025-12-13
 **Status:** Complete
 **Audience:** Frontend engineers, component library maintainers
@@ -67,6 +67,14 @@
    - [Skeleton Loading System](#component-system-skeleton-loading-states)
    - [Error State Components](#component-system-error-state-components)
    - [Text Utilities](#component-system-text-utilities)
+
+10. [Liquid Glass Design System (V2.1.0)](#liquid-glass-design-system-v210)
+    - [Glass Tier Hierarchy](#glass-tier-hierarchy)
+    - [Glass Utility Classes](#glass-utility-classes)
+    - [Section Dividers](#section-dividers)
+    - [Hover Effects](#hover-effects)
+    - [Background Depth](#background-depth)
+    - [CSS Custom Properties](#css-custom-properties)
 
 ---
 
@@ -1596,6 +1604,315 @@ Display text with line truncation and automatic tooltip on overflow.
 - Smart truncation (only shows tooltip if text overflows)
 - Multi-line support (1, 2, or 3 line clamp)
 - Resize-aware (rechecks truncation on window resize)
+
+---
+
+## Liquid Glass Design System (V2.1.0)
+
+**File:** `src/app/globals.css`
+
+**Purpose:** InstaTCR's signature dark-mode aesthetic using layered glass-morphism effects with three distinct hierarchy tiers, background depth, and polished interactions.
+
+### Glass Tier Hierarchy
+
+The Liquid Glass system uses three tiers to create clear visual hierarchy:
+
+| Tier | Class | Opacity | Blur | Use Case |
+|------|-------|---------|------|----------|
+| **Elevated** | `.glass-elevated` | 85% | 24px | Primary containers, hero sections, prominent cards |
+| **Surface** | `.glass-surface` | 70% | 20px | Secondary containers, standard cards, tables |
+| **Subtle** | `.glass-subtle` | 5% white | 8px | Nested elements, stat cards, child components |
+
+**Visual Hierarchy Example:**
+```
+Page Background (radial gradients + noise)
+└── .glass-elevated (page header, hero sections)
+    └── .glass-surface (stats container, search box)
+        └── .glass-subtle (individual stat cards)
+```
+
+---
+
+### Glass Utility Classes
+
+#### Class: `.glass-elevated`
+
+**Purpose:** Highest prominence tier for primary content containers.
+
+```css
+.glass-elevated {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 16px -2px rgba(0, 0, 0, 0.15),
+    0 2px 8px -2px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 80px rgba(20, 184, 166, 0.1),
+    inset 0 2px 4px rgba(255, 255, 255, 0.08);
+}
+```
+
+**Use Cases:**
+- Page title/header sections
+- Hero content areas
+- Primary action cards (e.g., CHP Wrapper card)
+- Downloads section on completed jobs
+
+---
+
+#### Class: `.glass-surface`
+
+**Purpose:** Standard tier for secondary content containers.
+
+```css
+.glass-surface {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 8px -2px rgba(0, 0, 0, 0.1),
+    0 1px 4px -1px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 60px rgba(0, 0, 0, 0.15);
+}
+```
+
+**Use Cases:**
+- Stats overview containers
+- Search bars
+- Desktop table containers
+- Timeline containers
+- Left panel wrappers in split views
+
+---
+
+#### Class: `.glass-subtle`
+
+**Purpose:** Lowest prominence tier for nested elements.
+
+```css
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  border-radius: 12px;
+}
+```
+
+**Use Cases:**
+- Individual stat cards inside `.glass-surface`
+- Child cards within elevated containers
+- Nested interactive elements
+
+---
+
+#### Class: `.glass-header`
+
+**Purpose:** Sticky header treatment with glass effect.
+
+```css
+.glass-header {
+  background: rgba(10, 15, 26, 0.8);
+  backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+```
+
+**Use Cases:**
+- Sticky page headers
+- Mobile navigation headers
+- Staff job detail headers (mobile & desktop)
+
+---
+
+### Section Dividers
+
+**Purpose:** Visual grouping labels to organize content sections.
+
+```css
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(148, 163, 184, 0.8);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1rem 0;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.25),
+    transparent
+  );
+}
+```
+
+**Usage:**
+```tsx
+<div className="section-divider">overview</div>
+<div className="section-divider">job queue</div>
+<div className="section-divider">data collection</div>
+<div className="section-divider">manual actions</div>
+```
+
+**Current Implementations:**
+- Staff queue: "job queue" above table
+- Staff job detail: "data collection", "manual actions"
+- Law firm dashboard: "overview" above stats
+
+---
+
+### Hover Effects
+
+#### Class: `.hover-lift`
+
+**Purpose:** Subtle elevation effect on hover for interactive cards.
+
+```css
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 4px 16px -2px rgba(0, 0, 0, 0.15),
+      0 0 40px rgba(20, 184, 166, 0.15);
+  }
+}
+```
+
+#### Class: `.hover-lift-subtle`
+
+**Purpose:** More subtle hover for nested elements.
+
+```css
+@media (hover: hover) {
+  .hover-lift-subtle:hover {
+    transform: translateY(-2px);
+  }
+}
+```
+
+---
+
+### Background Depth
+
+**Purpose:** Create visual depth behind glass surfaces for blur effects to be visible.
+
+```css
+body {
+  background-image:
+    /* Subtle noise texture */
+    url("data:image/svg+xml,..."),
+    /* Center glow */
+    radial-gradient(
+      ellipse 1200px 800px at 50% 20%,
+      rgba(15, 23, 42, 0.4) 0%,
+      transparent 60%
+    ),
+    /* Corner glows (teal + blue) */
+    radial-gradient(
+      circle 600px at 0% 0%,
+      rgba(20, 184, 166, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle 700px at 100% 100%,
+      rgba(59, 130, 246, 0.06) 0%,
+      transparent 50%
+    );
+  background-color: #0a0f1a;
+  background-attachment: fixed;
+}
+```
+
+**Law Firm Dashboard Orbs:**
+The law firm screens also use animated floating orbs for additional depth:
+- Teal orb: `bg-teal-600/25` (top-left)
+- Cyan orb: `bg-cyan-600/20` (bottom-right)
+- Slate orb: `bg-slate-700/25` (bottom-center)
+
+---
+
+### CSS Custom Properties
+
+The glass system uses design tokens defined as CSS custom properties:
+
+```css
+:root {
+  /* Blur levels */
+  --glass-blur: 20px;
+  --glass-blur-elevated: 24px;
+  --glass-blur-subtle: 8px;
+
+  /* Saturation */
+  --glass-saturate: 180%;
+  --glass-saturate-elevated: 200%;
+
+  /* Border radius */
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Spacing tokens */
+  --space-card: 20px;
+  --gap-card: 20px;
+
+  /* Elevation shadows */
+  --elevation-2: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 1px 4px -1px rgba(0, 0, 0, 0.08);
+  --elevation-3: 0 4px 12px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+  --elevation-4: 0 4px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+
+  /* Glass inset highlight */
+  --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+```
+
+---
+
+### Usage Guidelines
+
+#### DO:
+- Use `.glass-elevated` for primary/hero content
+- Use `.glass-surface` for standard containers
+- Use `.glass-subtle` for nested child elements
+- Add section dividers to group related content
+- Apply `.hover-lift` to interactive cards
+
+#### DON'T:
+- Mix glass classes with conflicting `bg-*` utilities
+- Use `.glass-elevated` for nested elements (creates visual confusion)
+- Skip hierarchy tiers (don't put `.glass-subtle` directly on page)
+- Add `border` utilities that conflict with glass borders
+
+#### Component Integration:
+```tsx
+// Elevated hero section
+<div className="glass-elevated p-6 md:p-8 mb-6">
+  <h1>Page Title</h1>
+</div>
+
+// Surface container with subtle children
+<div className="glass-surface p-card mb-6">
+  <div className="section-divider">overview</div>
+  <div className="grid grid-cols-3 gap-3">
+    <div className="glass-subtle rounded-xl p-4 hover-lift-subtle">
+      <StatCard />
+    </div>
+  </div>
+</div>
+```
 
 ---
 

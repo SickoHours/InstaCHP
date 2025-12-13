@@ -1,6 +1,6 @@
 ---
 title: "InstaTCR Implementation Guide"
-version: "2.1"
+version: "2.2"
 last_updated: "2025-12-13"
 audience: "All engineers, QA, DevOps"
 document_type: "Technical Reference & Implementation Strategy"
@@ -2081,6 +2081,48 @@ className="text-base md:text-sm"
 
 // Responsive height
 className="h-12 md:h-10"
+```
+
+### Liquid Glass Classes (V2.1.0)
+
+InstaTCR uses a three-tier glass-morphism design system. See [05-component-library.md](05-component-library.md#liquid-glass-design-system-v210) for complete documentation.
+
+```typescript
+// Glass tier hierarchy (highest to lowest prominence)
+className="glass-elevated"  // Primary containers, hero sections (85% opacity, 24px blur)
+className="glass-surface"   // Secondary containers, cards (70% opacity, 20px blur)
+className="glass-subtle"    // Nested elements, child cards (5% white, 8px blur)
+
+// Sticky headers
+className="glass-header"    // Sticky nav headers with glass effect
+
+// Section dividers for visual grouping
+<div className="section-divider">section label</div>
+
+// Hover effects
+className="hover-lift"        // 4px lift + teal glow
+className="hover-lift-subtle" // 2px lift
+
+// Spacing tokens
+className="p-card"  // 20px padding (use for glass containers)
+className="gap-card" // 20px gap (use for card grids)
+```
+
+**Usage Pattern:**
+```tsx
+// Page structure with glass hierarchy
+<div className="glass-elevated p-6 md:p-8 mb-6">
+  <h1>Page Title</h1>
+</div>
+
+<div className="glass-surface p-card mb-6">
+  <div className="section-divider">overview</div>
+  <div className="grid grid-cols-3 gap-3">
+    <div className="glass-subtle rounded-xl p-4 hover-lift-subtle">
+      Content
+    </div>
+  </div>
+</div>
 ```
 
 ---

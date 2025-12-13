@@ -11,7 +11,7 @@ import { hasAuthorizationUploaded, isReadyToClaim } from '@/lib/jobUIHelpers';
 import StatCard from '@/components/ui/StatCard';
 import TabBar from '@/components/ui/TabBar';
 import StaffJobCard from '@/components/ui/StaffJobCard';
-import { StatCardSkeleton, JobCardSkeleton, NotificationBell } from '@/components/ui';
+import { StatCardSkeleton, JobCardSkeleton } from '@/components/ui';
 
 /**
  * Filter configuration for job statuses
@@ -194,53 +194,43 @@ export default function StaffQueuePage() {
   const isEscalatedFilter = activeFilter === 'escalated';
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold text-white font-serif">
-                Job Queue
-              </h1>
-              {/* Escalation count badge (always visible in header) */}
-              {stats.escalations > 0 && (
-                <span className={cn(
-                  'flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium',
-                  'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                )}>
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  {stats.escalations} escalated
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Notification Bell */}
-              <NotificationBell userType="staff" />
-
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg',
-                  'text-sm text-slate-400 hover:text-white',
-                  'bg-slate-800/50 hover:bg-slate-700/50',
-                  'transition-all duration-200',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
-                )}
-              >
-                <RefreshCw
-                  className={cn('w-4 h-4', isRefreshing && 'animate-icon-spin')}
-                />
-                <span className="hidden md:inline">Refresh</span>
-              </button>
-            </div>
+    <div className="h-full overflow-auto">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-10 animate-page-entrance">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6 md:mb-8">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-bold text-white font-serif">
+              Job Queue
+            </h1>
+            {/* Escalation count badge */}
+            {stats.escalations > 0 && (
+              <span className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium',
+                'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              )}>
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {stats.escalations} escalated
+              </span>
+            )}
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12 animate-page-entrance">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-lg',
+              'text-sm text-slate-400 hover:text-white',
+              'bg-slate-800/50 hover:bg-slate-700/50',
+              'transition-all duration-200',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            <RefreshCw
+              className={cn('w-4 h-4', isRefreshing && 'animate-icon-spin')}
+            />
+            <span className="hidden md:inline">Refresh</span>
+          </button>
+        </div>
         {/* Stats Cards - V1.7.0: Reordered with Escalations first */}
         {/* V2.0: Wrapped in glass-elevated container for prominence */}
         <div className="glass-elevated p-card mb-8 md:mb-12">

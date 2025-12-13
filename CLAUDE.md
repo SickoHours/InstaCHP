@@ -58,7 +58,7 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 
 ---
 
-## 📊 Current Status: V1 Complete (Frontend Only)
+## 📊 Current Status: V2 Complete (UI Polish + App Shell)
 
 **V1 MVP:** ✅ COMPLETE (V1.9.0)
 - All 8 screens functional (6 core + 2 V1.6.0)
@@ -67,10 +67,17 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 - Dark mode + glass-morphism
 - Authorization-first workflow with smart sorting
 
-**V2-V4:** ⚪ Not started
-- V2: Convex + real wrapper
-- V3: VAPI AI phone calls
-- V4: Open Router AI
+**V2 UI Polish:** ✅ COMPLETE (V2.2.0)
+- Liquid Glass design system (glass-surface, glass-elevated, glass-subtle)
+- ChatGPT-style app shell with collapsible sidebar
+- Persistent job list with search
+- In-shell navigation (no back buttons)
+- NotificationBell V2.0.0 (keyboard support, focus management)
+
+**V3-V5:** ⚪ Not started
+- V3: Convex + real wrapper
+- V4: VAPI AI phone calls
+- V5: Open Router AI
 
 👉 **Details:** [DEV-ROADMAP.md](DEV-ROADMAP.md)
 
@@ -83,14 +90,29 @@ src/
 ├── app/
 │   ├── page.tsx                    # Landing page
 │   ├── law/
-│   │   ├── page.tsx                # Law firm dashboard
+│   │   ├── layout.tsx              # AppShell wrapper (V2.2.0)
+│   │   ├── page.tsx                # Welcome canvas
 │   │   └── jobs/
 │   │       ├── new/page.tsx        # New request form (2 fields only!)
-│   │       └── [jobId]/page.tsx    # Job detail (chat view)
+│   │       └── [jobId]/page.tsx    # Job detail (in-shell)
 │   └── staff/
-│       ├── page.tsx                # Staff queue
+│       ├── layout.tsx              # AppShell wrapper (V2.2.0)
+│       ├── page.tsx                # Queue dashboard
 │       └── jobs/[jobId]/page.tsx   # Staff job detail (7 cards)
-├── components/ui/                   # Reusable components
+├── components/
+│   ├── shell/                      # App shell components (V2.2.0)
+│   │   ├── AppShell.tsx            # Main layout wrapper
+│   │   ├── AppShellHeader.tsx      # Top header
+│   │   ├── AppShellSidebar.tsx     # Sidebar container
+│   │   ├── SidebarJobList.tsx      # Job list with search
+│   │   ├── SidebarProfileCard.tsx  # Profile card dropdown
+│   │   └── BackgroundOrbs.tsx      # Animated background
+│   └── ui/                         # Reusable components
+│       ├── SidebarJobCard.tsx      # Compact job card (V2.2.0)
+│       ├── NotificationBell.tsx    # V2.0.0 with keyboard support
+│       └── ...                     # Other UI components
+├── context/
+│   └── SidebarContext.tsx          # Sidebar state (V2.2.0)
 ├── lib/
 │   ├── mockData.ts                 # 29 sample jobs (24 prod + 5 dev)
 │   ├── statusMapping.ts            # Status conversion (CANONICAL)

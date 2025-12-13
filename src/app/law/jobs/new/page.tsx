@@ -3,8 +3,8 @@
 import { useState, useCallback, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, Loader2, AlertCircle } from 'lucide-react';
-import { Container, Button, Input } from '@/components/ui';
+import { X, ArrowRight, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Button, Input } from '@/components/ui';
 import { cn, isValidReportNumber } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
 import { useMockData } from '@/context/MockDataContext';
@@ -182,52 +182,15 @@ export default function NewRequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
-      {/* Animated Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="orb-dark w-[500px] h-[500px] bg-teal-600/20 top-[-10%] left-[-10%]"
-          style={{ animationDelay: '0s' }}
-        />
-        <div
-          className="orb-dark w-[400px] h-[400px] bg-cyan-600/15 bottom-[20%] right-[-5%]"
-          style={{ animationDelay: '5s' }}
-        />
-        <div
-          className="orb-dark w-[600px] h-[600px] bg-slate-700/20 bottom-[-20%] left-[30%]"
-          style={{ animationDelay: '10s' }}
-        />
-      </div>
-
-      {/* Mobile Header - Dark */}
-      <header className="md:hidden sticky top-0 z-50 header-blur border-b border-slate-800/50">
-        <div className="flex items-center h-14 px-4">
-          <Link
-            href="/law"
-            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all active:scale-95"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="ml-2 text-lg font-semibold text-white">New Request</h1>
-        </div>
-      </header>
-
+    <div className="h-full overflow-auto">
       {/* Main Content */}
-      <div className="relative z-10">
-        <Container>
-          {/* Desktop Layout */}
-          <div className="py-6 md:py-10 md:max-w-xl md:mx-auto">
-            {/* Desktop Header - Dark */}
-            <div className="hidden md:block mb-8 animate-page-entrance">
-              <Link
-                href="/law"
-                className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-teal-400 transition-colors mb-4"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-              </Link>
+      <div className="py-6 md:py-10 px-4">
+        <div className="max-w-xl mx-auto">
+          {/* Page Header with close button */}
+          <div className="flex items-center justify-between mb-8 animate-page-entrance">
+            <div>
               <h1
-                className="text-3xl font-bold text-white font-serif animate-text-reveal"
+                className="text-2xl md:text-3xl font-bold text-white font-serif animate-text-reveal"
                 style={{ animationDelay: '100ms' }}
               >
                 New Request
@@ -239,6 +202,20 @@ export default function NewRequestPage() {
                 Submit a CHP crash report request
               </p>
             </div>
+            <Link
+              href="/law"
+              className={cn(
+                'flex items-center justify-center w-10 h-10 rounded-full',
+                'text-slate-400 hover:text-white',
+                'hover:bg-slate-800/50',
+                'transition-all duration-200',
+                'active:scale-95'
+              )}
+              title="Cancel"
+            >
+              <X className="w-5 h-5" />
+            </Link>
+          </div>
 
             {/* Form Card - Dark */}
             <form onSubmit={handleSubmit}>
@@ -335,8 +312,7 @@ export default function NewRequestPage() {
 
             {/* Spacer for mobile sticky footer */}
             <div className="md:hidden h-24" />
-          </div>
-        </Container>
+        </div>
       </div>
     </div>
   );

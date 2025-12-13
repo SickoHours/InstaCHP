@@ -5,6 +5,119 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-13
+
+### Added
+
+#### ChatGPT-Style App Shell
+
+**Purpose:**
+Transform the Law Firm and Staff authenticated pages into a modern ChatGPT-style dashboard with a persistent sidebar, eliminating the "open job → new page → back button" navigation pattern for a smoother, more app-like experience.
+
+**Key Features:**
+
+1. **Persistent Sidebar (Desktop)**
+   - Collapsible sidebar (320px expanded, 72px collapsed)
+   - Collapse state persisted to localStorage
+   - Smooth width transition animation
+   - Job list with search functionality
+   - Profile card at bottom with dropdown menu
+
+2. **Mobile Drawer**
+   - Full sidebar content in slide-out drawer
+   - Auto-closes when job is selected
+   - Swipe/tap-outside to close
+
+3. **Unified Header**
+   - Glass-header styling
+   - Menu toggle (mobile) / Logo (desktop)
+   - NotificationBell with keyboard support (Escape to close)
+   - Focus management (returns to bell on close)
+
+4. **Welcome Canvas**
+   - `/law` and `/staff` now show welcome state when no job selected
+   - Status summary cards remain visible
+   - Floating "New Request" CTA (law firm only)
+
+5. **In-Shell Navigation**
+   - Job detail pages render inside the shell
+   - No more back button headers
+   - Instant job switching via sidebar
+   - Background orbs rendered once (not per-page)
+
+**New Files Created (8):**
+
+| File | Purpose |
+|------|---------|
+| `src/context/SidebarContext.tsx` | Global sidebar state (open, collapsed) with localStorage |
+| `src/components/shell/BackgroundOrbs.tsx` | Extracted animated background (single instance) |
+| `src/components/shell/AppShell.tsx` | Main layout wrapper combining all parts |
+| `src/components/shell/AppShellHeader.tsx` | Top header with logo, menu, notifications |
+| `src/components/shell/AppShellSidebar.tsx` | Sidebar container with collapse toggle |
+| `src/components/shell/SidebarJobList.tsx` | Scrollable job list with search |
+| `src/components/shell/SidebarProfileCard.tsx` | Bottom profile card with dropdown |
+| `src/components/ui/SidebarJobCard.tsx` | Compact job card for sidebar |
+
+**Files Modified (8):**
+
+| File | Changes |
+|------|---------|
+| `src/app/law/layout.tsx` | Replaced with `AppShell` wrapper |
+| `src/app/law/page.tsx` | Converted to welcome canvas, removed job grid |
+| `src/app/law/jobs/[jobId]/page.tsx` | Removed back header and background orbs |
+| `src/app/law/jobs/new/page.tsx` | Removed header, added X close button |
+| `src/app/staff/layout.tsx` | Replaced with `AppShell` wrapper |
+| `src/app/staff/page.tsx` | Removed sticky header (now in shell) |
+| `src/app/staff/jobs/[jobId]/page.tsx` | Removed back header and background orbs |
+| `src/components/ui/NotificationBell.tsx` | V2.0.0: Glass styling, Escape key, focus return |
+
+**Additional Fixes:**
+
+| File | Fix |
+|------|-----|
+| `src/components/ui/EscalationQuickActions.tsx` | Fixed React Hooks violation (hooks after conditional return) |
+
+**Architecture:**
+
+```
+AppShell (layout wrapper)
+├── BackgroundOrbs (single instance)
+├── Desktop Sidebar
+│   └── AppShellSidebar
+│       ├── SidebarJobList (search + job cards)
+│       └── SidebarProfileCard (profile + dropdown)
+├── Mobile Drawer
+│   └── AppShellSidebar (same content)
+└── Main Content Area
+    ├── AppShellHeader (logo, notifications)
+    └── <main>{children}</main>
+```
+
+**Business Logic Preserved:**
+
+- ✅ Law firms see only their own jobs (DEFAULT_LAW_FIRM_ID filter)
+- ✅ Staff see all jobs
+- ✅ Law firms never see internal statuses (`getPublicStatus()` used)
+- ✅ All notification routing works in-shell
+- ✅ Authorization gate workflow unchanged
+
+**Responsive Behavior:**
+
+| Breakpoint | Sidebar | Header |
+|------------|---------|--------|
+| < 768px | Drawer (hidden by default) | Menu button + Logo + Notifications |
+| ≥ 768px | Persistent (collapsible) | Logo (when collapsed) + Notifications |
+
+**Testing:**
+
+- Production build: ✅ PASS (all 9 routes compiled)
+- Lint: ✅ PASS (no errors)
+- All existing functionality preserved
+
+**Version:** V2.2.0
+
+---
+
 ## [2.1.0] - 2025-12-13
 
 ### Changed

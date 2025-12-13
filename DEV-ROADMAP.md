@@ -9,11 +9,12 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 | Version | Focus | Duration | Status |
 |---------|-------|----------|--------|
 | **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.9.0 - Authorization Gate) |
-| **V2** | Backend Integration | 6 days | ⚪ Not Started |
-| **V3** | VAPI AI Caller | TBD | ⚪ Not Started |
-| **V4** | Open Router AI | TBD | ⚪ Not Started |
+| **V2** | UI Polish & Shell | 1 day | ✅ Complete (V2.2.0 - App Shell) |
+| **V3** | Backend Integration | 6 days | ⚪ Not Started |
+| **V4** | VAPI AI Caller | TBD | ⚪ Not Started |
+| **V5** | Open Router AI | TBD | ⚪ Not Started |
 
-**Current Version:** V1.9.0 (December 13, 2025)
+**Current Version:** V2.2.0 (December 13, 2025)
 
 ---
 
@@ -877,7 +878,69 @@ Elevate authorization upload as the true "start" of staff work on escalated jobs
 
 ---
 
-## V2: Backend Integration (6 Days)
+## V2: UI Polish & App Shell ✅ COMPLETE
+
+**Duration:** 1 day
+**Status:** ✅ Complete (December 13, 2025)
+
+Transformed the authenticated pages into a modern ChatGPT-style dashboard with enhanced UI polish.
+
+### Phase 1: Liquid Glass Design System ✅ COMPLETE
+
+- [x] Design tokens (20+ CSS custom properties)
+- [x] Glass utility classes (surface, elevated, subtle, header)
+- [x] Elevation shadow system
+- [x] Enhanced hover effects
+- [x] Section dividers
+- [x] Background depth (radial gradients, noise texture)
+
+**Files Created:**
+- `docs/ui/liquid-glass-audit.md`
+
+### Phase 2: App Shell Architecture ✅ COMPLETE
+
+- [x] SidebarContext (global state with localStorage)
+- [x] AppShell layout wrapper
+- [x] AppShellHeader (logo, notifications)
+- [x] AppShellSidebar (job list, profile card)
+- [x] SidebarJobList (search, job cards)
+- [x] SidebarJobCard (compact card)
+- [x] SidebarProfileCard (dropdown menu)
+- [x] BackgroundOrbs (extracted single instance)
+
+**Files Created:**
+- `src/context/SidebarContext.tsx`
+- `src/components/shell/AppShell.tsx`
+- `src/components/shell/AppShellHeader.tsx`
+- `src/components/shell/AppShellSidebar.tsx`
+- `src/components/shell/SidebarJobList.tsx`
+- `src/components/shell/SidebarProfileCard.tsx`
+- `src/components/shell/BackgroundOrbs.tsx`
+- `src/components/ui/SidebarJobCard.tsx`
+
+### Phase 3: Page Integration ✅ COMPLETE
+
+- [x] Law firm layout → AppShell wrapper
+- [x] Staff layout → AppShell wrapper
+- [x] Welcome canvas for `/law` and `/staff`
+- [x] Remove back button headers from job detail pages
+- [x] NotificationBell polish (glass, keyboard, focus)
+
+**Files Modified:**
+- `src/app/law/layout.tsx`
+- `src/app/law/page.tsx`
+- `src/app/law/jobs/[jobId]/page.tsx`
+- `src/app/law/jobs/new/page.tsx`
+- `src/app/staff/layout.tsx`
+- `src/app/staff/page.tsx`
+- `src/app/staff/jobs/[jobId]/page.tsx`
+- `src/components/ui/NotificationBell.tsx`
+
+**Deliverable:** ✅ ChatGPT-style app shell with persistent sidebar, instant job switching, and polished UI.
+
+---
+
+## V3: Backend Integration (6 Days)
 
 Connect frontend to real Convex database and CHP wrapper service.
 
@@ -922,7 +985,7 @@ Connect frontend to real Convex database and CHP wrapper service.
 
 ---
 
-## V3: VAPI AI Caller (TBD)
+## V4: VAPI AI Caller (TBD)
 
 Add AI-powered phone calling to automatically obtain crash time and officer ID from CHP offices.
 
@@ -944,7 +1007,7 @@ Add AI-powered phone calling to automatically obtain crash time and officer ID f
 
 ---
 
-## V4: Open Router AI Features (TBD)
+## V5: Open Router AI Features (TBD)
 
 Add AI-powered assistance features.
 

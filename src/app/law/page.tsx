@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+/**
+ * Law Firm Welcome Canvas - V2.0.0
+ *
+ * Welcome state shown when no job is selected.
+ * Jobs are now listed in the sidebar, so this page serves as:
+ * - Landing/welcome message
+ * - Status overview summary
+ * - Prominent "New Request" CTA
+ */
+
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, Search, AlertTriangle } from 'lucide-react';
-import {
-  Container,
-  Button,
-  MobileJobCard,
-  FloatingActionButton,
-  JobCardSkeleton,
-  SkeletonBase,
-  NotificationBell,
-} from '@/components/ui';
+import { Plus, FileText, AlertTriangle, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Button, FloatingActionButton } from '@/components/ui';
 import { mockJobs, DEFAULT_LAW_FIRM_ID } from '@/lib/mockData';
 import {
   isActiveStatus,
@@ -19,34 +21,11 @@ import {
   needsAttention,
 } from '@/lib/statusMapping';
 
-export default function LawFirmDashboard() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate initial data fetch
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000); // 1 second simulated load time
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter jobs for current law firm, sorted by createdAt (newest first)
+export default function LawFirmWelcome() {
+  // Get jobs for current law firm
   const jobs = useMemo(() => {
-    return mockJobs
-      .filter((job) => job.lawFirmId === DEFAULT_LAW_FIRM_ID)
-      .filter((job) => {
-        if (!searchQuery) return true;
-        const query = searchQuery.toLowerCase();
-        return (
-          job.clientName.toLowerCase().includes(query) ||
-          job.reportNumber.toLowerCase().includes(query) ||
-          (job.caseReference?.toLowerCase().includes(query) ?? false)
-        );
-      })
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [searchQuery]);
+    return mockJobs.filter((job) => job.lawFirmId === DEFAULT_LAW_FIRM_ID);
+  }, []);
 
   // Count jobs by status category for summary
   const statusCounts = useMemo(() => {
@@ -64,220 +43,97 @@ export default function LawFirmDashboard() {
   }, [jobs]);
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
-      {/* Animated Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="orb-dark w-[500px] h-[500px] bg-teal-600/25 top-[-10%] left-[-10%]"
-          style={{ animationDelay: '0s' }}
-        />
-        <div
-          className="orb-dark w-[400px] h-[400px] bg-cyan-600/20 bottom-[20%] right-[-5%]"
-          style={{ animationDelay: '5s' }}
-        />
-        <div
-          className="orb-dark w-[600px] h-[600px] bg-slate-700/25 bottom-[-20%] left-[30%]"
-          style={{ animationDelay: '10s' }}
-        />
-      </div>
-
+    <div className="h-full flex flex-col">
       {/* Main Content */}
-      <div className="relative z-10">
-        <Container>
-          {/* Page Header */}
-          <div className="py-6 md:py-10 animate-page-entrance">
-            {/* Title Section - Elevated for prominence */}
-            <div className="glass-elevated p-6 md:p-8 mb-6 md:mb-8">
-            {/* Title row with desktop CTA */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div>
-                  <h1
-                    className="text-2xl md:text-3xl font-bold text-white font-serif animate-text-reveal"
-                    style={{ animationDelay: '100ms' }}
-                  >
-                    Your Requests
-                  </h1>
-                  <p
-                    className="text-sm text-slate-400 mt-1 animate-text-reveal"
-                    style={{ animationDelay: '200ms' }}
-                  >
-                    {jobs.length} total request{jobs.length !== 1 ? 's' : ''}
-                  </p>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-8">
+        {/* Welcome Section */}
+        <div className="max-w-md text-center mb-8 animate-page-entrance">
+          {/* Icon */}
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/20 flex items-center justify-center">
+            <FileText className="w-10 h-10 text-teal-400" />
+          </div>
+
+          {/* Welcome Text */}
+          <h1 className="text-2xl md:text-3xl font-bold text-white font-serif mb-3">
+            Welcome to InstaTCR
+          </h1>
+          <p className="text-slate-400 mb-6">
+            Select a request from the sidebar or create a new one to get started.
+          </p>
+
+          {/* Desktop CTA Buttons */}
+          <div className="hidden md:flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/law/jobs/new">
+              <Button
+                variant="primary"
+                size="lg"
+                icon={<Plus className="w-5 h-5" />}
+                iconPosition="left"
+                className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
+              >
+                New Request
+              </Button>
+            </Link>
+            <Link href="/law/jobs/new-fatal">
+              <Button
+                variant="secondary"
+                size="lg"
+                icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+                iconPosition="left"
+                className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
+              >
+                Fatal Report
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Status Summary Cards */}
+        {jobs.length > 0 && (
+          <div
+            className="w-full max-w-lg glass-surface p-card animate-page-entrance"
+            style={{ animationDelay: '200ms' }}
+          >
+            <div className="section-divider mb-4">overview</div>
+            <div className="grid grid-cols-3 gap-3">
+              {/* In Progress */}
+              <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
+                <div className="flex items-center justify-center mb-2">
+                  <Clock className="w-5 h-5 text-blue-400" />
                 </div>
+                <p className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
+                  {statusCounts.active}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">In Progress</p>
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(59,130,246,0.15)] pointer-events-none" />
               </div>
 
-              {/* Right side: Notification bell + Desktop CTA buttons */}
-              <div className="flex items-center gap-3">
-                {/* Notification Bell (visible on all screen sizes) */}
-                <div className="animate-text-reveal" style={{ animationDelay: '200ms' }}>
-                  <NotificationBell userType="law_firm" />
+              {/* Completed */}
+              <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
                 </div>
+                <p className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                  {statusCounts.completed}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Completed</p>
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(16,185,129,0.15)] pointer-events-none" />
+              </div>
 
-                {/* Desktop CTA buttons */}
-                <div
-                  className="hidden md:flex items-center gap-3 animate-text-reveal"
-                  style={{ animationDelay: '200ms' }}
-                >
-                  <Link href="/law/jobs/new">
-                    <Button
-                      variant="primary"
-                      size="md"
-                      icon={<Plus className="w-5 h-5" />}
-                      iconPosition="left"
-                      className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
-                    >
-                      New Request
-                    </Button>
-                  </Link>
-                  <Link href="/law/jobs/new-fatal">
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
-                      iconPosition="left"
-                      className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
-                    >
-                      Fatal Report
-                    </Button>
-                  </Link>
+              {/* Need Info */}
+              <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
+                <div className="flex items-center justify-center mb-2">
+                  <TrendingUp className="w-5 h-5 text-amber-400" />
                 </div>
-              </div>
-            </div>
-            </div>
-
-            {/* Status summary cards - V2.0: Wrapped in glass-surface */}
-            <div
-              className="glass-surface p-card mb-6 animate-text-reveal"
-              style={{ animationDelay: '300ms' }}
-            >
-              <div className="section-divider mb-4">overview</div>
-              <div className="grid grid-cols-3 gap-3">
-                {isLoading ? (
-                  // Skeleton state
-                  <>
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="glass-subtle rounded-xl p-4 text-center animate-card-entrance"
-                        style={{ animationDelay: `${300 + i * 100}ms` }}
-                      >
-                        <SkeletonBase width={32} height={32} rounded="md" className="mx-auto" />
-                        <SkeletonBase width={60} height={12} rounded="md" className="mx-auto mt-2" />
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {/* In Progress Card */}
-                    <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
-                      <p className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
-                        {statusCounts.active}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">In Progress</p>
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(59,130,246,0.15)] pointer-events-none" />
-                    </div>
-
-                    {/* Completed Card */}
-                    <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
-                      <p className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">
-                        {statusCounts.completed}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">Completed</p>
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(16,185,129,0.15)] pointer-events-none" />
-                    </div>
-
-                    {/* Need Info Card */}
-                    <div className="glass-subtle rounded-xl p-4 text-center group relative overflow-hidden hover-lift-subtle">
-                      <p className="text-2xl font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
-                        {statusCounts.needsAttention}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">Need Info</p>
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(251,191,36,0.15)] pointer-events-none" />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Search - V2.0: Glass container */}
-            <div
-              className="glass-surface p-4 mb-8 animate-text-reveal"
-              style={{ animationDelay: '400ms' }}
-            >
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search by client name, report #, or case reference..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="
-                    w-full h-12 md:h-10 pl-12 pr-4
-                    text-base md:text-sm
-                    bg-slate-900/50 border border-slate-700/50 rounded-lg
-                    text-white placeholder:text-slate-500
-                    focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30
-                    transition-all duration-300
-                  "
-                />
+                <p className="text-2xl font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
+                  {statusCounts.needsAttention}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Need Info</p>
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(251,191,36,0.15)] pointer-events-none" />
               </div>
             </div>
           </div>
-
-          {/* Job List */}
-          <main id="main-content" className="pb-24 md:pb-8">
-            {isLoading ? (
-              // Skeleton loading state
-              <>
-                {/* Mobile: Single column skeletons */}
-                <div className="md:hidden space-y-3">
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <JobCardSkeleton key={i} variant="mobile" delay={600 + i * 80} />
-                  ))}
-                </div>
-
-                {/* Desktop: Grid skeletons */}
-                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <JobCardSkeleton key={i} variant="mobile" delay={600 + i * 80} />
-                  ))}
-                </div>
-              </>
-            ) : jobs.length === 0 ? (
-              <EmptyState hasSearch={!!searchQuery} />
-            ) : (
-              <>
-                {/* Mobile: Single column */}
-                <div className="md:hidden space-y-3">
-                  {jobs.map((job, index) => (
-                    <MobileJobCard
-                      key={job._id}
-                      job={job}
-                      variant="dark"
-                      animationDelay={500 + index * 80}
-                    />
-                  ))}
-                </div>
-
-                {/* Desktop: 2-3 columns grid */}
-                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {jobs.map((job, index) => (
-                    <MobileJobCard
-                      key={job._id}
-                      job={job}
-                      variant="dark"
-                      animationDelay={500 + index * 80}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </main>
-        </Container>
+        )}
       </div>
 
       {/* Mobile FABs */}
@@ -309,38 +165,6 @@ export default function LawFirmDashboard() {
           />
         </Link>
       </div>
-    </div>
-  );
-}
-
-// Empty state component - Dark mode
-function EmptyState({ hasSearch }: { hasSearch: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center animate-page-entrance">
-      <div className="w-16 h-16 rounded-full empty-state-icon-dark flex items-center justify-center mb-4">
-        <FileText className="w-8 h-8 text-slate-500" />
-      </div>
-      <h3 className="text-lg font-semibold text-white mb-2">
-        {hasSearch ? 'No matching requests' : 'No requests yet'}
-      </h3>
-      <p className="text-sm text-slate-400 max-w-sm">
-        {hasSearch
-          ? 'Try adjusting your search terms.'
-          : 'Submit your first CHP crash report request to get started.'}
-      </p>
-      {!hasSearch && (
-        <Link href="/law/jobs/new" className="mt-6">
-          <Button
-            variant="primary"
-            size="md"
-            icon={<Plus className="w-5 h-5" />}
-            iconPosition="left"
-            className="shadow-lg shadow-teal-600/30"
-          >
-            New Request
-          </Button>
-        </Link>
-      )}
     </div>
   );
 }

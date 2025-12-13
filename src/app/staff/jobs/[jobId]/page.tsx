@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, notFound } from 'next/navigation';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Phone,
   Bot,
   FileText,
@@ -1205,52 +1203,9 @@ export default function StaffJobDetailPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
-      {/* Animated Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="orb-dark w-[500px] h-[500px] bg-teal-600/20 top-[-10%] left-[-10%]"
-          style={{ animationDelay: '0s' }}
-        />
-        <div
-          className="orb-dark w-[400px] h-[400px] bg-cyan-600/15 bottom-[20%] right-[-5%]"
-          style={{ animationDelay: '5s' }}
-        />
-        <div
-          className="orb-dark w-[600px] h-[600px] bg-slate-700/20 bottom-[-20%] left-[30%]"
-          style={{ animationDelay: '10s' }}
-        />
-      </div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-header">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Link
-                href="/staff"
-                className={cn(
-                  'flex items-center justify-center w-10 h-10 -ml-2 rounded-full',
-                  'text-slate-400 hover:text-white',
-                  'hover:bg-slate-800/50',
-                  'transition-all duration-200',
-                  'active:scale-95'
-                )}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <span className="ml-3 text-slate-400 text-sm font-medium">Back to queue</span>
-            </div>
-            <div className="hidden md:flex items-center gap-3">
-              <span className="text-slate-500 text-sm font-mono">{localJob.reportNumber}</span>
-              <DarkStatusBadge internalStatus={localJob.internalStatus} showInternal />
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="h-full overflow-auto">
       {/* Mobile Tab Bar */}
-      <div className="md:hidden sticky top-16 z-40 glass-header px-4 py-2">
+      <div className="md:hidden sticky top-0 z-40 glass-header px-4 py-2">
         <TabBar
           tabs={TABS}
           activeTab={activeTab}
@@ -1258,8 +1213,16 @@ export default function StaffJobDetailPage() {
         />
       </div>
 
+      {/* Desktop: Report number and status badge in page header */}
+      <div className="hidden md:flex items-center justify-between px-4 py-4 border-b border-slate-800/50">
+        <div className="flex items-center gap-3">
+          <span className="text-slate-400 text-sm font-mono">{localJob.reportNumber}</span>
+          <DarkStatusBadge internalStatus={localJob.internalStatus} showInternal />
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 animate-page-entrance">
+      <main className="max-w-7xl mx-auto px-4 py-6 md:py-8 animate-page-entrance">
         <div className="md:grid md:grid-cols-[45fr_55fr] md:gap-8">
           {/* ============================================ */}
           {/* LEFT COLUMN: Law Firm View */}

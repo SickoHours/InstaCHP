@@ -40,6 +40,7 @@ import {
   getStatusColor,
   getStatusMessage,
   formatPublicStatus,
+  isCompletedStatus,
 } from '@/lib/statusMapping';
 import type { Job, WrapperRun, WrapperResult, InternalStatus, JobEvent } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
@@ -395,6 +396,224 @@ function EscalationDialog({
 }
 
 // ============================================
+// INFO ROW (Read-only display)
+// ============================================
+
+function InfoRow({
+  label,
+  value,
+  icon: Icon,
+  copyable = false,
+}: {
+  label: string;
+  value: string | undefined;
+  icon?: React.ComponentType<{ className?: string }>;
+  copyable?: boolean;
+}) {
+  const handleCopy = () => {
+    if (value) {
+      navigator.clipboard.writeText(value);
+    }
+  };
+
+  if (!value) return null;
+
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-b-0">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-slate-500" />}
+        <span className="text-xs text-slate-500 uppercase tracking-wider">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-slate-200 font-medium">{value}</span>
+        {copyable && (
+          <button
+            onClick={handleCopy}
+            className="p-1 rounded hover:bg-slate-700/50 transition-colors"
+            title="Copy to clipboard"
+          >
+            <Copy className="w-3 h-3 text-slate-500 hover:text-teal-400" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// JOB SUMMARY CARD (Completed/Cancelled State)
+// ============================================
+
+function JobSummaryCard({
+  job,
+  page1Data,
+  page2Data,
+  isCompleted,
+  onRunWrapper,
+  canRunWrapper,
+  isWrapperRunning,
+}: {
+  job: Job;
+  page1Data: { crashDate: string; crashTime: string; officerId: string };
+  page2Data: { firstName: string; lastName: string; plate: string; driverLicense: string; vin: string };
+  isCompleted: boolean;
+  onRunWrapper?: () => void;
+  canRunWrapper?: boolean;
+  isWrapperRunning?: boolean;
+}) {
+  const isCancelled = job.internalStatus === 'CANCELLED';
+  const isManual = job.internalStatus === 'COMPLETED_MANUAL';
+  const clientName = [page2Data.firstName, page2Data.lastName].filter(Boolean).join(' ') || job.clientName;
+
+  const getCompletionBadge = () => {
+    if (isCancelled) {
+      return { label: 'Cancelled', color: 'bg-red-500/20 text-red-200 border-red-500/30' };
+    }
+    if (isManual) {
+      return { label: 'Manual', color: 'bg-amber-500/20 text-amber-200 border-amber-500/30' };
+    }
+    return { label: 'Automated', color: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30' };
+  };
+
+  const badge = getCompletionBadge();
+
+  return (
+    <div
+      className={cn(
+        'glass-card-dark rounded-xl p-5 animate-text-reveal',
+        'border-l-4',
+        isCancelled ? 'border-l-slate-500' : 'border-l-emerald-500'
+      )}
+      style={{ animationDelay: '100ms' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            'flex items-center justify-center w-10 h-10 rounded-full',
+            isCancelled ? 'bg-slate-500/10' : 'bg-emerald-500/10'
+          )}>
+            {isCancelled ? (
+              <XCircle className="w-5 h-5 text-slate-400" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+              Job Summary
+            </h3>
+            <span className={cn(
+              'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mt-1',
+              badge.color
+            )}>
+              {badge.label}
+            </span>
+          </div>
+        </div>
+        <span className="text-xs text-slate-500">
+          {formatDateTime(job.updatedAt)}
+        </span>
+      </div>
+
+      {/* Report Details Section */}
+      <div className="mb-6">
+        <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <FileText className="w-3 h-3" />
+          Report Details
+        </h4>
+        <div className="bg-slate-800/30 rounded-lg p-3">
+          <InfoRow label="Report #" value={job.reportNumber} icon={Hash} copyable />
+          <InfoRow label="NCIC" value={deriveNcic(job.reportNumber)} icon={Hash} />
+          <InfoRow label="Crash Date" value={page1Data.crashDate} icon={Calendar} />
+          <InfoRow label="Crash Time" value={page1Data.crashTime} icon={Clock} />
+          <InfoRow label="Officer ID" value={page1Data.officerId} icon={User} />
+        </div>
+      </div>
+
+      {/* Verification Data Section */}
+      <div className="mb-6">
+        <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <User className="w-3 h-3" />
+          Verification Data
+        </h4>
+        <div className="bg-slate-800/30 rounded-lg p-3">
+          <InfoRow label="Client Name" value={clientName} icon={User} />
+          {job.clientType && (
+            <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-500" />
+                <span className="text-xs text-slate-500 uppercase tracking-wider">Client Type</span>
+              </div>
+              <span className={cn(
+                'px-2 py-0.5 rounded-md text-xs font-medium border',
+                'bg-teal-500/20 text-teal-200 border-teal-500/30'
+              )}>
+                {job.clientType.charAt(0).toUpperCase() + job.clientType.slice(1)}
+              </span>
+            </div>
+          )}
+          <InfoRow label="License Plate" value={page2Data.plate} icon={Car} />
+          <InfoRow label="Driver License" value={page2Data.driverLicense} icon={CreditCard} />
+          <InfoRow label="VIN" value={page2Data.vin} icon={Car} />
+        </div>
+      </div>
+
+      {/* Completion Info Section */}
+      <div className="mb-6">
+        <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <History className="w-3 h-3" />
+          Processing Info
+        </h4>
+        <div className="bg-slate-800/30 rounded-lg p-3">
+          <div className="flex items-center justify-between py-2 border-b border-slate-700/30">
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Wrapper Runs</span>
+            <span className="text-sm text-slate-200 font-medium">
+              {job.wrapperRuns.length} attempt{job.wrapperRuns.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {job.lawFirmName && (
+            <div className="flex items-center justify-between py-2">
+              <span className="text-xs text-slate-500 uppercase tracking-wider">Law Firm</span>
+              <span className="text-sm text-slate-200 font-medium">{job.lawFirmName}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Run Wrapper Button (Completed only) */}
+      {isCompleted && onRunWrapper && (
+        <button
+          onClick={onRunWrapper}
+          disabled={!canRunWrapper || isWrapperRunning}
+          className={cn(
+            'w-full h-12 md:h-10 rounded-lg font-medium',
+            'transition-all duration-200',
+            'flex items-center justify-center gap-2',
+            'border border-slate-600/50',
+            canRunWrapper && !isWrapperRunning
+              ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:border-teal-500/30 active:scale-98'
+              : 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+          )}
+        >
+          {isWrapperRunning ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Running...</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4" />
+              <span>Run Wrapper Again</span>
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // ALL EVENTS CARD
 // ============================================
 
@@ -544,6 +763,11 @@ export default function StaffJobDetailPage() {
   }, [localJob.facePageToken, page2Data.firstName, page2Data.lastName]);
 
   const isEscalated = localJob.internalStatus === 'NEEDS_IN_PERSON_PICKUP';
+
+  // Closed job state (completed or cancelled)
+  const isCompleted = isCompletedStatus(localJob.internalStatus);
+  const isCancelled = localJob.internalStatus === 'CANCELLED';
+  const isClosedJob = isCompleted || isCancelled;
 
   // Get user-facing events for timeline
   const userFacingEvents = getUserFacingEvents(jobId);
@@ -984,6 +1208,19 @@ export default function StaffJobDetailPage() {
               <DarkStatusBadge internalStatus={localJob.internalStatus} showInternal />
             </div>
 
+            {/* Conditional: Show Summary Card OR Form Cards */}
+            {isClosedJob ? (
+              <JobSummaryCard
+                job={localJob}
+                page1Data={page1Data}
+                page2Data={page2Data}
+                isCompleted={isCompleted}
+                onRunWrapper={handleRunWrapper}
+                canRunWrapper={canRunWrapper}
+                isWrapperRunning={isWrapperRunning}
+              />
+            ) : (
+              <>
             {/* Card 1: Page 1 Data */}
             <StaffControlCard title="Page 1 Data" icon={FileText} animationDelay={100}>
               {/* Call Buttons */}
@@ -1344,8 +1581,11 @@ export default function StaffJobDetailPage() {
                 </div>
               )}
             </StaffControlCard>
+              </>
+            )}
 
-            {/* Card 5: Auto-Checker */}
+            {/* Card 5: Auto-Checker - Hide when full report exists */}
+            {!localJob.fullReportToken && (
             <StaffControlCard
               title="Auto-Checker"
               icon={canRunAutoChecker ? Unlock : Lock}
@@ -1455,6 +1695,7 @@ export default function StaffJobDetailPage() {
                 </div>
               )}
             </StaffControlCard>
+            )}
 
             {/* Card 6: Escalation - Only show if NO reports obtained */}
             {!localJob.facePageToken && !localJob.fullReportToken && (

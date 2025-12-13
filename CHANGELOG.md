@@ -5,6 +5,278 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-12-12
+
+### Added
+
+#### Completed State UI Cleanup (Complete Implementation)
+
+**Problem Solved:**
+When a job reached a completed or cancelled state, all the interactive forms, wrapper controls, and action buttons remained visible even though they were no longer needed. This created visual clutter and a confusing experience for both staff and law firms.
+
+**New Behavior:**
+
+**Staff Detail Screen (Completed/Cancelled State):**
+- Cards 1-4 (Page 1 Data, Page 2 Verification, CHP Wrapper, Wrapper History) now completely hidden
+- Replaced with a single clean `JobSummaryCard` showing:
+  - Report Details (report number, NCIC, crash date/time, officer ID) - all read-only
+  - Verification Data (client name, client type, plate, DL, VIN) - filled fields only
+  - Completion Info with status badge (Automated/Manual/Cancelled)
+  - Completion/cancellation timestamp
+  - Total wrapper runs count
+  - "Run Wrapper" button for re-runs (completed only, NOT cancelled)
+- Differential styling: Green accent for completed, slate/gray for cancelled
+- InfoRow component with copy-to-clipboard functionality
+
+**Law Firm View (Completed/Cancelled State):**
+- Current Status Card completely hidden (redundant when closed)
+- Activity Timeline hidden by default with "Show Activity Timeline (X events)" toggle button
+- Completed jobs: Download section promoted to top with prominent green success card
+- Cancelled jobs: Red/slate "Request Cancelled" notice card, no downloads
+- Collapsed timeline can be expanded with ChevronDown/ChevronUp button
+- Cleaner, more focused view emphasizing outcomes over in-progress UI
+
+**Type System Updates:**
+
+- **No new types added** - Used existing `isCompletedStatus()` helper from `statusMapping.ts`
+- Leveraged existing status constants: `COMPLETED_FULL_REPORT`, `COMPLETED_MANUAL`, `CANCELLED`
+
+**Staff Side Updates:**
+
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - MAJOR UPDATE (~220 lines added)
+  - Added `isCompletedStatus` import from statusMapping
+  - Added computed values: `isCompleted`, `isCancelled`, `isClosedJob` (lines 767-770)
+  - Created `InfoRow` component (lines 401-440):
+    - Read-only display with label/value pairs
+    - Optional copy-to-clipboard functionality
+    - Icon support for visual clarity
+  - Created `JobSummaryCard` component (lines 446-613):
+    - Handles both completed and cancelled states
+    - Three sections: Report Details, Verification Data, Completion Info
+    - Conditional "Run Wrapper" button (completed only)
+    - Differential badge styling (Automated/Manual/Cancelled)
+    - Border accent: emerald for completed, slate for cancelled
+  - Wrapped Cards 1-4 in conditional: `{!isClosedJob && ( ... )}` (lines 1211-1347)
+  - Added summary card: `{isClosedJob && <JobSummaryCard ... />}` (line 1211)
+
+**Law Firm Side Updates:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - MAJOR UPDATE (~140 lines added)
+  - Added `isCompletedStatus`, `CheckCircle2`, `XCircle` imports
+  - Added `timelineExpanded` state (line 223)
+  - Added computed values: `isCompleted`, `isCancelled`, `isClosedJob`, `shouldShowTimeline` (lines 270-276)
+  - Hidden Current Status Card: `{!isClosedJob && ( ... )}` (lines 924-942)
+  - Added Completed Downloads Section (lines 944-984):
+    - Promoted to top of page (above timeline)
+    - Green glass-card with CheckCircle2 icon
+    - "Your Reports Are Ready" heading
+    - Download buttons for full report and face page
+  - Added Cancelled Notice Card (lines 986-1006):
+    - Slate glass-card with XCircle icon
+    - "Request Cancelled" message
+    - Helpful instruction to contact if error
+  - Made Timeline Collapsible (lines 1095-1176):
+    - Hidden by default for closed jobs with toggle button
+    - Button shows event count: "Show Activity Timeline (X events)"
+    - ChevronUp/ChevronDown icon for expand/collapse
+    - Full height (400-500px) when expanded
+    - Always visible for active jobs
+  - Modified Download Section (line 1378):
+    - Only shows for non-completed jobs (avoids duplication)
+    - Completed jobs show downloads at top instead
+
+### Changed
+
+- **Cards 1-4 visibility logic** - Staff side now conditional based on `isClosedJob` flag
+- **Law firm download prominence** - Completed jobs show downloads at top with success card
+- **Timeline visibility** - Hidden by default for closed jobs with toggle link
+- **Current Status Card** - Hidden for closed jobs on law firm side
+
+### UX Flow Summary
+
+**Visibility Rules (Staff Side):**
+
+| Job State | Cards 1-4 | JobSummaryCard | Run Wrapper Button |
+|-----------|-----------|----------------|-------------------|
+| Active (not completed/cancelled) | **Visible** | Hidden | N/A |
+| Completed | **Hidden** | **Visible** | **Yes** |
+| Cancelled | **Hidden** | **Visible** | No |
+
+**Visibility Rules (Law Firm Side):**
+
+| Job State | Current Status Card | Downloads Section | Timeline |
+|-----------|-------------------|-------------------|----------|
+| Active | **Visible** | Bottom (if exists) | **Always shown** |
+| Completed | **Hidden** | **Top (promoted)** | Hidden by default, toggle to show |
+| Cancelled | **Hidden** | Not shown | Hidden by default, toggle to show |
+
+**UI Cleanup Summary:**
+
+| Screen | Hidden When Closed | Shown Instead |
+|--------|--------------------|---------------|
+| Staff Detail | Cards 1-4 (forms, wrapper, history) | JobSummaryCard (read-only info) |
+| Law Firm View | Current Status Card, Timeline (collapsed) | Downloads (top, completed only) + Collapsed CTA |
+
+### Technical Notes
+
+- **No new files created** - All components inline in page files
+- **Reused existing helpers** - `isCompletedStatus()` from statusMapping.ts
+- **Mobile-First** - InfoRow and JobSummaryCard use responsive layouts
+- **Glass-morphism** - All new cards match existing dark theme aesthetic
+- **Plain English** - All completion messages avoid technical jargon
+- **State Persistence** - Timeline expansion state managed with React useState
+
+**Files Created:** 0 files
+**Files Modified:** 2 files
+**Lines Added:** ~360 lines
+**Lines Changed:** ~5 lines
+
+---
+
+## [1.4.0] - 2025-12-12
+
+### Added
+
+#### Auto-Checker Improvements & Law Firm Check Button (Complete Implementation)
+
+**Problem Solved:**
+When a job reached the full report stage, the auto-checker card was still visible on the staff side even though it was no longer needed. Additionally, law firms had no way to manually trigger a check for the full report when they only had a face page - they had to wait for staff to handle it.
+
+**New Features:**
+
+1. **Conditional Auto-Checker Visibility (Staff Side)**
+   - Card 5 (Auto-Checker) now hidden when `fullReportToken` exists
+   - Reduces clutter and cognitive load for staff
+   - Auto-checker only shows when relevant (face page without full report)
+
+2. **Law Firm Manual Check Button**
+   - NEW: "Check if Full Report Ready" button for face page jobs
+   - Shows when job has face page but no full report
+   - Applicable statuses: `FACE_PAGE_ONLY`, `WAITING_FOR_FULL_REPORT`
+   - Unlimited manual checks (no daily limit)
+   - Loading state with spinner (3-5s mock delay)
+   - Result messaging: success or "not ready yet"
+   - Timeline integration with user-facing events
+
+3. **Auto-Checker Frequency Controls (Future-Ready)**
+   - Per-job frequency settings
+   - Default: 4:30 PM California time daily
+   - Frequency options: Daily (1x) or Twice Daily (9 AM + 4:30 PM)
+   - Adjustable scheduled times via time picker
+   - Max 2 scheduled checks per day
+   - Settings panel with expandable UI
+   - V1: UI + mock behavior, actual scheduling in V2
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - EXTENDED (~40 lines added)
+  - `AutoCheckTime` interface for scheduled check times
+  - `AutoCheckSettings` interface for per-job settings:
+    - `enabled` - Whether auto-checker is on
+    - `frequency` - 'daily' or 'twice_daily'
+    - `scheduledTimes` - Array of check times (max 2)
+    - `scheduledChecksToday` - Counter for scheduled checks (max 2)
+    - `lastScheduledCheck` - Timestamp of last scheduled check
+    - `lastManualCheck` - Timestamp of last manual check (no limit)
+  - `DEFAULT_AUTO_CHECK_SETTINGS` constant (4:30 PM PT default)
+  - `autoCheckSettings` field added to `Job` interface
+  - 4 new `EventType` values:
+    - `auto_check_started` - Law firm triggered manual check
+    - `auto_check_found` - Full report found
+    - `auto_check_not_found` - Full report not yet available
+    - `auto_check_settings_updated` - Frequency settings changed
+
+**Staff Side Updates:**
+
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - UPDATED (~5 lines changed)
+  - Wrapped Card 5 (Auto-Checker) in conditional: `{!localJob.fullReportToken && (...)}`
+  - Card completely hidden when full report exists
+  - Maintains all existing auto-checker functionality when visible
+
+**Law Firm Side Updates:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - MAJOR UPDATE (~200 lines added)
+  - Added auto-checker state variables:
+    - `isAutoChecking` - Check in progress
+    - `autoCheckResult` - Result of last check
+    - `showAutoCheckSettings` - Settings panel visibility
+  - Added `shouldShowCheckButton` derived state:
+    - Shows when `facePageToken` + no `fullReportToken` + applicable status
+  - New handler: `handleAutoCheck()` - Executes manual check (20% success mock)
+  - New handler: `handleUpdateAutoCheckSettings()` - Saves frequency preferences
+  - New UI section: Check button + settings panel + result display
+  - Glass-morphism styling matching existing design
+  - Teal/cyan gradient check button with hover glow
+  - Expandable settings panel with frequency options
+  - Time picker inputs for custom scheduled times
+  - Last check timestamp display
+  - V1 demo notice about scheduling (real in V2)
+
+**Timeline Event Support:**
+
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED (~15 lines added)
+  - Icon mappings for 4 new event types:
+    - `auto_check_started`: RefreshCw (teal)
+    - `auto_check_found`: CheckCircle2 (emerald)
+    - `auto_check_not_found`: Clock (slate)
+    - `auto_check_settings_updated`: Clock (slate)
+
+**Mock Data Updates:**
+
+- **`src/lib/mockData.ts`** - UPDATED (~30 lines added)
+  - Added `autoCheckSettings` to 3 face page jobs:
+    - `job_005` (FACE_PAGE_ONLY) - Daily, 4:30 PM PT
+    - `job_006` (FACE_PAGE_ONLY) - Daily, 4:30 PM PT, 1 check today, last manual 6h ago
+    - `job_018` (WAITING_FOR_FULL_REPORT) - Twice daily (9 AM + 4:30 PM), 1 scheduled check
+
+### Changed
+
+- **Auto-checker visibility logic** - Staff Card 5 now conditional based on `fullReportToken`
+- **Law firm check capability** - Law firms can now manually trigger checks (unlimited)
+- **Frequency configuration** - Per-job settings for scheduled checks (V2 feature prep)
+
+### UX Flow Summary
+
+**Visibility Rules:**
+
+| User Type | Condition | Shows Auto-Checker? |
+|-----------|-----------|---------------------|
+| Staff | `fullReportToken` exists | **NO** (Card 5 hidden) |
+| Staff | No full report | **YES** (existing Card 5) |
+| Law Firm | `facePageToken` + no `fullReportToken` + status `FACE_PAGE_ONLY`/`WAITING_FOR_FULL_REPORT` | **YES** (new button) |
+| Law Firm | Any other condition | **NO** |
+
+**Check Limits:**
+
+| Check Type | Limit |
+|------------|-------|
+| Manual (button click) | **Unlimited** |
+| Scheduled (automatic) | **2 per day** (V2) |
+
+**Timeline Events:**
+
+| Action | Event Type | Message |
+|--------|------------|---------|
+| Law firm clicks check button | `auto_check_started` | "Checking if your full report is ready..." |
+| Check finds full report | `auto_check_found` | "Great news! Your full report is now available for download." |
+| Check doesn't find report | `auto_check_not_found` | "The full report isn't ready yet. We'll keep checking automatically." |
+
+### Technical Notes
+
+- **V1 Limitations:** Scheduled checks are UI-only (mock). Actual scheduling requires V2 backend with Convex.
+- **Manual Checks:** No daily limit on law firm manual checks (unlimited clicks)
+- **Scheduled Checks:** Counter `scheduledChecksToday` enforces 2/day limit (V2 feature)
+- **Mobile-First:** All new UI uses 48px touch targets, responsive to 375px
+- **Plain English:** All timeline messages avoid technical jargon
+- **State Persistence:** Settings persist in Job object (in-memory for V1)
+
+**Files Created:** 0 files (all inline implementation)
+**Files Modified:** 5 files
+**Lines Added:** ~250 lines
+**Lines Changed:** ~5 lines
+
+---
+
 ## [1.3.0] - 2025-12-12
 
 ### Added

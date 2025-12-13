@@ -78,6 +78,11 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   driver_speedup_reopened: Zap,
   passenger_helper_declined: ArrowRight,
   passenger_helper_reopened: UserCheck,
+  // V1.4.0+ Auto-checker events (law firm)
+  auto_check_started: RefreshCw,
+  auto_check_found: CheckCircle2,
+  auto_check_not_found: Clock,
+  auto_check_settings_updated: Clock,
 };
 
 /**
@@ -123,6 +128,11 @@ const EVENT_COLORS: Record<EventType, string> = {
   driver_speedup_reopened: 'text-amber-400',
   passenger_helper_declined: 'text-slate-400',
   passenger_helper_reopened: 'text-cyan-400',
+  // V1.4.0+ Auto-checker events (law firm)
+  auto_check_started: 'text-teal-400',
+  auto_check_found: 'text-emerald-400',
+  auto_check_not_found: 'text-slate-400',
+  auto_check_settings_updated: 'text-slate-400',
 };
 
 const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(

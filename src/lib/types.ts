@@ -112,6 +112,42 @@ export interface InteractiveState {
   passengerDeclineCount?: number;      // Times "No thanks" clicked (passenger)
 }
 
+// ============================================
+// AUTO-CHECKER TYPES (V1.4.0+)
+// ============================================
+
+/**
+ * Auto-checker scheduled time
+ */
+export interface AutoCheckTime {
+  hour: number;    // 0-23 (California time)
+  minute: number;  // 0-59
+}
+
+/**
+ * Per-job auto-checker settings (V1.4.0+)
+ * Allows configuring when scheduled checks run for face page jobs
+ */
+export interface AutoCheckSettings {
+  enabled: boolean;                      // Whether auto-checker is enabled
+  frequency: 'daily' | 'twice_daily';    // Check frequency
+  scheduledTimes: AutoCheckTime[];       // Scheduled check times (max 2)
+  scheduledChecksToday: number;          // Count of scheduled checks today (max 2)
+  lastScheduledCheck?: number;           // Timestamp of last scheduled check
+  lastManualCheck?: number;              // Timestamp of last manual check (no limit)
+}
+
+/**
+ * Default auto-check settings for face page jobs
+ * Default: 4:30 PM California time
+ */
+export const DEFAULT_AUTO_CHECK_SETTINGS: AutoCheckSettings = {
+  enabled: true,
+  frequency: 'daily',
+  scheduledTimes: [{ hour: 16, minute: 30 }],
+  scheduledChecksToday: 0,
+};
+
 /**
  * CHP wrapper execution result types
  * - FULL: Success, full report retrieved
@@ -187,6 +223,9 @@ export interface Job {
   // Interactive timeline state (V1.0.5+)
   interactiveState?: InteractiveState;
 
+  // Auto-checker settings (V1.4.0+)
+  autoCheckSettings?: AutoCheckSettings;
+
   // Status
   internalStatus: InternalStatus;
 
@@ -248,7 +287,12 @@ export type EventType =
   | 'driver_speedup_declined' // Driver clicked "No thanks"
   | 'driver_speedup_reopened' // Driver re-opened collapsed CTA
   | 'passenger_helper_declined' // Passenger clicked "No thanks/Skip"
-  | 'passenger_helper_reopened'; // Passenger re-opened collapsed CTA
+  | 'passenger_helper_reopened' // Passenger re-opened collapsed CTA
+  // V1.4.0+ Auto-checker events (law firm)
+  | 'auto_check_started' // Law firm triggered manual check
+  | 'auto_check_found' // Full report found
+  | 'auto_check_not_found' // Full report not yet available
+  | 'auto_check_settings_updated'; // Frequency settings changed
 
 /**
  * Timeline event for job history

@@ -8,12 +8,12 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 
 | Version | Focus | Duration | Status |
 |---------|-------|----------|--------|
-| **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.2.0) |
+| **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.5.0) |
 | **V2** | Backend Integration | 6 days | ⚪ Not Started |
 | **V3** | VAPI AI Caller | TBD | ⚪ Not Started |
 | **V4** | Open Router AI | TBD | ⚪ Not Started |
 
-**Current Version:** V1.2.0 (December 12, 2025)
+**Current Version:** V1.5.0 (December 12, 2025)
 
 ---
 
@@ -380,7 +380,7 @@ Complete, polished frontend with mock data. No backend dependencies.
 
 ### Post-Phase 6: Continued Enhancements ✅ COMPLETE
 
-**Status:** ✅ Complete (V1.0.5 - V1.2.0)
+**Status:** ✅ Complete (V1.0.5 - V1.5.0)
 
 After Phase 6 completion, additional enhancements were made to improve user experience and streamline workflows.
 
@@ -479,6 +479,52 @@ After Phase 6 completion, additional enhancements were made to improve user expe
 | "Continue" button | "Save & Check for Report" (triggers wrapper) |
 
 **Deliverable:** ✅ Complete rescue flow with conditional form visibility and reportTypeHint.
+
+#### V1.3.0: Soft-Dismiss Decline Behavior ✅ COMPLETE
+
+- [x] **CollapsedHelperCTA** - Compact CTA shown after "No thanks" decline
+- [x] **ContactingCHPBanner** - Amber notification for passenger flow during CONTACTING_CHP
+- [x] **Soft-Dismiss Pattern** - "No thanks" collapses to compact CTA instead of hiding
+- [x] **Re-Expand Functionality** - Users can re-access helpers after decline
+- [x] **Type System Updates** - `InteractiveState` extended with collapse/decline tracking
+- [x] **Timeline Events** - 4 new event types for decline/reopen tracking
+- [x] **Component Updates** - SpeedUpPrompt, PassengerVerificationForm, CrashDetailsForm support `onCollapse`
+
+**Deliverable:** ✅ Complete soft-dismiss pattern with re-access capability.
+
+#### V1.4.0: Auto-Checker Improvements & Law Firm Check Button ✅ COMPLETE
+
+- [x] **Conditional Auto-Checker Visibility** - Card 5 hidden when `fullReportToken` exists
+- [x] **Law Firm Manual Check Button** - "Check if Full Report Ready" button for face page jobs
+- [x] **Auto-Checker Frequency Controls** - Per-job frequency settings (V1: UI + mock, V2: actual scheduling)
+- [x] **Type System Updates** - `AutoCheckSettings` interface with frequency, scheduled times
+- [x] **Timeline Events** - 4 new event types for auto-checker actions
+- [x] **Mock Data Updates** - 3 face page jobs with autoCheckSettings
+
+**Deliverable:** ✅ Complete auto-checker improvements with law firm manual check capability.
+
+#### V1.5.0: Completed State UI Cleanup ✅ COMPLETE
+
+- [x] **JobSummaryCard (Staff)** - Clean read-only info card for completed/cancelled jobs
+  - Report Details (report #, NCIC, crash date/time, officer ID)
+  - Verification Data (client name, type, plate, DL, VIN - filled fields only)
+  - Completion Info with status badge (Automated/Manual/Cancelled)
+  - "Run Wrapper" button for re-runs (completed only, NOT cancelled)
+- [x] **InfoRow Component** - Read-only display with copy-to-clipboard functionality
+- [x] **Cards 1-4 Hidden** - Staff control cards completely hidden when job closed
+- [x] **Completed Downloads Section (Law Firm)** - Prominent green success card promoted to top
+- [x] **Cancelled Notice Card (Law Firm)** - Slate "Request Cancelled" card with helpful message
+- [x] **Timeline Collapsibility** - Hidden by default for closed jobs with "Show timeline" toggle
+- [x] **Current Status Card Hidden** - Law firm side removes redundant status card
+- [x] **Differential Styling** - Green accent for completed, slate/gray for cancelled
+
+**Key UX Improvements:**
+- Staff side: Replaced 4 verbose control cards with single clean summary card
+- Law firm side: Promoted downloads to top, collapsed timeline by default
+- Differential treatment: Completed (green, Run Wrapper button) vs Cancelled (gray, no button)
+- Re-run capability: Staff can re-run wrapper on completed jobs
+
+**Deliverable:** ✅ Complete closed-state UI cleanup for both staff and law firm views.
 
 ---
 

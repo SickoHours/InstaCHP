@@ -10,6 +10,15 @@ import {
   Sparkles,
   FileCheck,
   ExternalLink,
+  RefreshCw,
+  Clock,
+  Settings,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMockData } from '@/context/MockDataContext';
@@ -19,8 +28,10 @@ import {
   getStatusMessage,
   formatPublicStatus,
   STATUS_COLORS,
+  isCompletedStatus,
 } from '@/lib/statusMapping';
-import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint, Job, EventType } from '@/lib/types';
+import type { FlowStep, PassengerVerificationData, RescueFormData, WrapperResult, ReportTypeHint, Job, EventType, AutoCheckSettings, AutoCheckTime } from '@/lib/types';
+import { DEFAULT_AUTO_CHECK_SETTINGS } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
 import CHPNudge from '@/components/ui/CHPNudge';
 import InlineFieldsCard from '@/components/ui/InlineFieldsCard';
@@ -203,6 +214,14 @@ export default function JobDetailPage() {
   // Loading state for interactive actions
   const [isInteracting, setIsInteracting] = useState(false);
 
+  // Auto-checker state (V1.4.0+)
+  const [isAutoChecking, setIsAutoChecking] = useState(false);
+  const [autoCheckResult, setAutoCheckResult] = useState<'found' | 'not_found' | null>(null);
+  const [showAutoCheckSettings, setShowAutoCheckSettings] = useState(false);
+
+  // Timeline visibility for closed jobs (V1.5.0+)
+  const [timelineExpanded, setTimelineExpanded] = useState(false);
+
   // Auto-scroll to bottom of timeline on load
   useEffect(() => {
     if (timelineRef.current) {
@@ -238,11 +257,105 @@ export default function JobDetailPage() {
   const statusMessage = getStatusMessage(job.internalStatus);
   const hasDownloads = job.facePageToken || job.fullReportToken;
 
+  // Show check button when: face page exists, no full report, applicable status (V1.4.0+)
+  const shouldShowCheckButton = !!(
+    job.facePageToken &&
+    !job.fullReportToken &&
+    ['FACE_PAGE_ONLY', 'WAITING_FOR_FULL_REPORT'].includes(job.internalStatus)
+  );
+
+  // Get auto-check settings (default if not set)
+  const autoCheckSettings = job.autoCheckSettings || DEFAULT_AUTO_CHECK_SETTINGS;
+
+  // Closed job state (completed or cancelled) (V1.5.0+)
+  const isCompleted = isCompletedStatus(job.internalStatus);
+  const isCancelled = job.internalStatus === 'CANCELLED';
+  const isClosedJob = isCompleted || isCancelled;
+
+  // Timeline visibility: always show for active jobs, toggle for closed jobs
+  const shouldShowTimeline = !isClosedJob || timelineExpanded;
+
   // Mock download handler
   const handleDownload = (type: 'face' | 'full') => {
     alert(
       `[V1 Mock] Download ${type === 'face' ? 'Face Page' : 'Full Report'} would happen here.\n\nIn V2, this will fetch from Convex Storage.`
     );
+  };
+
+  /**
+   * Handle law firm manual auto-check (V1.4.0+)
+   * Unlimited manual clicks per requirements
+   */
+  const handleAutoCheck = async () => {
+    if (isAutoChecking) return;
+
+    setIsAutoChecking(true);
+    setAutoCheckResult(null);
+
+    // Add event to timeline
+    addEvent(jobId, {
+      eventType: 'auto_check_started',
+      message: "Checking if your full report is ready...",
+      isUserFacing: true,
+    });
+
+    // Mock 3-5 second delay
+    await new Promise((resolve) =>
+      setTimeout(resolve, 3000 + Math.random() * 2000)
+    );
+
+    // 20% chance of finding full report (matching staff side)
+    const found = Math.random() < 0.2;
+
+    if (found) {
+      // Update job with full report
+      updateJob(jobId, {
+        fullReportToken: `fr_token_${Date.now()}`,
+        internalStatus: 'COMPLETED_FULL_REPORT',
+        autoCheckSettings: {
+          ...autoCheckSettings,
+          lastManualCheck: Date.now(),
+        },
+      });
+
+      addEvent(jobId, {
+        eventType: 'auto_check_found',
+        message: "Great news! Your full report is now available for download.",
+        isUserFacing: true,
+      });
+
+      setAutoCheckResult('found');
+    } else {
+      // Update last check time only
+      updateJob(jobId, {
+        autoCheckSettings: {
+          ...autoCheckSettings,
+          lastManualCheck: Date.now(),
+        },
+      });
+
+      addEvent(jobId, {
+        eventType: 'auto_check_not_found',
+        message: "The full report isn't ready yet. We'll keep checking automatically.",
+        isUserFacing: true,
+      });
+
+      setAutoCheckResult('not_found');
+    }
+
+    setIsAutoChecking(false);
+  };
+
+  /**
+   * Handle auto-check settings update (V1.4.0+)
+   */
+  const handleUpdateAutoCheckSettings = (newSettings: Partial<AutoCheckSettings>) => {
+    updateJob(jobId, {
+      autoCheckSettings: {
+        ...autoCheckSettings,
+        ...newSettings,
+      },
+    });
   };
 
   // Handle flow wizard step changes
@@ -808,23 +921,89 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {/* Current Status Card */}
-        <div
-          className="glass-card-dark rounded-2xl p-5 mb-8 animate-text-reveal"
-          style={{ animationDelay: '400ms' }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-500/10">
-              <Sparkles className="w-5 h-5 text-teal-400" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Current Status
-              </h2>
-              <p className="text-slate-200 leading-relaxed">{statusMessage}</p>
+        {/* Current Status Card - Hide when job is closed */}
+        {!isClosedJob && (
+          <div
+            className="glass-card-dark rounded-2xl p-5 mb-8 animate-text-reveal"
+            style={{ animationDelay: '400ms' }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-500/10">
+                <Sparkles className="w-5 h-5 text-teal-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  Current Status
+                </h2>
+                <p className="text-slate-200 leading-relaxed">{statusMessage}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Completed State: Downloads Section (Promoted to top) */}
+        {isCompleted && hasDownloads && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: '400ms' }}
+          >
+            <div className="glass-card-dark rounded-2xl p-5 border-l-4 border-l-emerald-500">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Your Reports Are Ready</h2>
+                  <p className="text-sm text-slate-400">Download your CHP crash report documents below.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {job.fullReportToken && (
+                  <DownloadButton
+                    label="Download Full Report"
+                    subLabel="Complete CHP crash report (PDF)"
+                    icon={FileCheck}
+                    onClick={() => handleDownload('full')}
+                    variant="primary"
+                  />
+                )}
+
+                {job.facePageToken && (
+                  <DownloadButton
+                    label="Download Face Page"
+                    subLabel="Preliminary report summary (PDF)"
+                    icon={FileText}
+                    onClick={() => handleDownload('face')}
+                    variant={job.fullReportToken ? 'secondary' : 'primary'}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancelled State: Notice Card */}
+        {isCancelled && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: '400ms' }}
+          >
+            <div className="glass-card-dark rounded-2xl p-5 border-l-4 border-l-slate-500">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-500/10">
+                  <XCircle className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Request Cancelled</h2>
+                  <p className="text-sm text-slate-400">
+                    This report request has been cancelled. If you believe this was in error, please contact us.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CHP Nudge (Optional - NEW status only) */}
         {shouldShowNudge && (
@@ -913,42 +1092,290 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Timeline Section */}
+        {/* Timeline Section - Collapsible for closed jobs */}
         <div className="mb-8">
-          <h2
-            className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 animate-text-reveal"
-            style={{ animationDelay: '500ms' }}
-          >
-            Activity Timeline
-          </h2>
+          {isClosedJob ? (
+            // Closed job: Show toggle link
+            <>
+              <button
+                onClick={() => setTimelineExpanded(!timelineExpanded)}
+                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors mb-4 animate-text-reveal"
+                style={{ animationDelay: '500ms' }}
+              >
+                {timelineExpanded ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+                <span className="font-semibold uppercase tracking-wider">
+                  {timelineExpanded ? 'Hide Activity Timeline' : `Show Activity Timeline (${events.length} events)`}
+                </span>
+              </button>
 
-          <div
-            ref={timelineRef}
-            className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-          >
-            {events.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-slate-500">No activity yet</p>
+              {timelineExpanded && (
+                <div
+                  ref={timelineRef}
+                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent animate-text-reveal"
+                >
+                  {events.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-slate-500">No activity yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-0">
+                      {events.map((event, index) => (
+                        <TimelineMessage
+                          key={event._id}
+                          eventType={event.eventType}
+                          message={event.message}
+                          timestamp={event.timestamp}
+                          animationDelay={100 + index * 100}
+                          isLatest={index === events.length - 1}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            // Active job: Show full timeline
+            <>
+              <h2
+                className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 animate-text-reveal"
+                style={{ animationDelay: '500ms' }}
+              >
+                Activity Timeline
+              </h2>
+
+              <div
+                ref={timelineRef}
+                className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+              >
+                {events.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-slate-500">No activity yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-0">
+                    {events.map((event, index) => (
+                      <TimelineMessage
+                        key={event._id}
+                        eventType={event.eventType}
+                        message={event.message}
+                        timestamp={event.timestamp}
+                        animationDelay={600 + index * 150}
+                        isLatest={index === events.length - 1}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-0">
-                {events.map((event, index) => (
-                  <TimelineMessage
-                    key={event._id}
-                    eventType={event.eventType}
-                    message={event.message}
-                    timestamp={event.timestamp}
-                    animationDelay={600 + index * 150}
-                    isLatest={index === events.length - 1}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
-        {/* Download Section */}
-        {hasDownloads && (
+        {/* Auto-Check Section - For face page jobs without full report (V1.4.0+) */}
+        {shouldShowCheckButton && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
+          >
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
+              Check for Full Report
+            </h2>
+
+            <div className="glass-card-dark rounded-xl p-5 border border-teal-500/20">
+              {/* Main Check Button */}
+              <button
+                onClick={handleAutoCheck}
+                disabled={isAutoChecking}
+                className={cn(
+                  'w-full flex items-center justify-center gap-3 p-4 rounded-xl',
+                  'bg-gradient-to-r from-teal-600/90 to-cyan-600/90',
+                  'border border-teal-500/30',
+                  'text-white font-medium',
+                  'transition-all duration-300',
+                  'hover:from-teal-500/90 hover:to-cyan-500/90',
+                  'hover:scale-[1.02]',
+                  'hover:shadow-lg hover:shadow-teal-500/20',
+                  'active:scale-[0.98]',
+                  'disabled:opacity-70 disabled:cursor-wait',
+                  'h-14 md:h-12'
+                )}
+              >
+                {isAutoChecking ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Checking...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    <span>Check if Full Report Ready</span>
+                  </>
+                )}
+              </button>
+
+              {/* Result Message */}
+              {autoCheckResult && !isAutoChecking && (
+                <div
+                  className={cn(
+                    'mt-4 p-3 rounded-lg',
+                    autoCheckResult === 'found'
+                      ? 'bg-emerald-500/10 border border-emerald-500/20'
+                      : 'bg-slate-800/30 border border-slate-700/30'
+                  )}
+                >
+                  <p className={cn(
+                    'text-sm',
+                    autoCheckResult === 'found' ? 'text-emerald-400' : 'text-slate-400'
+                  )}>
+                    {autoCheckResult === 'found'
+                      ? 'Full report is now available! Check downloads below.'
+                      : "Not ready yet. We'll keep checking automatically."}
+                  </p>
+                </div>
+              )}
+
+              {/* Last Check Info */}
+              {autoCheckSettings.lastManualCheck && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    Last checked: {new Date(autoCheckSettings.lastManualCheck).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )}
+
+              {/* Settings Toggle */}
+              <button
+                onClick={() => setShowAutoCheckSettings(!showAutoCheckSettings)}
+                className={cn(
+                  'mt-4 flex items-center gap-2 text-sm text-slate-400',
+                  'transition-colors duration-200',
+                  'hover:text-slate-300'
+                )}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Auto-check settings</span>
+                {showAutoCheckSettings ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* Settings Panel (Expandable) */}
+              {showAutoCheckSettings && (
+                <div className="mt-4 pt-4 border-t border-slate-700/50 animate-text-reveal">
+                  <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-teal-400" />
+                    Automatic Check Schedule
+                  </h4>
+
+                  <p className="text-xs text-slate-500 mb-4">
+                    We'll automatically check for the full report at these times (California time).
+                    Max 2 scheduled checks per day.
+                  </p>
+
+                  {/* Frequency Selection */}
+                  <div className="space-y-3 mb-4">
+                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Check Frequency
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleUpdateAutoCheckSettings({
+                          frequency: 'daily',
+                          scheduledTimes: [autoCheckSettings.scheduledTimes[0] || { hour: 16, minute: 30 }]
+                        })}
+                        className={cn(
+                          'flex-1 flex flex-col items-center gap-1 p-3 rounded-lg',
+                          'border transition-all duration-200',
+                          autoCheckSettings.frequency === 'daily'
+                            ? 'bg-teal-500/10 border-teal-500/30 text-teal-400'
+                            : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
+                        )}
+                      >
+                        <span className="text-sm font-medium">Daily</span>
+                        <span className="text-xs opacity-70">Once a day</span>
+                        {autoCheckSettings.frequency === 'daily' && <Check className="w-4 h-4 mt-1" />}
+                      </button>
+                      <button
+                        onClick={() => handleUpdateAutoCheckSettings({
+                          frequency: 'twice_daily',
+                          scheduledTimes: [
+                            { hour: 9, minute: 0 },
+                            { hour: 16, minute: 30 }
+                          ]
+                        })}
+                        className={cn(
+                          'flex-1 flex flex-col items-center gap-1 p-3 rounded-lg',
+                          'border transition-all duration-200',
+                          autoCheckSettings.frequency === 'twice_daily'
+                            ? 'bg-teal-500/10 border-teal-500/30 text-teal-400'
+                            : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
+                        )}
+                      >
+                        <span className="text-sm font-medium">Twice Daily</span>
+                        <span className="text-xs opacity-70">Morning & afternoon</span>
+                        {autoCheckSettings.frequency === 'twice_daily' && <Check className="w-4 h-4 mt-1" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Time Display */}
+                  <div className="space-y-3 mb-4">
+                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Scheduled Times
+                    </label>
+                    <div className="space-y-2">
+                      {autoCheckSettings.scheduledTimes.map((time, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <span className="text-xs text-slate-500 w-20">
+                            {autoCheckSettings.frequency === 'twice_daily'
+                              ? (index === 0 ? 'Morning' : 'Afternoon')
+                              : 'Daily check'}
+                          </span>
+                          <input
+                            type="time"
+                            value={`${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`}
+                            onChange={(e) => {
+                              const [hours, minutes] = e.target.value.split(':').map(Number);
+                              const newTimes = [...autoCheckSettings.scheduledTimes];
+                              newTimes[index] = { hour: hours, minute: minutes };
+                              handleUpdateAutoCheckSettings({ scheduledTimes: newTimes });
+                            }}
+                            className={cn(
+                              'flex-1 h-10 px-3 rounded-lg',
+                              'bg-slate-800/50 border border-slate-700/50',
+                              'text-slate-200 text-sm',
+                              'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                              'transition-all duration-200'
+                            )}
+                          />
+                          <span className="text-xs text-slate-500">PT</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* V1 Mock Notice */}
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-xs text-amber-400">
+                      <strong>V1 Demo:</strong> Schedule settings are saved but actual automated
+                      checks will be enabled in V2 with the Convex backend.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Download Section - Only show for non-completed jobs (completed shows downloads at top) */}
+        {hasDownloads && !isCompleted && (
           <div
             className="space-y-3 animate-text-reveal"
             style={{ animationDelay: `${600 + events.length * 150 + 200}ms` }}

@@ -104,16 +104,84 @@ const statusColors = {
 
 InstaTCR follows a phased development approach:
 
-### V1: MVP - Frontend First (13 days)
+### V1: MVP - Frontend First ✅ COMPLETE (V1.9.0)
 - Complete, polished frontend with mock data
-- All 6 screens functional (Landing, Law Dashboard, New Request, Job Detail, Staff Queue, Staff Job Detail)
+- All 8 screens functional (6 core + 2 V1.6.0: Fatal report submission, New request forms)
 - Mobile-first responsive design (375px minimum)
-- Complete mock data system (15 sample jobs)
-- All 8 mobile components
+- Complete mock data system (29 sample jobs: 24 production + 5 dev)
 - **NO backend dependencies**
 - Mock wrapper execution (8-13 seconds, random results)
 
-### V2: Backend Integration (6 days)
+**V1.6.0-V1.9.0 Enhancements:**
+
+#### V1.6.0: Manual Pickup & Fatal Reports
+- **Fatal Report Submission**: Law firms can submit crash reports without full report numbers
+- **Manual Pickup Flow**: Staff-driven escalation workflow for in-person CHP pickups
+- **Authorization Upload**: Law firms upload authorization documents for escalated jobs
+- **Face Page Completion Choice**: Law firms can complete with face page only or wait for full
+- **Pickup Scheduler**: Staff UI for claiming and scheduling pickups
+- New components: `FacePageCompletionChoice`, `FacePageReopenBanner`, `AuthorizationUploadCard`, `PickupScheduler`
+- 2 new screens: `/law/jobs/new-fatal`, enhanced job detail views
+
+#### V1.7.0: Escalation-First Dashboard
+- **Default View Changed**: Staff dashboard now shows escalated jobs first (not "All")
+- **Quick Actions Workflow**: Inline 5-step workflow on job cards (Claim → Schedule → Download → Upload → Auto-check)
+- **Step Progress Indicator**: Dot-based visual progress (green/orange/gray dots)
+- **Mobile-First Touch Targets**: 48px button heights for WCAG AAA compliance
+- **BottomSheet Contrast Fix**: Solid slate-900 backgrounds for readability
+- New components: `EscalationQuickActions`, `StepProgress`, `ManualCompletionSheet`
+- Workflow: Sequential step state machine with completion tracking
+
+#### V1.8.0: Notification System
+- **6 Notification Types**: Escalation started, auth requested/uploaded, pickup claimed/scheduled, report ready
+- **NotificationBell UI**: Header bell icon with unread count badge and dropdown panel
+- **Magic Link System**: Token-based deep linking (`/m/[token]` routes)
+- **Thread Management**: All notifications for same job share `threadId` (email threading prep)
+- **Dev Mode**: Shows all notifications regardless of recipient for testing
+- New files: `notificationTypes.ts`, `notificationManager.ts`, `magicLinks.ts`, `emailNotificationService.ts` (stub)
+- New components: `NotificationBell`, `NotificationItem`
+- New route: `/m/[token]/page.tsx` for magic link handling
+- Documentation: `docs/NOTIFICATION-SYSTEM.md`
+
+#### V1.8.1: Auto-Checker UX Improvements
+- **Renamed CTA**: "Set Up Auto Checker" (was "Wait for full report")
+- **Inline Setup Flow**: Two frequency options side-by-side (Daily 4:30 PM / Twice Daily 9 AM & 4:30 PM)
+- **Always-Visible Settings**: Settings section always shown after setup (not collapsible)
+- **Dynamic Activity Messages**: Feed messages reflect configured frequency
+- **Full Authorization Document Name**: Standardized to "Authorization to Obtain Governmental Agency Records and Reports"
+- New component: `AutoCheckSetupFlow`
+
+#### V1.9.0: Authorization Upload Gate
+- **Three-Tier Sorting**: Escalated jobs sorted by authorization status
+  - **Tier 1 (TOP)**: Ready to Claim - Auth uploaded, not claimed (🟢 Green badge)
+  - **Tier 2 (MIDDLE)**: In Progress - Auth uploaded, claimed/scheduled (🔵 Blue badge)
+  - **Tier 3 (BOTTOM)**: Pending Authorization - No auth yet (🟡 Amber badge)
+- **Authorization Status Badges**: Color-coded badges on StaffJobCard
+- **Quick Actions Gate**: Workflow buttons only shown if authorization uploaded
+- **Email Notification Service Stub**: `emailNotificationService.ts` ready for V2 integration
+- **5 New Helper Functions**: `hasAuthorizationUploaded()`, `isReadyToClaim()`, `isPendingAuthorization()`, `getAuthorizationStatusLabel()`, `getAuthorizationStatusColor()`
+- Enhanced component: `StaffJobCard` with authorization badge rendering
+
+**New Files Created (V1.6.0-V1.9.0):**
+- `src/lib/notificationTypes.ts` - Notification type definitions
+- `src/lib/notificationManager.ts` - Singleton notification manager
+- `src/lib/magicLinks.ts` - Token generation and decoding
+- `src/lib/emailNotificationService.ts` - Email service stub (V2-ready)
+- `src/app/m/[token]/page.tsx` - Magic link route handler
+- `src/app/law/jobs/new-fatal/page.tsx` - Fatal report submission form
+- `src/components/ui/FacePageCompletionChoice.tsx` - Face page completion UI
+- `src/components/ui/FacePageReopenBanner.tsx` - Reopen banner for checking full report
+- `src/components/ui/AuthorizationUploadCard.tsx` - Auth document upload
+- `src/components/ui/PickupScheduler.tsx` - Staff pickup scheduler
+- `src/components/ui/EscalationQuickActions.tsx` - Mobile workflow component
+- `src/components/ui/StepProgress.tsx` - Visual progress indicator
+- `src/components/ui/ManualCompletionSheet.tsx` - Report upload BottomSheet
+- `src/components/ui/NotificationBell.tsx` - Bell with dropdown panel
+- `src/components/ui/NotificationItem.tsx` - Individual notification cards
+- `src/components/ui/AutoCheckSetupFlow.tsx` - Inline auto-checker setup
+- `docs/NOTIFICATION-SYSTEM.md` - Complete notification documentation
+
+### V2: Backend Integration ⚪ NOT STARTED
 - Convex schema deployed (chpJobs, jobEvents tables)
 - Real-time queries replacing mock data
 - CHP wrapper on Fly.io integrated

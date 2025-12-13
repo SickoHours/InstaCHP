@@ -18,10 +18,12 @@ interface TabBarProps extends React.HTMLAttributes<HTMLDivElement> {
   onTabChange: (tabId: string) => void;
   /** Accessible label for the tab list */
   ariaLabel?: string;
+  /** Visual variant: 'default' for inline tabs, 'pills' for glass-container pill tabs */
+  variant?: 'default' | 'pills';
 }
 
 const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
-  ({ className, tabs, activeTab, onTabChange, ariaLabel = 'Filter options', ...props }, ref) => {
+  ({ className, tabs, activeTab, onTabChange, ariaLabel = 'Filter options', variant = 'default', ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
@@ -96,10 +98,17 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
       }
     }, [activeTab]);
 
+    const isPills = variant === 'pills';
+
     return (
       <div
         ref={ref}
-        className={cn('relative', className)}
+        className={cn(
+          'relative',
+          // Pills variant gets a glass container
+          isPills && 'glass-surface p-2',
+          className
+        )}
         {...props}
       >
         {/* Scrollable tab container */}
@@ -109,7 +118,7 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
           aria-label={ariaLabel}
           className={cn(
             'flex gap-1 overflow-x-auto scrollbar-none',
-            'pb-1 -mb-1', // Compensate for indicator
+            !isPills && 'pb-1 -mb-1', // Only compensate for indicator on default
             'relative'
           )}
         >
@@ -128,14 +137,17 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 className={cn(
                   // Base styles
-                  'relative flex items-center gap-2 px-4 py-2.5 rounded-lg',
+                  'relative flex items-center gap-2 px-4 py-2.5',
+                  isPills ? 'rounded-lg' : 'rounded-lg',
                   'text-sm font-medium whitespace-nowrap',
                   'transition-all duration-300 ease-out',
                   'flex-shrink-0',
 
                   // Default state
                   'text-slate-400 hover:text-slate-200',
-                  'hover:bg-slate-800/50',
+                  isPills
+                    ? 'hover:bg-white/5'
+                    : 'hover:bg-slate-800/50',
 
                   // Focus visible
                   'focus:outline-none',
@@ -144,7 +156,9 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
                   // Active state
                   isActive && [
                     'text-white',
-                    'bg-slate-800/80',
+                    isPills
+                      ? 'bg-white/10 shadow-sm'
+                      : 'bg-slate-800/80',
                   ]
                 )}
               >
@@ -168,24 +182,30 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
             );
           })}
 
-          {/* Animated glow indicator */}
-          <div
-            className={cn(
-              'absolute bottom-0 h-0.5 rounded-full',
-              'bg-gradient-to-r from-teal-500 to-cyan-500',
-              'transition-all duration-300 ease-out',
-              'shadow-[0_0_10px_rgba(20,184,166,0.5)]'
-            )}
-            style={{
-              left: indicatorStyle.left,
-              width: indicatorStyle.width,
-            }}
-          />
+          {/* Animated glow indicator - only for default variant */}
+          {!isPills && (
+            <div
+              className={cn(
+                'absolute bottom-0 h-0.5 rounded-full',
+                'bg-gradient-to-r from-teal-500 to-cyan-500',
+                'transition-all duration-300 ease-out',
+                'shadow-[0_0_10px_rgba(20,184,166,0.5)]'
+              )}
+              style={{
+                left: indicatorStyle.left,
+                width: indicatorStyle.width,
+              }}
+            />
+          )}
         </div>
 
-        {/* Fade edges for scroll indication */}
-        <div className="absolute left-0 top-0 bottom-1 w-4 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none md:hidden" />
-        <div className="absolute right-0 top-0 bottom-1 w-4 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none md:hidden" />
+        {/* Fade edges for scroll indication - only for default variant */}
+        {!isPills && (
+          <>
+            <div className="absolute left-0 top-0 bottom-1 w-4 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none md:hidden" />
+            <div className="absolute right-0 top-0 bottom-1 w-4 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none md:hidden" />
+          </>
+        )}
       </div>
     );
   }

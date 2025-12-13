@@ -186,13 +186,17 @@ function StaffControlCard({
 }) {
   return (
     <div
-      className="glass-card-dark rounded-xl p-5 animate-text-reveal"
+      className={cn(
+        'glass-subtle p-5 animate-text-reveal',
+        'transition-all duration-200',
+        'hover-lift-subtle'
+      )}
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-500/10">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20">
               <Icon className="w-4 h-4 text-teal-400" />
             </div>
           )}
@@ -364,7 +368,7 @@ function EscalationDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative glass-card-dark rounded-2xl p-6 max-w-md w-full animate-text-reveal">
+      <div className="relative glass-elevated p-6 max-w-md w-full animate-text-reveal">
         <h3 className="text-lg font-semibold text-white mb-2">Escalate to Manual Pickup</h3>
         <p className="text-sm text-slate-400 mb-4">
           This will mark the job for in-person pickup at the CHP office. A staff member will need to
@@ -491,7 +495,7 @@ function JobSummaryCard({
   return (
     <div
       className={cn(
-        'glass-card-dark rounded-xl p-5 animate-text-reveal',
+        'glass-subtle p-5 animate-text-reveal',
         'border-l-4',
         isCancelled ? 'border-l-slate-500' : 'border-l-emerald-500'
       )}
@@ -1219,7 +1223,7 @@ export default function StaffJobDetailPage() {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 header-blur border-b border-slate-800/50">
+      <header className="sticky top-0 z-50 glass-header">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -1246,7 +1250,7 @@ export default function StaffJobDetailPage() {
       </header>
 
       {/* Mobile Tab Bar */}
-      <div className="md:hidden sticky top-16 z-40 header-blur border-b border-slate-800/50 px-4 py-2">
+      <div className="md:hidden sticky top-16 z-40 glass-header px-4 py-2">
         <TabBar
           tabs={TABS}
           activeTab={activeTab}
@@ -1256,7 +1260,7 @@ export default function StaffJobDetailPage() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10 animate-page-entrance">
-        <div className="md:grid md:grid-cols-2 md:gap-8">
+        <div className="md:grid md:grid-cols-[45fr_55fr] md:gap-8">
           {/* ============================================ */}
           {/* LEFT COLUMN: Law Firm View */}
           {/* ============================================ */}
@@ -1266,7 +1270,7 @@ export default function StaffJobDetailPage() {
               activeTab !== 'lawFirmView' && 'hidden'
             )}
           >
-            <div className="space-y-6">
+            <div className="glass-surface p-5 space-y-6">
               {/* Client Info Header */}
               <div>
                 <h1
@@ -1391,13 +1395,16 @@ export default function StaffJobDetailPage() {
           {/* RIGHT COLUMN: Staff Controls */}
           {/* ============================================ */}
           <div
-            className={cn('md:block space-y-4', activeTab !== 'staffControls' && 'hidden md:block')}
+            className={cn('md:block', activeTab !== 'staffControls' && 'hidden md:block')}
           >
-            {/* Internal Status Banner (Mobile Only) */}
-            <div className="md:hidden glass-card-dark rounded-xl p-4 flex items-center justify-between">
-              <span className="text-sm text-slate-400">Internal Status</span>
-              <DarkStatusBadge internalStatus={localJob.internalStatus} showInternal />
-            </div>
+            {/* Glass Surface Container for Staff Controls */}
+            <div className="glass-surface p-4 md:p-5 scroll-container-smooth md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
+              <div className="space-y-6 md:space-y-8">
+                {/* Internal Status Banner (Mobile Only) */}
+                <div className="md:hidden glass-subtle p-4 flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Internal Status</span>
+                  <DarkStatusBadge internalStatus={localJob.internalStatus} showInternal />
+                </div>
 
             {/* Conditional: Show Summary Card OR Form Cards */}
             {isClosedJob ? (
@@ -1608,6 +1615,9 @@ export default function StaffJobDetailPage() {
             {/* Cards 1-4: Wrapper-related UI (hidden for fatal/terminal escalations AND for non-fatal escalations without resume capability) */}
             {shouldShowWrapperUI(localJob) && (
               <>
+            {/* Section Divider: Data Collection */}
+            <div className="section-divider">data collection</div>
+
             {/* Card 1: Page 1 Data */}
             <StaffControlCard title="Page 1 Data" icon={FileText} animationDelay={100}>
               {/* Call Buttons */}
@@ -1814,6 +1824,9 @@ export default function StaffJobDetailPage() {
               </div>
             </StaffControlCard>
 
+            {/* Section Divider: Automation */}
+            <div className="section-divider">automation</div>
+
             {/* Card 3: CHP Wrapper */}
             <StaffControlCard title="CHP Wrapper" icon={Play} animationDelay={300}>
               {/* Prerequisites */}
@@ -1973,6 +1986,9 @@ export default function StaffJobDetailPage() {
               </>
             )}
 
+            {/* Section Divider: Actions */}
+            <div className="section-divider">actions</div>
+
             {/* Card 5: Auto-Checker - Hide when full report exists OR when auto-checker not applicable */}
             {shouldShowAutoChecker(localJob) && (
             <StaffControlCard
@@ -2085,6 +2101,9 @@ export default function StaffJobDetailPage() {
               )}
             </StaffControlCard>
             )}
+
+            {/* Section Divider: Manual Actions */}
+            <div className="section-divider">manual actions</div>
 
             {/* Card 6: Escalation Button - Only show for NON-escalated jobs without reports */}
             {!isEscalatedJob(localJob) && !isFatalJob(localJob) && !localJob.facePageToken && !localJob.fullReportToken && (
@@ -2243,6 +2262,8 @@ export default function StaffJobDetailPage() {
 
             {/* Bottom Spacer */}
             <div className="h-8" />
+              </div>
+            </div>
           </div>
         </div>
       </main>

@@ -5,6 +5,190 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-12-13
+
+### Changed
+
+#### Liquid Glass V2.0 - Second-Pass Visual Refactor
+
+**Purpose:**
+Strengthen the Liquid Glass aesthetic with clearly noticeable visual improvements. Adds background depth, strengthens glass tier differentiation, and improves visual hierarchy across all 4 money screens. Visual-only changes with zero business logic modifications.
+
+**Key Changes:**
+
+1. **Background Depth Enhancement (globals.css)**
+   - Added layered radial gradients to `body` for depth behind glass surfaces
+   - Added subtle SVG noise texture for visual interest
+   - Darkened background color (`#0a0f1a`) for stronger glass contrast
+   - Fixed background attachment for parallax scroll effect
+
+2. **Strengthened Glass Tier Differentiation**
+   - `.glass-surface`: Increased opacity (0.6→0.7), brighter border (0.15→0.2), added 60px outer glow
+   - `.glass-elevated`: Increased opacity (0.75→0.85), much brighter border (0.1→0.3), teal outer glow, stronger shadows (elevation-4)
+   - `.glass-subtle`: Unchanged (maintains subtle nested card treatment)
+
+3. **New `.glass-header` Utility Class**
+   - Purpose: Standardized sticky header treatment with blur
+   - Properties: 80% opacity background matching body, 16px blur, bottom border, shadow
+   - Applied to: Staff queue header, staff job detail header, mobile tab bars
+
+4. **Enhanced Section Dividers**
+   - Brighter text color (0.6→0.8 opacity)
+   - Larger font size (0.65rem→0.7rem)
+   - Bolder weight (500→600)
+   - More letter spacing (0.1em→0.12em)
+   - Increased padding (0.5rem→1rem)
+   - Brighter gradient lines (0.15→0.25 opacity)
+
+5. **Enhanced Hover Effects**
+   - `.hover-lift`: Stronger lift (-2px→-4px), elevated shadow (elevation-3), teal glow on hover
+
+**Screen-Specific Changes:**
+
+| Screen | Changes |
+|--------|---------|
+| `/staff` | Header→glass-header, page padding increased, stats container→glass-elevated, added "job queue" section divider, standardized table cell padding (px-5 py-4) |
+| `/staff/jobs/[jobId]` | Both headers→glass-header, added "data collection" + "manual actions" section dividers, increased card spacing (space-y-6 md:space-y-8), left panel wrapped in glass-surface |
+| `/law` | Orb backgrounds strengthened (opacity +5%), page title wrapped in glass-elevated, search padding increased (p-3→p-4, mb-6→mb-8) |
+| `/law/jobs/[jobId]` | Hero section (client name + badge) wrapped in glass-elevated |
+
+**Files Modified:**
+
+| File | Purpose |
+|------|---------|
+| `src/app/globals.css` | Background depth, glass tier strengthening, new utilities, enhanced hover effects |
+| `src/app/staff/page.tsx` | Header, spacing, stats elevation, section divider, table padding |
+| `src/app/staff/jobs/[jobId]/page.tsx` | Headers, section dividers, spacing, left panel glass |
+| `src/app/law/page.tsx` | Orb opacity, title elevation, search styling |
+| `src/app/law/jobs/[jobId]/page.tsx` | Hero section elevation |
+
+**New File Created:**
+
+| File | Purpose |
+|------|---------|
+| `docs/ui/liquid-glass-audit.md` | Audit report documenting 12 key surfaces across 4 money screens |
+
+**Visual Impact:**
+
+- ✅ Background depth makes glass blur effects "pop"
+- ✅ Three glass tiers are clearly distinguishable (subtle < surface < elevated)
+- ✅ Primary sections use elevated treatment (stats dashboards, hero headers)
+- ✅ Section dividers organize card groups with clear visual separation
+- ✅ Hover effects are more dramatic and responsive
+
+**What Did NOT Change:**
+
+- ❌ Business logic - All status transitions, validation rules intact
+- ❌ Data models - No schema changes
+- ❌ Routes - All paths remain identical
+- ❌ Permissions - Law firm vs staff visibility unchanged
+- ❌ Buttons/actions - Only repositioned/restyled, never deleted
+- ❌ Dependencies - Zero new packages
+
+**Testing:**
+
+- Production build: ✅ PASS (all 9 routes compiled)
+- All existing functionality preserved
+
+**Version:** V2.1.0
+
+---
+
+## [2.0.0] - 2025-12-13
+
+### Changed
+
+#### Liquid Glass UI Refactor
+
+**Purpose:**
+Transform InstaTCR's existing glass-morphism aesthetic into a more cohesive, premium "Liquid Glass" experience inspired by iOS 26. Visual-only changes with zero business logic modifications.
+
+**Key Changes:**
+
+1. **New Design Tokens (globals.css)**
+   - Added 20+ CSS custom properties for consistent styling:
+     - `--glass-blur`, `--glass-saturate` - Blur and saturation values
+     - `--glass-bg-dark`, `--glass-bg-elevated`, `--glass-bg-subtle` - Background opacity levels
+     - `--glass-border`, `--glass-border-light`, `--glass-border-subtle` - Border opacity variants
+     - `--elevation-1` through `--elevation-4` - Shadow scale system
+     - `--space-card`, `--space-section`, `--space-page` - Consistent spacing
+     - `--radius-sm` through `--radius-xl` - Border radius scale
+
+2. **New Utility Classes**
+   - `.glass-surface` - Main containers (20px blur, elevation-2)
+   - `.glass-elevated` - Modals, sheets, overlays (24px blur, elevation-3)
+   - `.glass-subtle` - Cards within glass containers (subtle bg, hover lift)
+   - `.hover-lift` / `.hover-lift-subtle` - Hover elevation effects
+   - `.section-divider` - Subtle separator with gradient lines
+   - `.scroll-container-smooth` - Opt-in smooth scrolling
+   - `.p-card` / `.gap-card` - Standard card padding/gap
+
+3. **Staff Job Detail Page**
+   - `StaffControlCard` updated to use `glass-subtle` + `hover-lift-subtle`
+   - Staff controls wrapped in `glass-surface` container
+   - Added section dividers ("automation", "actions")
+   - Desktop grid changed from 50/50 to 45/55 split
+   - `JobSummaryCard` updated to `glass-subtle`
+   - `EscalationDialog` updated to `glass-elevated`
+
+4. **Staff Queue Dashboard**
+   - Stats wrapped in `glass-surface` container with "overview" divider
+   - StatCard component: Added `variant` prop (`'default'` | `'subtle'`)
+   - TabBar component: Added `variant` prop (`'default'` | `'pills'`)
+   - Table container updated to `glass-surface`
+   - EmptyState updated to `glass-surface`
+
+5. **Law Firm Job Detail Page**
+   - Current Status Card → `glass-surface`
+   - Downloads section → `glass-elevated` (more prominence when report ready)
+   - Timeline wrapped in `glass-surface` with gradient connector line
+   - Cancelled State Card → `glass-surface`
+   - Face Page Completion Choice → `glass-surface`
+   - Auto-Check Section → `glass-surface`
+   - DownloadButton secondary variant → `glass-subtle`
+
+6. **Law Firm Dashboard**
+   - Stats wrapped in `glass-surface` container with "overview" divider
+   - Stat cards use `glass-subtle` + `hover-lift-subtle`
+   - Search input wrapped in `glass-surface` container
+
+**Component Enhancements:**
+
+| Component | Enhancement |
+|-----------|-------------|
+| `StatCard` | Added `variant` prop: `'default'` (glass-card-dark) or `'subtle'` (glass-subtle) |
+| `TabBar` | Added `variant` prop: `'default'` (underline indicator) or `'pills'` (glass container) |
+
+**Design Principles Applied:**
+
+- **Blur levels**: 20px standard, 24px elevated
+- **Saturation boost**: 180-200%
+- **Background opacity**: 0.6-0.75 for dark surfaces
+- **Border subtlety**: rgba at 10-15% opacity
+- **Layered depth**: Elevation shadows, not just blur
+- **Hover states**: `@media (hover: hover)` protection for touch devices
+- **Smooth scroll**: Opt-in per container, not global
+
+**What Did NOT Change:**
+
+- ❌ Business logic - All status transitions, validation rules intact
+- ❌ Data models - No schema changes
+- ❌ Routes - All paths remain identical
+- ❌ Permissions - Law firm vs staff visibility unchanged
+- ❌ Backend calls - Mock data patterns preserved
+- ❌ Buttons/actions - Only repositioned/restyled, never deleted
+- ❌ Dependencies - Zero new packages
+
+**Testing:**
+
+- TypeScript check: ✅ PASS
+- Production build: ✅ PASS (all 9 routes compiled)
+- All existing functionality preserved
+
+**Version:** V2.0.0
+
+---
+
 ## [1.9.0] - 2025-12-13
 
 ### Added

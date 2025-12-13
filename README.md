@@ -6,17 +6,21 @@ A web application for managing California Highway Patrol (CHP) crash report requ
 
 ## Current Status
 
-**V1.6.2 (current):**
+**V1.9.0 (current):**
 - Frontend-only (Next.js App Router)
-- Mock data: 27 jobs (22 production + 5 dev in `src/lib/mockData.ts`)
+- Mock data: 29 jobs (24 production + 5 dev in `src/lib/mockData.ts`)
 - Wrapper behavior simulated with configurable delays
 - All 8 screens functional (6 core + 2 V1.6.0)
+- Escalation-first staff dashboard with quick actions (V1.7.0)
+- Internal notification system with magic links (V1.8.0)
+- Authorization upload gate with three-tier sorting (V1.9.0)
 
 **Not in V1 yet:**
 - Convex database
 - Authentication
 - Real CHP wrapper execution
 - File storage
+- Email notifications (stub ready for V2)
 
 See [DEV-ROADMAP.md](DEV-ROADMAP.md) for version details and what's next.
 

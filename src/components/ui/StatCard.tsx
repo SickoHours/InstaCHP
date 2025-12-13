@@ -16,6 +16,8 @@ interface StatCardProps extends React.HTMLAttributes<HTMLButtonElement> {
   isActive?: boolean;
   /** Animation delay for staggered entrance */
   animationDelay?: number;
+  /** Visual variant: 'default' uses glass-card-dark, 'subtle' uses glass-subtle for nested cards */
+  variant?: 'default' | 'subtle';
 }
 
 /**
@@ -71,6 +73,7 @@ const StatCard = forwardRef<HTMLButtonElement, StatCardProps>(
       color = 'slate',
       isActive = false,
       animationDelay = 0,
+      variant = 'default',
       style,
       ...props
     },
@@ -111,13 +114,15 @@ const StatCard = forwardRef<HTMLButtonElement, StatCardProps>(
           'transition-all duration-300 ease-out',
           'cursor-pointer',
 
-          // Glass effect
-          'glass-card-dark',
+          // Glass effect - variant determines base style
+          variant === 'default' ? 'glass-card-dark' : 'glass-subtle',
           'border',
           colorConfig.border,
 
-          // Hover state
-          'hover:scale-[1.02]',
+          // Hover state - subtle lift for nested cards
+          variant === 'default'
+            ? 'hover:scale-[1.02]'
+            : 'hover-lift-subtle',
           'hover:border-opacity-50',
 
           // Active state

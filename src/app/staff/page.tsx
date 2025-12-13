@@ -196,7 +196,7 @@ export default function StaffQueuePage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 header-blur border-b border-slate-800/50">
+      <header className="sticky top-0 z-50 glass-header">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -240,64 +240,73 @@ export default function StaffQueuePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 animate-page-entrance">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12 animate-page-entrance">
         {/* Stats Cards - V1.7.0: Reordered with Escalations first */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
-          {isLoading ? (
-            // Skeleton state
-            <>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <StatCardSkeleton key={i} delay={100 + i * 100} />
-              ))}
-            </>
-          ) : (
-            <>
-              {/* Escalated stat card - first and highlighted */}
-              <StatCard
-                value={stats.escalations}
-                label="Escalated"
-                color="orange"
-                isActive={activeFilter === 'escalated'}
-                onClick={() => setActiveFilter('escalated')}
-                animationDelay={100}
-              />
-              <StatCard
-                value={stats.total}
-                label="Total Jobs"
-                color="slate"
-                isActive={activeFilter === 'all'}
-                onClick={() => setActiveFilter('all')}
-                animationDelay={200}
-              />
-              <StatCard
-                value={stats.needsAction}
-                label="Needs Action"
-                color="amber"
-                isActive={activeFilter === 'needsAction'}
-                onClick={() => setActiveFilter('needsAction')}
-                animationDelay={300}
-              />
-              <StatCard
-                value={stats.inProgress}
-                label="In Progress"
-                color="blue"
-                isActive={activeFilter === 'inProgress'}
-                onClick={() => setActiveFilter('inProgress')}
-                animationDelay={400}
-              />
-              <StatCard
-                value={stats.completed}
-                label="Completed"
-                color="green"
-                isActive={activeFilter === 'completed'}
-                onClick={() => setActiveFilter('completed')}
-                animationDelay={500}
-              />
-            </>
-          )}
+        {/* V2.0: Wrapped in glass-elevated container for prominence */}
+        <div className="glass-elevated p-card mb-8 md:mb-12">
+          <div className="section-divider mb-4">overview</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+            {isLoading ? (
+              // Skeleton state
+              <>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <StatCardSkeleton key={i} delay={100 + i * 100} />
+                ))}
+              </>
+            ) : (
+              <>
+                {/* Escalated stat card - first and highlighted */}
+                <StatCard
+                  value={stats.escalations}
+                  label="Escalated"
+                  color="orange"
+                  variant="subtle"
+                  isActive={activeFilter === 'escalated'}
+                  onClick={() => setActiveFilter('escalated')}
+                  animationDelay={100}
+                />
+                <StatCard
+                  value={stats.total}
+                  label="Total Jobs"
+                  color="slate"
+                  variant="subtle"
+                  isActive={activeFilter === 'all'}
+                  onClick={() => setActiveFilter('all')}
+                  animationDelay={200}
+                />
+                <StatCard
+                  value={stats.needsAction}
+                  label="Needs Action"
+                  color="amber"
+                  variant="subtle"
+                  isActive={activeFilter === 'needsAction'}
+                  onClick={() => setActiveFilter('needsAction')}
+                  animationDelay={300}
+                />
+                <StatCard
+                  value={stats.inProgress}
+                  label="In Progress"
+                  color="blue"
+                  variant="subtle"
+                  isActive={activeFilter === 'inProgress'}
+                  onClick={() => setActiveFilter('inProgress')}
+                  animationDelay={400}
+                />
+                <StatCard
+                  value={stats.completed}
+                  label="Completed"
+                  color="green"
+                  variant="subtle"
+                  isActive={activeFilter === 'completed'}
+                  onClick={() => setActiveFilter('completed')}
+                  animationDelay={500}
+                />
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs - V2.0: Pill variant with glass container */}
         <div
           className="mb-6 animate-text-reveal"
           style={{ animationDelay: '500ms' }}
@@ -306,6 +315,7 @@ export default function StaffQueuePage() {
             tabs={tabsWithCounts}
             activeTab={activeFilter}
             onTabChange={(id) => setActiveFilter(id as FilterId)}
+            variant="pills"
           />
         </div>
 
@@ -333,19 +343,22 @@ export default function StaffQueuePage() {
           )}
         </div>
 
-        {/* Job Table - Desktop */}
+        {/* Section divider for job queue */}
+        <div className="section-divider">job queue</div>
+
+        {/* Job Table - Desktop - V2.0: glass-surface container */}
         <div
           className="hidden md:block animate-text-reveal"
           style={{ animationDelay: '600ms' }}
         >
           {isLoading ? (
             // Table skeleton state
-            <div className="glass-card-dark rounded-xl overflow-hidden">
+            <div className="glass-surface rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-800/50">
                     {['Client', 'Report #', 'Law Firm', 'Internal', 'Public', 'Created', 'Actions'].map((header) => (
-                      <th key={header} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                      <th key={header} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                         {header}
                       </th>
                     ))}
@@ -361,29 +374,29 @@ export default function StaffQueuePage() {
           ) : filteredJobs.length === 0 ? (
             <EmptyState filter={activeFilter} />
           ) : (
-            <div className="glass-card-dark rounded-xl overflow-hidden">
+            <div className="glass-surface rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-800/50">
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Client
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Report #
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Law Firm
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Internal
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Public
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Created
                     </th>
-                    <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
                       Actions
                     </th>
                   </tr>
@@ -402,22 +415,22 @@ export default function StaffQueuePage() {
                         )}
                         style={{ animationDelay: `${700 + index * 50}ms` }}
                       >
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span className="text-sm font-medium text-slate-200">
                             {job.clientName}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span className="text-sm text-slate-400 font-mono">
                             {job.reportNumber}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span className="text-sm text-slate-400">
                             {job.lawFirmName}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span
                             className={cn(
                               'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
@@ -427,7 +440,7 @@ export default function StaffQueuePage() {
                             {formatInternalStatus(job.internalStatus)}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span
                             className={cn(
                               'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
@@ -437,12 +450,12 @@ export default function StaffQueuePage() {
                             {formatPublicStatus(publicStatus)}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-5 py-4">
                           <span className="text-sm text-slate-500">
                             {formatRelativeTime(job.createdAt)}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right">
+                        <td className="px-5 py-4 text-right">
                           <Link
                             href={`/staff/jobs/${job._id}`}
                             className={cn(
@@ -484,7 +497,7 @@ function EmptyState({ filter }: { filter: FilterId }) {
   };
 
   return (
-    <div className="glass-card-dark rounded-xl p-12 text-center">
+    <div className="glass-surface rounded-xl p-12 text-center">
       <p className="text-slate-500">{messages[filter]}</p>
     </div>
   );

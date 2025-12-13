@@ -1,7 +1,7 @@
 # InstaTCR - Master Product Requirements Document
 
-**Version:** 2.0 (Reorganized)
-**Date:** 2025-12-11
+**Version:** 2.1 (Reorganized)
+**Date:** 2025-12-13
 **Status:** Navigation Hub & Index
 **Purpose:** Entry point for all InstaTCR documentation
 
@@ -122,7 +122,7 @@ Start here:
 
 ## 📊 Current Status
 
-**Version:** V1.0.1 (Frontend Complete)
+**Version:** V1.9.0 (Frontend Complete with Notifications & Authorization Gate)
 **Next:** V2 Backend Integration
 
 See [DEV-ROADMAP.md](DEV-ROADMAP.md) for detailed development status.
@@ -131,10 +131,20 @@ See [DEV-ROADMAP.md](DEV-ROADMAP.md) for detailed development status.
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **V1** | MVP Frontend (mock data) | ✅ Complete |
+| **V1** | MVP Frontend (mock data) | ✅ Complete (V1.9.0) |
 | **V2** | Backend Integration (Convex + wrapper) | ⚪ Not Started |
 | **V3** | VAPI AI Caller | ⚪ Not Started |
 | **V4** | Open Router AI | ⚪ Not Started |
+
+### V1 Completion Highlights
+
+**Core MVP (V1.0.0-V1.6.2):** All 8 screens, 14→8 status mapping, mock data with 29 jobs
+
+**V1.6.0-V1.9.0 Enhancements:**
+- **V1.7.0:** Escalation-first dashboard with quick actions workflow
+- **V1.8.0:** Internal notification system with magic links (6 notification types)
+- **V1.8.1:** Auto-checker UX improvements, full authorization document name
+- **V1.9.0:** Authorization upload gate with three-tier sorting, email service stub
 
 ---
 
@@ -147,7 +157,12 @@ See [DEV-ROADMAP.md](DEV-ROADMAP.md) for detailed development status.
 
 ## 📖 Document Version History
 
-### Version 2.0 (2025-12-11) - Current
+### Version 2.1 (2025-12-13) - Current
+- Updated to reflect V1.9.0 completion
+- Added V1.6.0-V1.9.0 enhancement highlights
+- Updated version references throughout
+
+### Version 2.0 (2025-12-11)
 - **Split 5,275-line master PRD into 6 focused documents**
 - Transformed master PRD into navigation hub
 - Added AGENTS.md with AI agent guidelines
@@ -160,6 +175,6 @@ See [DEV-ROADMAP.md](DEV-ROADMAP.md) for detailed development status.
 
 ---
 
-*Last Updated: 2025-12-11*
-*Document Version: 2.0 (Post-Split)*
+*Last Updated: 2025-12-13*
+*Document Version: 2.1 (Post-Split)*
 *For detailed specifications, see the linked documents above.*

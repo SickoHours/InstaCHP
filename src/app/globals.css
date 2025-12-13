@@ -21,6 +21,50 @@
   /* Background & Foreground */
   --background: var(--slate-900);
   --foreground: var(--slate-50);
+
+  /* ============================================
+     LIQUID GLASS DESIGN TOKENS (V2.0)
+     iOS 26 / Liquid Glass inspired
+     ============================================ */
+
+  /* Glass Surface Tokens */
+  --glass-blur: 20px;
+  --glass-blur-elevated: 24px;
+  --glass-saturate: 180%;
+  --glass-saturate-elevated: 200%;
+
+  /* Glass Background Opacities */
+  --glass-bg-light: rgba(255, 255, 255, 0.08);
+  --glass-bg-dark: rgba(15, 23, 42, 0.6);
+  --glass-bg-elevated: rgba(15, 23, 42, 0.75);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.03);
+
+  /* Glass Border Opacities */
+  --glass-border: rgba(148, 163, 184, 0.15);
+  --glass-border-light: rgba(255, 255, 255, 0.1);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-border-hover: rgba(148, 163, 184, 0.25);
+
+  /* Elevation System (layered depth via shadows) */
+  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --elevation-3: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --elevation-4: 0 16px 48px rgba(0, 0, 0, 0.3);
+
+  /* Spacing Scale (consistent rhythm) */
+  --space-card: 1.25rem;     /* 20px - standard card padding */
+  --space-section: 1.5rem;   /* 24px - between sections */
+  --space-page: 2rem;        /* 32px - page margins */
+  --space-gap: 1.25rem;      /* 20px - uniform gap between cards */
+
+  /* Border Radius Scale (consistent edges) */
+  --radius-sm: 0.5rem;       /* 8px - inputs, badges */
+  --radius-md: 0.75rem;      /* 12px - buttons, small cards */
+  --radius-lg: 1rem;         /* 16px - main cards */
+  --radius-xl: 1.25rem;      /* 20px - modals, sheets */
+
+  /* Inset Highlight (top edge shine) */
+  --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -150,7 +194,35 @@
 
 /* Base Styles */
 body {
-  background: var(--background);
+  background: var(--background); /* Fallback */
+
+  /* Layered depth: noise + radial gradients for glass visibility */
+  background-image:
+    /* Subtle noise texture */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+
+    /* Center glow (subtle depth) */
+    radial-gradient(
+      ellipse 1200px 800px at 50% 20%,
+      rgba(15, 23, 42, 0.4) 0%,
+      transparent 60%
+    ),
+
+    /* Corner glows (teal + blue ambient light) */
+    radial-gradient(
+      circle 600px at 0% 0%,
+      rgba(20, 184, 166, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle 700px at 100% 100%,
+      rgba(59, 130, 246, 0.06) 0%,
+      transparent 50%
+    );
+
+  background-color: #0a0f1a; /* Darker than slate-950 for more contrast */
+  background-attachment: fixed; /* Parallax effect on scroll */
+
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -701,4 +773,138 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-tooltip-enter {
   animation: tooltipEnter 0.15s ease-out forwards;
+}
+
+/* ============================================
+   LIQUID GLASS UTILITY CLASSES (V2.0)
+   New utilities - existing classes unchanged
+   ============================================ */
+
+/* Base glass surface - for main containers, cards, panels
+   Use this as the primary glass treatment */
+.glass-surface {
+  background: rgba(15, 23, 42, 0.7); /* Increased from 0.6 - more opaque */
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid rgba(148, 163, 184, 0.2); /* Increased from 0.15 - brighter border */
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--elevation-2),
+    var(--glass-inset-highlight),
+    0 0 60px rgba(0, 0, 0, 0.15); /* NEW: outer glow for depth */
+}
+
+/* Elevated glass - for modals, sheets, overlays, download panels
+   Higher blur, stronger shadow for visual hierarchy */
+.glass-elevated {
+  background: rgba(15, 23, 42, 0.85); /* Increased from 0.75 - much more opaque */
+  backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
+  -webkit-backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
+  border: 1px solid rgba(148, 163, 184, 0.3); /* Increased from 0.1 - MUCH brighter */
+  border-radius: var(--radius-xl);
+  box-shadow:
+    var(--elevation-4), /* Increased from elevation-3 for stronger shadow */
+    var(--glass-inset-highlight),
+    0 0 80px rgba(20, 184, 166, 0.1), /* NEW: teal outer glow */
+    inset 0 2px 4px rgba(255, 255, 255, 0.08); /* Stronger inset highlight */
+}
+
+/* Glass header - for sticky page headers with scroll blur
+   Matches new body background color for seamless integration */
+.glass-header {
+  background: rgba(10, 15, 26, 0.8); /* Matches body bg-color #0a0f1a */
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+/* Subtle glass - for cards within glass containers
+   Very light, doesn't compete with parent */
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hover lift effect - only applies on devices that support hover
+   Prevents weird touch behavior on mobile */
+@media (hover: hover) {
+  .glass-subtle:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--glass-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--elevation-2);
+  }
+
+  /* Lighter lift variant for cards */
+  .hover-lift:hover {
+    transform: translateY(-4px); /* Increased from -2px - more dramatic lift */
+    box-shadow:
+      var(--elevation-3), /* Increased from elevation-2 - stronger shadow */
+      0 0 40px rgba(20, 184, 166, 0.15); /* NEW: teal glow on hover */
+  }
+
+  /* Subtle lift - even gentler, for inline cards */
+  .hover-lift-subtle:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elevation-1);
+  }
+}
+
+/* Section divider - subtle visual separator between card groups
+   Non-collapsible, just a label with lines */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(148, 163, 184, 0.8); /* Increased from 0.6 - brighter text */
+  font-size: 0.7rem; /* Increased from 0.65rem - more readable */
+  font-weight: 600; /* Increased from 500 - bolder */
+  letter-spacing: 0.12em; /* Increased from 0.1em - more spacing */
+  text-transform: uppercase;
+  padding: 1rem 0; /* Increased from 0.5rem - more breathing room */
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.25), /* Increased from 0.15 - more visible */
+    transparent
+  );
+}
+
+/* Smooth scroll container - apply to specific scrollable areas only
+   NOT global, per your safety note */
+.scroll-container-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Uniform gap utility using design token */
+.gap-card {
+  gap: var(--space-gap);
+}
+
+/* Card padding utility using design token */
+.p-card {
+  padding: var(--space-card);
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+  .glass-surface,
+  .glass-elevated {
+    background: rgba(15, 23, 42, 0.9);
+  }
+  .glass-subtle {
+    background: rgba(30, 41, 59, 0.6);
+  }
 }

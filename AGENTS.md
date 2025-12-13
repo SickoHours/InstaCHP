@@ -1,7 +1,7 @@
 # InstaTCR - Guide for AI Agents
 
-**Version:** 1.0
-**Last Updated:** 2025-12-11
+**Version:** 1.1
+**Last Updated:** 2025-12-13
 **Purpose:** Help AI agents navigate InstaTCR documentation and work effectively in this codebase
 
 ---
@@ -107,17 +107,63 @@ When product behavior is unclear or documents disagree, follow this precedence:
 
 ## 🏗️ Current Implementation Status
 
-### V1 MVP (Frontend Only) - ✅ COMPLETE (V1.6.2)
+### V1 MVP (Frontend Only) - ✅ COMPLETE (V1.9.0)
 - All 8 screens functional (6 core + 2 V1.6.0)
-- Mock data in `src/lib/mockData.ts` (27 jobs: 22 production + 5 dev)
+- Mock data in `src/lib/mockData.ts` (29 jobs: 24 production + 5 dev)
 - No backend (wrapper execution simulated with delays)
 - Dark mode aesthetic with glass-morphism
+
+**V1.6.0-V1.9.0 Enhancements:**
+- **V1.7.0:** Escalation-first staff dashboard with quick actions workflow
+  - Sequential workflow: Claim → Schedule → Download Auth → Upload → Auto-check
+  - Visual progress indicators with dots
+  - Mobile-first 48px touch targets
+- **V1.8.0:** Internal notification system
+  - 6 notification types (escalation, auth upload, pickup claimed/scheduled, report ready)
+  - NotificationBell UI with dropdown panel
+  - Magic link system for deep linking
+  - Thread management for email preparation
+- **V1.8.1:** Auto-checker UX improvements
+  - Renamed CTA from "Wait for full report" to "Set Up Auto Checker"
+  - Always-visible settings after setup
+  - Dynamic activity feed messages based on frequency
+  - Full authorization document name standardization
+- **V1.9.0:** Authorization upload gate
+  - Three-tier sorting: Ready to Claim / In Progress / Pending Authorization
+  - Authorization status badges (green/blue/amber)
+  - Quick actions gated behind authorization check
+  - Email notification service stub for V2
+  - 5 new authorization helper functions
+
+**New Components (V1.7.0-V1.9.0):**
+- `EscalationQuickActions` - Mobile workflow component
+- `StepProgress` - Visual progress indicator
+- `ManualCompletionSheet` - Report upload BottomSheet
+- `AutoCheckSetupFlow` - Inline auto-checker setup
+- `NotificationBell` - Bell with dropdown panel
+- `NotificationItem` - Individual notification cards
+
+**New Helper Functions (V1.9.0):**
+- `hasAuthorizationUploaded()` - Check if auth document exists
+- `isReadyToClaim()` - Check if ready for staff claim
+- `isPendingAuthorization()` - Check if awaiting auth upload
+- `getAuthorizationStatusLabel()` - Get badge display label
+- `getAuthorizationStatusColor()` - Get badge color
+
+**New Files Created:**
+- `src/lib/notificationTypes.ts` - Notification type definitions
+- `src/lib/notificationManager.ts` - Singleton notification manager
+- `src/lib/magicLinks.ts` - Token generation and decoding
+- `src/lib/emailNotificationService.ts` - Email service stub (V2-ready)
+- `src/app/m/[token]/page.tsx` - Magic link route handler
+- `docs/NOTIFICATION-SYSTEM.md` - Complete notification documentation
 
 ### V2 Backend Integration - ⚪ Not Started
 - Convex database
 - Real CHP wrapper on Fly.io
 - File storage
 - Authentication
+- Real email notifications (stub ready)
 
 ### V3 VAPI AI Caller - ⚪ Not Started
 ### V4 Open Router AI - ⚪ Not Started
@@ -273,5 +319,5 @@ When product behavior is unclear or documents disagree, follow this precedence:
 
 ---
 
-*Last Updated: 2025-12-11*
+*Last Updated: 2025-12-13*
 *For Claude-specific tips, see [CLAUDE.md](CLAUDE.md)*

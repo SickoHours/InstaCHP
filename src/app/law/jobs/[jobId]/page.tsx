@@ -133,7 +133,7 @@ function DownloadButton({
           'hover:shadow-xl hover:shadow-teal-500/30',
         ],
         variant === 'secondary' && [
-          'glass-card-dark',
+          'glass-subtle',
           'border border-slate-600/30',
           'hover:border-teal-500/30',
         ]
@@ -1096,8 +1096,8 @@ export default function JobDetailPage() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-3xl mx-auto px-4 py-6 md:py-10 animate-page-entrance">
-        {/* Client Info Header */}
-        <div className="mb-8">
+        {/* Client Info Header - Elevated Hero Section */}
+        <div className="glass-elevated p-6 md:p-8 mb-6 md:mb-8">
           {/* Client Name */}
           <h1
             className="text-3xl md:text-4xl font-bold text-white font-serif mb-3 animate-text-reveal"
@@ -1129,10 +1129,10 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {/* Current Status Card - Hide when job is closed */}
+        {/* Current Status Card - Hide when job is closed - V2.0: glass-surface */}
         {!isClosedJob && (
           <div
-            className="glass-card-dark rounded-2xl p-5 mb-8 animate-text-reveal"
+            className="glass-surface rounded-2xl p-5 mb-8 animate-text-reveal"
             style={{ animationDelay: '400ms' }}
           >
             <div className="flex items-start gap-4">
@@ -1149,13 +1149,13 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Completed State: Downloads Section (Promoted to top) */}
+        {/* Completed State: Downloads Section (Promoted to top) - V2.0: glass-elevated */}
         {isCompleted && hasDownloads && (
           <div
             className="mb-8 animate-text-reveal"
             style={{ animationDelay: '400ms' }}
           >
-            <div className="glass-card-dark rounded-2xl p-5 border-l-4 border-l-emerald-500">
+            <div className="glass-elevated rounded-2xl p-5 border-l-4 border-l-emerald-500">
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -1191,13 +1191,13 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Cancelled State: Notice Card */}
+        {/* Cancelled State: Notice Card - V2.0: glass-surface */}
         {isCancelled && (
           <div
             className="mb-8 animate-text-reveal"
             style={{ animationDelay: '400ms' }}
           >
-            <div className="glass-card-dark rounded-2xl p-5 border-l-4 border-l-slate-500">
+            <div className="glass-surface rounded-2xl p-5 border-l-4 border-l-slate-500">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-500/10">
                   <XCircle className="w-5 h-5 text-slate-400" />
@@ -1349,7 +1349,7 @@ export default function JobDetailPage() {
               )}
             </>
           ) : (
-            // Active job: Show full timeline
+            // Active job: Show full timeline - V2.0: Glass container with connector
             <>
               <h2
                 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 animate-text-reveal"
@@ -1358,28 +1358,35 @@ export default function JobDetailPage() {
                 Activity Timeline
               </h2>
 
-              <div
-                ref={timelineRef}
-                className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-              >
-                {events.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-slate-500">No activity yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-0">
-                    {events.map((event, index) => (
-                      <TimelineMessage
-                        key={event._id}
-                        eventType={event.eventType}
-                        message={event.message}
-                        timestamp={event.timestamp}
-                        animationDelay={600 + index * 150}
-                        isLatest={index === events.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
+              <div className="glass-surface rounded-xl p-4">
+                <div
+                  ref={timelineRef}
+                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+                >
+                  {/* Timeline connector line */}
+                  {events.length > 1 && (
+                    <div className="absolute left-[19px] top-4 bottom-4 w-px bg-gradient-to-b from-teal-500/40 via-slate-600/30 to-transparent pointer-events-none" />
+                  )}
+
+                  {events.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-slate-500">No activity yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-0 relative">
+                      {events.map((event, index) => (
+                        <TimelineMessage
+                          key={event._id}
+                          eventType={event.eventType}
+                          message={event.message}
+                          timestamp={event.timestamp}
+                          animationDelay={600 + index * 150}
+                          isLatest={index === events.length - 1}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -1391,7 +1398,7 @@ export default function JobDetailPage() {
             className="mb-8 animate-text-reveal"
             style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
           >
-            <div className="glass-card-dark rounded-xl p-5 border border-emerald-500/20">
+            <div className="glass-surface rounded-xl p-5 border border-emerald-500/20">
               {showAutoCheckSetup ? (
                 <AutoCheckSetupFlow
                   onSave={handleAutoCheckSetupSave}
@@ -1459,7 +1466,7 @@ export default function JobDetailPage() {
               Check for Full Report
             </h2>
 
-            <div className="glass-card-dark rounded-xl p-5 border border-teal-500/20">
+            <div className="glass-surface rounded-xl p-5 border border-teal-500/20">
               {/* Main Check Button */}
               <button
                 onClick={handleAutoCheck}

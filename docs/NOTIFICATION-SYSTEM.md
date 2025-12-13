@@ -1,6 +1,8 @@
-# Notification System (V1.8.0)
+# Notification System (V1.8.0+)
 
 Internal notification system for tracking escalation workflow events. Prepares for future email integration while providing in-app notification feed with magic link simulation.
+
+**V1.9.0 Update:** Email notification service stub added (`emailNotificationService.ts`). Wired into `notificationManager.emitAuthorizationUploaded()` for immediate V2 integration readiness.
 
 ## Overview
 

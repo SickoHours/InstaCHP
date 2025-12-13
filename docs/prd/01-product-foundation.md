@@ -1,8 +1,8 @@
 # Product Foundation
 
 **Document:** InstaTCR Product Foundation
-**Version:** 2.0 (Split from Master PRD)
-**Last Updated:** 2025-12-11
+**Version:** 2.1 (Updated for V1.9.0)
+**Last Updated:** 2025-12-13
 **Audience:** Product managers, stakeholders, designers, all team members
 
 ---

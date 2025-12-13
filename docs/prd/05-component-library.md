@@ -1,7 +1,7 @@
 # Component Library
 
-**Version:** 2.5 (Updated for V1.6.2)
-**Last Updated:** 2025-12-12
+**Version:** 2.9 (Updated for V1.9.0)
+**Last Updated:** 2025-12-13
 **Status:** Complete
 **Audience:** Frontend engineers, component library maintainers
 
@@ -45,15 +45,24 @@
    - [AuthorizationUploadCard](#component-authorizationuploadcard)
    - [PickupScheduler](#component-pickupscheduler)
 
-7. [Helper Functions & Utilities](#helper-functions--utilities)
+7. [Escalation & Notification Components (V1.7.0-V1.9.0)](#escalation--notification-components-v170-v190)
+   - [EscalationQuickActions](#component-escalationquickactions)
+   - [StepProgress](#component-stepprogress)
+   - [ManualCompletionSheet](#component-manualcompletionsheet)
+   - [NotificationBell](#component-notificationbell)
+   - [NotificationItem](#component-notificationitem)
+   - [AutoCheckSetupFlow](#component-autochecksetupflow)
+
+8. [Helper Functions & Utilities](#helper-functions--utilities)
    - [getPublicStatus](#function-getpublicstatus)
    - [formatRelativeTime](#function-formatrelativetime)
    - [splitClientName](#function-splitclientname)
    - [deriveNcic](#function-derivencic)
    - [convertDateForApi](#function-convertdateforapi)
+   - [Authorization Helpers (V1.9.0)](#authorization-helpers-v190)
    - [Validation Functions](#validation-functions)
 
-7. [Component Systems](#component-systems)
+9. [Component Systems](#component-systems)
    - [Toast Notification System](#component-system-toast-notifications)
    - [Skeleton Loading System](#component-system-skeleton-loading-states)
    - [Error State Components](#component-system-error-state-components)
@@ -865,6 +874,265 @@ interface PickupSchedulerProps {
 
 ---
 
+## Escalation & Notification Components (V1.7.0-V1.9.0)
+
+### Component: EscalationQuickActions
+
+**File:** `src/components/ui/EscalationQuickActions.tsx`
+
+**Purpose:** Mobile-first quick action workflow for escalated jobs. Sequential step-by-step process for staff to complete manual pickups without navigating away from the card.
+
+#### Props
+
+```typescript
+interface EscalationQuickActionsProps {
+  job: Job;
+  onUpdate: (updates: Partial<Job>) => void;
+}
+```
+
+#### Features
+
+**Workflow Steps:**
+1. **Claim** - Staff claims the pickup assignment
+2. **Schedule** - Choose pickup time/date via BottomSheet
+3. **Download Auth** - Download law firm authorization document
+4. **Upload** - Upload face page or full report via BottomSheet
+5. **Auto-check** - (Optional, non-fatal only) Check if full report available
+
+**UI Characteristics:**
+- 48px touch targets (WCAG AAA compliant)
+- Sequential workflow (each step disappears after completion)
+- Visual progress with StepProgress component
+- Mobile-optimized BottomSheet modals
+- Fatal jobs skip auto-check (4 steps vs 5)
+
+**Authorization Gate (V1.9.0):**
+- Quick actions gated behind authorization upload
+- Jobs WITH authorization: Show full workflow buttons
+- Jobs WITHOUT authorization: Show amber "Waiting for Authorization" message
+
+#### Workflow Logic
+
+```typescript
+// Step determination
+if (authDocumentAcknowledged && facePageToken && !isFatal && !fullReportToken) return 'auto_check';
+if (authDocumentAcknowledged) return 'upload_report';
+if (scheduledPickupTime && authorizationDocumentToken) return 'download_auth';
+if (claimedBy && !scheduledPickupTime) return 'schedule';
+return 'claim';
+```
+
+---
+
+### Component: StepProgress
+
+**File:** `src/components/ui/StepProgress.tsx`
+
+**Purpose:** Visual progress indicator showing workflow completion with dot-based UI.
+
+#### Props
+
+```typescript
+interface StepProgressProps {
+  currentStep: number;
+  totalSteps: number;
+  completedSteps: number[];
+}
+```
+
+#### Features
+
+- **Completed steps**: Green dots
+- **Current step**: Pulsing orange dot
+- **Pending steps**: Gray dots
+- Adapts to workflow (4 steps for fatal, 5 for non-fatal)
+- Accessible labels for screen readers
+
+---
+
+### Component: ManualCompletionSheet
+
+**File:** `src/components/ui/ManualCompletionSheet.tsx`
+
+**Purpose:** BottomSheet content for staff to upload face page or full report after manual pickup.
+
+#### Props
+
+```typescript
+interface ManualCompletionSheetProps {
+  jobId: string;
+  onUpload: (file: File, reportType: 'face' | 'full') => void;
+  isUploading: boolean;
+}
+```
+
+#### Features
+
+- Two-tab interface: Face Page vs Full Report
+- PDF drag-and-drop upload
+- File preview with remove button
+- Upload validation
+- Solid slate-900 background for contrast (V1.7.0 fix)
+
+---
+
+### Component: NotificationBell
+
+**File:** `src/components/ui/NotificationBell.tsx`
+
+**Purpose:** Bell icon with unread count badge in header. Displays notification dropdown panel with quick actions.
+
+#### Props
+
+```typescript
+interface NotificationBellProps {
+  userId?: string;  // For filtering by recipient
+}
+```
+
+#### Features
+
+- **Bell icon** with unread count badge
+- **Dropdown panel** showing notification list
+- **Quick action buttons** that simulate magic links
+- **Dev mode** shows ALL notifications regardless of recipient
+- Click outside to close
+- Supports 6 notification types (escalation, auth upload, pickup claimed/scheduled, report ready)
+
+#### Notification Types
+
+1. `ESCALATION_STARTED` - Job escalated (manual, auto, or fatal)
+2. `AUTHORIZATION_REQUESTED` - System prompts law firm for auth doc
+3. `AUTHORIZATION_UPLOADED` - Law firm uploads authorization (V1.9.0 triggers email stub)
+4. `PICKUP_CLAIMED` - Staff claims the pickup
+5. `PICKUP_SCHEDULED` - Staff schedules pickup time
+6. `REPORT_READY` - Staff uploads report (face or full)
+
+---
+
+### Component: NotificationItem
+
+**File:** `src/components/ui/NotificationItem.tsx`
+
+**Purpose:** Individual notification card with icon, message, timestamp, and quick action buttons.
+
+#### Props
+
+```typescript
+interface NotificationItemProps {
+  notification: Notification;
+  onMarkAsRead: (id: string) => void;
+  onActionClick: (notification: Notification) => void;
+}
+```
+
+#### Features
+
+- Type-based icon and color coding
+- Relative timestamp display
+- Quick action buttons (view job, upload auth, download report)
+- Read/unread visual distinction
+- Responsive text truncation
+
+---
+
+### Component: AutoCheckSetupFlow
+
+**File:** `src/components/ui/AutoCheckSetupFlow.tsx`
+
+**Purpose:** Inline setup flow for law firms to configure auto-checker frequency when waiting for full report.
+
+#### Props
+
+```typescript
+interface AutoCheckSetupFlowProps {
+  onSave: (frequency: 'daily' | 'twice_daily') => void;
+  onCancel: () => void;
+  isSaving: boolean;
+}
+```
+
+#### Features (V1.8.1)
+
+- **Renamed CTA**: "Set Up Auto Checker" (was "Wait for full report")
+- **Two frequency options** side-by-side:
+  - Daily: 4:30 PM PT
+  - Twice Daily: 9 AM & 4:30 PM PT
+- **Fixed times** displayed as badges (not editable)
+- "Save Settings" button to confirm
+- "Back" button to return to choice screen
+- **Always-visible settings** after setup
+- **Dynamic activity feed messages** based on configured frequency
+
+#### Usage
+
+```tsx
+<AutoCheckSetupFlow
+  onSave={(frequency) => handleEnableAutoCheck(frequency)}
+  onCancel={() => setShowSetup(false)}
+  isSaving={isSubmitting}
+/>
+```
+
+---
+
+### Component: StaffJobCard (Authorization Badge Enhancement)
+
+**File:** `src/components/ui/StaffJobCard.tsx`
+
+**Purpose:** Displays authorization status badges on escalated jobs to indicate actionability (V1.9.0).
+
+#### Authorization Status Badges
+
+**Three states:**
+
+| Status | Badge Label | Color | Description |
+|--------|-------------|-------|-------------|
+| Ready to Claim | "Ready to Claim" | 🟢 Emerald | Auth uploaded, not claimed yet |
+| In Progress | "In Progress" | 🔵 Blue | Auth uploaded, claimed/scheduled |
+| Pending Authorization | "Pending Authorization" | 🟡 Amber | No auth yet |
+
+#### Helper Functions
+
+Uses authorization helpers from `jobUIHelpers.ts`:
+- `hasAuthorizationUploaded()` - Check if auth exists
+- `isReadyToClaim()` - Check if ready for claim
+- `isPendingAuthorization()` - Check if awaiting auth
+- `getAuthorizationStatusLabel()` - Get badge label
+- `getAuthorizationStatusColor()` - Get badge color
+
+---
+
+### Service: emailNotificationService (V1.9.0)
+
+**File:** `src/lib/emailNotificationService.ts`
+
+**Purpose:** Email notification service stub ready for V2 integration with Resend/SendGrid.
+
+#### API
+
+```typescript
+interface EmailNotificationService {
+  sendAuthorizationUploadNotification(jobId: string, lawFirmName: string): Promise<void>;
+}
+```
+
+#### V1 Behavior
+
+- Console logs only (development)
+- Wired into `notificationManager.emitAuthorizationUploaded()`
+- Ready for V2 integration
+
+#### V2 Migration Path
+
+- Same async function signature
+- Swap console.log for real email provider API calls
+- Thread management via `In-Reply-To` header
+- Magic links become real deep links with HMAC signatures
+
+---
+
 ## Helper Functions & Utilities
 
 ### Function: getPublicStatus
@@ -997,6 +1265,85 @@ export function convertDateForApi(htmlDate: string): string {
 // "2025-12-01" → "12/01/2025"
 // "2024-03-15" → "03/15/2024"
 ```
+
+---
+
+### Authorization Helpers (V1.9.0)
+
+**File:** `src/lib/jobUIHelpers.ts`
+
+**Purpose:** Helper functions for authorization gate workflow and three-tier sorting system.
+
+#### Function: hasAuthorizationUploaded
+
+Check if authorization document has been uploaded for an escalated job.
+
+```typescript
+export function hasAuthorizationUploaded(job: Job): boolean {
+  return !!(job.escalationData?.authorizationDocumentToken);
+}
+```
+
+---
+
+#### Function: isReadyToClaim
+
+Check if job is ready for staff to claim (auth uploaded, not claimed yet).
+
+```typescript
+export function isReadyToClaim(job: Job): boolean {
+  const hasAuth = hasAuthorizationUploaded(job);
+  const notClaimed = !job.escalationData?.claimedBy;
+  return hasAuth && notClaimed;
+}
+```
+
+---
+
+#### Function: isPendingAuthorization
+
+Check if job is awaiting authorization upload.
+
+```typescript
+export function isPendingAuthorization(job: Job): boolean {
+  return !hasAuthorizationUploaded(job);
+}
+```
+
+---
+
+#### Function: getAuthorizationStatusLabel
+
+Get display label for authorization status badge.
+
+```typescript
+export function getAuthorizationStatusLabel(job: Job): string {
+  if (isReadyToClaim(job)) return 'Ready to Claim';
+  if (hasAuthorizationUploaded(job)) return 'In Progress';
+  return 'Pending Authorization';
+}
+```
+
+---
+
+#### Function: getAuthorizationStatusColor
+
+Get badge color for authorization status.
+
+```typescript
+export function getAuthorizationStatusColor(job: Job): 'emerald' | 'blue' | 'amber' {
+  if (isReadyToClaim(job)) return 'emerald';  // 🟢 Green
+  if (hasAuthorizationUploaded(job)) return 'blue';  // 🔵 Blue
+  return 'amber';  // 🟡 Amber
+}
+```
+
+**Three-Tier Sorting (Staff Dashboard):**
+
+These helpers power the three-tier sorting system for escalated jobs:
+- **Tier 1 (TOP)**: Ready to Claim - `isReadyToClaim()` returns true
+- **Tier 2 (MIDDLE)**: In Progress - `hasAuthorizationUploaded()` returns true, but claimed
+- **Tier 3 (BOTTOM)**: Pending Authorization - `isPendingAuthorization()` returns true
 
 ---
 
@@ -1270,4 +1617,4 @@ This document is extracted from **INSTATCR-MASTER-PRD.md** (Part 5: Component Li
 
 ---
 
-*Last synced: 2025-12-11*
+*Last synced: 2025-12-13*

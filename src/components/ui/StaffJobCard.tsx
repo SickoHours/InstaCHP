@@ -42,6 +42,7 @@ const INTERNAL_STATUS_COLORS: Record<InternalStatus, string> = {
   WAITING_FOR_FULL_REPORT: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30',
   COMPLETED_FULL_REPORT: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
   COMPLETED_MANUAL: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
+  COMPLETED_FACE_PAGE_ONLY: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
   NEEDS_MORE_INFO: 'bg-amber-500/20 text-amber-200 border-amber-500/30',
   NEEDS_IN_PERSON_PICKUP: 'bg-orange-500/20 text-orange-200 border-orange-500/30',
   AUTOMATION_ERROR: 'bg-red-500/20 text-red-200 border-red-500/30',

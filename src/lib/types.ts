@@ -7,7 +7,7 @@
 // ============================================
 
 /**
- * Internal status - 13 values visible to staff only
+ * Internal status - 14 values visible to staff only
  * These reveal technical details about automation state
  */
 export type InternalStatus =
@@ -20,6 +20,7 @@ export type InternalStatus =
   | 'WAITING_FOR_FULL_REPORT'
   | 'COMPLETED_FULL_REPORT'
   | 'COMPLETED_MANUAL'
+  | 'COMPLETED_FACE_PAGE_ONLY' // V1.6.0: Law firm chose to complete with just face page
   | 'NEEDS_MORE_INFO'
   | 'NEEDS_IN_PERSON_PICKUP'
   | 'AUTOMATION_ERROR'
@@ -169,6 +170,11 @@ export type WrapperResult =
 export type ReportTypeHint = 'FULL' | 'FACE_PAGE' | 'UNKNOWN';
 
 /**
+ * Page 2 field verification result
+ */
+export type Page2FieldResult = 'success' | 'failed' | 'not_tried';
+
+/**
  * Record of a single wrapper execution
  */
 export interface WrapperRun {
@@ -179,6 +185,87 @@ export interface WrapperRun {
   page1Passed?: boolean; // True if Page 1 succeeded (reached Page 2)
   reportTypeHint?: ReportTypeHint; // Known report type even before Page 2 verification completes
   errorMessage?: string;
+  // V1.6.0: Track which Page 2 fields were tried for auto-escalation
+  page2FieldsTried?: {
+    name?: boolean;
+    plate?: boolean;
+    driverLicense?: boolean;
+    vin?: boolean;
+  };
+  page2FieldResults?: {
+    name?: Page2FieldResult;
+    plate?: Page2FieldResult;
+    driverLicense?: Page2FieldResult;
+    vin?: Page2FieldResult;
+  };
+}
+
+// ============================================
+// ESCALATION TYPES (V1.6.0+)
+// ============================================
+
+/**
+ * Reason for escalation to manual pickup
+ */
+export type EscalationReason = 'manual' | 'auto_exhausted' | 'fatal_report';
+
+/**
+ * Escalation workflow status
+ */
+export type EscalationStatus =
+  | 'pending_authorization'    // Waiting for law firm to upload auth doc
+  | 'authorization_received'   // Auth doc uploaded, ready for staff
+  | 'claimed'                  // Staff member claimed the pickup
+  | 'pickup_scheduled'         // Pickup date/time set
+  | 'completed';               // Report picked up and uploaded
+
+/**
+ * Pickup time slot options
+ */
+export type PickupTimeSlot = '9am' | 'afternoon' | '4pm';
+
+/**
+ * Escalation data tracking (V1.6.0+)
+ * Tracks the full escalation workflow for manual pickup
+ */
+export interface EscalationData {
+  status: EscalationStatus;
+  escalatedAt: number;
+  escalationReason: EscalationReason;
+  escalationNotes?: string;
+
+  // Authorization document
+  authorizationRequested?: boolean;
+  authorizationRequestedAt?: number;
+  authorizationDocumentToken?: string;
+  authorizationUploadedAt?: number;
+
+  // Staff claiming
+  claimedBy?: string;       // Staff member ID or name
+  claimedAt?: number;
+
+  // Pickup scheduling
+  scheduledPickupTime?: PickupTimeSlot;
+  scheduledPickupDate?: string;  // YYYY-MM-DD (Mon-Fri only)
+  pickupNotes?: string;
+
+  // Completion
+  completedAt?: number;
+  completedBy?: string;
+}
+
+// ============================================
+// FATAL REPORT TYPES (V1.6.0+)
+// ============================================
+
+/**
+ * Fatal report details (V1.6.0+)
+ * Additional data required for fatal crash reports
+ */
+export interface FatalDetails {
+  clientWasDeceased: boolean;
+  deathCertificateToken?: string;   // Required if clientWasDeceased is true
+  deathCertificateUploadedAt?: number;
 }
 
 /**
@@ -236,6 +323,18 @@ export interface Job {
   // Wrapper History
   wrapperRuns: WrapperRun[];
 
+  // Escalation Data (V1.6.0+)
+  escalationData?: EscalationData;
+
+  // Fatal Report (V1.6.0+)
+  isFatal?: boolean;
+  fatalDetails?: FatalDetails;
+
+  // Face Page Completion Choice (V1.6.0+)
+  facePageChoiceMade?: 'complete' | 'wait';  // Law firm's choice when face page received
+  facePageChoiceTimestamp?: number;
+  reopenedFromFacePageComplete?: boolean;    // True if job was reopened after completing with face page
+
   // Timestamps
   createdAt: number; // Unix timestamp (ms)
   updatedAt: number; // Unix timestamp (ms)
@@ -292,7 +391,23 @@ export type EventType =
   | 'auto_check_started' // Law firm triggered manual check
   | 'auto_check_found' // Full report found
   | 'auto_check_not_found' // Full report not yet available
-  | 'auto_check_settings_updated'; // Frequency settings changed
+  | 'auto_check_settings_updated' // Frequency settings changed
+  // V1.6.0+ Face page completion events
+  | 'face_page_complete_chosen' // Law firm chose to complete with face page only
+  | 'face_page_wait_chosen' // Law firm chose to wait for full report
+  | 'face_page_reopened' // Law firm reopened job to check for full report
+  // V1.6.0+ Escalation workflow events
+  | 'escalation_auto_triggered' // Auto-escalated due to exhausted Page 2 fields
+  | 'escalation_manual_triggered' // Staff manually escalated
+  | 'escalation_fatal_triggered' // Auto-escalated due to fatal report
+  | 'authorization_requested' // Law firm prompted to upload auth doc
+  | 'authorization_uploaded' // Law firm uploaded auth doc
+  | 'pickup_claimed' // Staff claimed the pickup
+  | 'pickup_scheduled' // Staff scheduled pickup time
+  | 'pickup_completed' // Staff completed manual pickup
+  // V1.6.0+ Fatal report events
+  | 'fatal_report_created' // Fatal report request submitted
+  | 'death_certificate_uploaded'; // Death certificate uploaded
 
 /**
  * Timeline event for job history
@@ -327,4 +442,9 @@ export interface ValidationResult {
 export interface NewJobFormData {
   clientName: string;
   reportNumber: string;
+  // V1.6.0: Fatal report fields (optional)
+  isFatal?: boolean;
+  fatalDetails?: FatalDetails;
+  internalStatus?: InternalStatus;
+  escalationData?: EscalationData;
 }

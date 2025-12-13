@@ -40,6 +40,13 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+
+        {/* DEV MODE INDICATOR - Shows when running in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed bottom-2 left-2 px-2 py-1 bg-amber-500/90 text-amber-950 text-[10px] font-mono font-bold rounded z-[9999] shadow-lg pointer-events-none">
+            DEV MODE
+          </div>
+        )}
       </body>
     </html>
   );

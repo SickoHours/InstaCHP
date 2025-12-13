@@ -67,6 +67,11 @@ export const STATUS_MAP: Record<InternalStatus, StatusConfig> = {
     color: 'green',
     message: 'Your report is ready to download.',
   },
+  COMPLETED_FACE_PAGE_ONLY: {
+    publicStatus: 'REPORT_READY',
+    color: 'green',
+    message: 'Your report is ready to download.',
+  },
   NEEDS_MORE_INFO: {
     publicStatus: 'NEEDS_INFO',
     color: 'amber',
@@ -268,7 +273,7 @@ export function formatPublicStatus(status: PublicStatus): string {
  * Check if a status indicates the job is complete
  */
 export function isCompletedStatus(internalStatus: InternalStatus): boolean {
-  return ['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL'].includes(internalStatus);
+  return ['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY'].includes(internalStatus);
 }
 
 /**
@@ -285,7 +290,15 @@ export function isActiveStatus(internalStatus: InternalStatus): boolean {
   return ![
     'COMPLETED_FULL_REPORT',
     'COMPLETED_MANUAL',
+    'COMPLETED_FACE_PAGE_ONLY',
     'CANCELLED',
     'NEEDS_MORE_INFO',
   ].includes(internalStatus);
+}
+
+/**
+ * Check if a status indicates the job needs escalation attention (V1.6.0+)
+ */
+export function isEscalatedStatus(internalStatus: InternalStatus): boolean {
+  return internalStatus === 'NEEDS_IN_PERSON_PICKUP';
 }

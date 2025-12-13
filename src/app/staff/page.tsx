@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { RefreshCw, ExternalLink } from 'lucide-react';
+import { RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { mockJobs } from '@/lib/mockData';
 import type { InternalStatus, PublicStatus } from '@/lib/types';
@@ -28,7 +28,7 @@ const FILTER_STATUSES: Record<FilterId, InternalStatus[] | null> = {
     'NEEDS_IN_PERSON_PICKUP',
     'AUTOMATION_ERROR',
   ],
-  completed: ['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL'],
+  completed: ['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY'],
   cancelled: ['CANCELLED'],
 };
 
@@ -63,6 +63,7 @@ const INTERNAL_STATUS_COLORS: Record<InternalStatus, string> = {
   WAITING_FOR_FULL_REPORT: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30',
   COMPLETED_FULL_REPORT: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
   COMPLETED_MANUAL: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
+  COMPLETED_FACE_PAGE_ONLY: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30',
   NEEDS_MORE_INFO: 'bg-amber-500/20 text-amber-200 border-amber-500/30',
   NEEDS_IN_PERSON_PICKUP: 'bg-orange-500/20 text-orange-200 border-orange-500/30',
   AUTOMATION_ERROR: 'bg-red-500/20 text-red-200 border-red-500/30',
@@ -119,6 +120,9 @@ export default function StaffQueuePage() {
       completed: allJobs.filter((job) =>
         completedStatuses.includes(job.internalStatus)
       ).length,
+      escalations: allJobs.filter((job) =>
+        job.internalStatus === 'NEEDS_IN_PERSON_PICKUP'
+      ).length,
     };
   }, [allJobs]);
 
@@ -156,7 +160,28 @@ export default function StaffQueuePage() {
               Job Queue
             </h1>
 
-            <button
+            <div className="flex items-center gap-2">
+              {/* Escalations Link */}
+              <Link
+                href="/staff/escalations"
+                className={cn(
+                  'relative flex items-center gap-2 px-3 py-2 rounded-lg',
+                  'text-sm text-orange-400 hover:text-orange-300',
+                  'bg-orange-500/10 hover:bg-orange-500/20',
+                  'border border-orange-500/30 hover:border-orange-500/50',
+                  'transition-all duration-200'
+                )}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span className="hidden md:inline">Escalations</span>
+                {stats.escalations > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full">
+                    {stats.escalations}
+                  </span>
+                )}
+              </Link>
+
+              <button
               onClick={handleRefresh}
               disabled={isRefreshing}
               className={cn(
@@ -172,6 +197,7 @@ export default function StaffQueuePage() {
               />
               <span className="hidden md:inline">Refresh</span>
             </button>
+            </div>
           </div>
         </div>
       </header>

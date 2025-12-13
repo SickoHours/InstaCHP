@@ -40,47 +40,89 @@ class MockDataManager {
    * Create new job from form submission
    * Automatically adds initial events:
    * 1. job_created - "We've received your request..."
-   * 2. driver_passenger_prompt - Interactive prompt
+   * 2. driver_passenger_prompt - Interactive prompt (unless fatal)
+   *
+   * V1.6.0: Fatal reports skip wrapper and auto-escalate
    */
   createJob(formData: NewJobFormData): Job {
+    const isFatal = formData.isFatal ?? false;
+
     const newJob: Job = {
       _id: this.generateJobId(),
       lawFirmId: DEFAULT_LAW_FIRM_ID,
       lawFirmName: DEFAULT_LAW_FIRM_NAME,
       clientName: formData.clientName,
-      clientType: null, // Will be set via interactive prompt
+      clientType: null, // Will be set via interactive prompt (unless fatal)
       reportNumber: formData.reportNumber,
       crashDate: '', // Will be collected later
       ncic: deriveNcic(formData.reportNumber),
-      internalStatus: 'NEEDS_CALL',
+      internalStatus: formData.internalStatus ?? 'NEEDS_CALL',
       wrapperRuns: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
       interactiveState: {
-        driverPassengerAsked: false,
-        chpNudgeDismissed: false,
+        driverPassengerAsked: isFatal, // Skip prompts for fatal
+        chpNudgeDismissed: isFatal,
       },
+      // V1.6.0: Fatal report fields
+      isFatal,
+      fatalDetails: formData.fatalDetails,
+      escalationData: formData.escalationData,
     };
 
     // Add to jobs array
     this.jobs.push(newJob);
 
-    // Create initial events
-    this.addEvent(newJob._id, {
-      eventType: 'job_created',
-      message: "We've received your request and will begin processing shortly.",
-      isUserFacing: true,
-    });
+    // Create initial events based on job type
+    if (isFatal) {
+      // Fatal report events
+      this.addEvent(newJob._id, {
+        eventType: 'fatal_report_created',
+        message: "We've received your fatal report request. Our team will handle this with priority.",
+        isUserFacing: true,
+      });
 
-    this.addEvent(newJob._id, {
-      eventType: 'driver_passenger_prompt',
-      message: 'Is this for a driver or passenger?',
-      isUserFacing: true,
-      metadata: {
-        isInteractive: true,
-        interactionComplete: false,
-      },
-    });
+      this.addEvent(newJob._id, {
+        eventType: 'escalation_fatal_triggered',
+        message: 'Fatal report - auto-escalated for manual pickup.',
+        isUserFacing: false, // Staff only
+      });
+
+      // If client was deceased and death cert uploaded
+      if (formData.fatalDetails?.clientWasDeceased && formData.fatalDetails?.deathCertificateToken) {
+        this.addEvent(newJob._id, {
+          eventType: 'death_certificate_uploaded',
+          message: 'Death certificate uploaded.',
+          isUserFacing: false, // Staff only
+        });
+      }
+
+      // Auth already uploaded with fatal report
+      if (formData.escalationData?.authorizationDocumentToken) {
+        this.addEvent(newJob._id, {
+          eventType: 'authorization_uploaded',
+          message: 'Authorization document received.',
+          isUserFacing: true,
+        });
+      }
+    } else {
+      // Standard job events
+      this.addEvent(newJob._id, {
+        eventType: 'job_created',
+        message: "We've received your request and will begin processing shortly.",
+        isUserFacing: true,
+      });
+
+      this.addEvent(newJob._id, {
+        eventType: 'driver_passenger_prompt',
+        message: 'Is this for a driver or passenger?',
+        isUserFacing: true,
+        metadata: {
+          isInteractive: true,
+          interactionComplete: false,
+        },
+      });
+    }
 
     return newJob;
   }

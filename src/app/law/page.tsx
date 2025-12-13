@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, Search } from 'lucide-react';
+import { Plus, FileText, Search, AlertTriangle } from 'lucide-react';
 import {
   Container,
   Button,
@@ -102,22 +102,34 @@ export default function LawFirmDashboard() {
                 </p>
               </div>
 
-              {/* Desktop CTA button */}
-              <Link
-                href="/law/jobs/new"
-                className="hidden md:block animate-text-reveal"
+              {/* Desktop CTA buttons */}
+              <div
+                className="hidden md:flex items-center gap-3 animate-text-reveal"
                 style={{ animationDelay: '200ms' }}
               >
-                <Button
-                  variant="primary"
-                  size="md"
-                  icon={<Plus className="w-5 h-5" />}
-                  iconPosition="left"
-                  className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
-                >
-                  New Request
-                </Button>
-              </Link>
+                <Link href="/law/jobs/new">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    icon={<Plus className="w-5 h-5" />}
+                    iconPosition="left"
+                    className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
+                  >
+                    New Request
+                  </Button>
+                </Link>
+                <Link href="/law/jobs/new-fatal">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+                    iconPosition="left"
+                    className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
+                  >
+                    Fatal Report
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             {/* Status summary cards */}
@@ -248,15 +260,35 @@ export default function LawFirmDashboard() {
         </Container>
       </div>
 
-      {/* Mobile FAB */}
-      <Link href="/law/jobs/new" className="md:hidden">
-        <FloatingActionButton
-          icon={<Plus className="w-6 h-6" />}
-          label="New Request"
-          extended
-          position="bottom-right"
-        />
-      </Link>
+      {/* Mobile FABs */}
+      <div className="md:hidden fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
+        {/* Fatal Report (secondary) */}
+        <Link href="/law/jobs/new-fatal">
+          <button
+            className="
+              flex items-center gap-2 px-4 py-3 rounded-full
+              bg-slate-800/90 border border-red-500/30 backdrop-blur-md
+              text-red-300 text-sm font-medium
+              shadow-lg shadow-red-900/20
+              hover:bg-slate-700/90 hover:border-red-500/50
+              active:scale-95 transition-all duration-200
+            "
+          >
+            <AlertTriangle className="w-5 h-5" />
+            <span>Fatal Report</span>
+          </button>
+        </Link>
+
+        {/* New Request (primary FAB) */}
+        <Link href="/law/jobs/new">
+          <FloatingActionButton
+            icon={<Plus className="w-6 h-6" />}
+            label="New Request"
+            extended
+            position="static"
+          />
+        </Link>
+      </div>
     </div>
   );
 }

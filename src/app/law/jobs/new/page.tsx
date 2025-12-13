@@ -8,6 +8,7 @@ import { Container, Button, Input } from '@/components/ui';
 import { cn, isValidReportNumber } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
 import { useMockData } from '@/context/MockDataContext';
+import { getDelay } from '@/lib/devConfig';
 
 // Form state interface - only 2 fields per PRD
 interface FormState {
@@ -156,7 +157,7 @@ export default function NewRequestPage() {
           } else {
             resolve(true);
           }
-        }, 1500);
+        }, getDelay('formSubmit'));
       });
 
       // Create new job with initial events

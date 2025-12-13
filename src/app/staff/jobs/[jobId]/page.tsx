@@ -45,7 +45,10 @@ import {
 import type { Job, WrapperRun, WrapperResult, InternalStatus, JobEvent } from '@/lib/types';
 import TimelineMessage from '@/components/ui/TimelineMessage';
 import TabBar from '@/components/ui/TabBar';
+import PickupScheduler from '@/components/ui/PickupScheduler';
 import { formatRelativeTime } from '@/lib/utils';
+import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
+import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -738,6 +741,10 @@ export default function StaffJobDetailPage() {
   const [showEscalationDialog, setShowEscalationDialog] = useState(false);
   const [escalationNotes, setEscalationNotes] = useState('');
 
+  // Pickup scheduler state (V1.6.0+)
+  const [isClaimingPickup, setIsClaimingPickup] = useState(false);
+  const [isSchedulingPickup, setIsSchedulingPickup] = useState(false);
+
   // Journey log collapse state
   const [isJourneyLogOpen, setIsJourneyLogOpen] = useState(false);
 
@@ -848,6 +855,32 @@ export default function StaffJobDetailPage() {
       page1Passed = false;
     }
 
+    // V1.6.0: Track which Page 2 fields were tried for auto-escalation
+    const page2FieldsTried = {
+      name: !!(page2Data.firstName || page2Data.lastName),
+      plate: !!page2Data.plate,
+      driverLicense: !!page2Data.driverLicense,
+      vin: !!page2Data.vin,
+    };
+
+    // Determine field results based on wrapper result
+    const page2FieldResults: WrapperRun['page2FieldResults'] = {};
+    if (result === 'FULL' || result === 'FACE_PAGE') {
+      // Success - at least one field worked
+      Object.keys(page2FieldsTried).forEach((field) => {
+        if (page2FieldsTried[field as keyof typeof page2FieldsTried]) {
+          page2FieldResults[field as keyof typeof page2FieldResults] = 'success';
+        }
+      });
+    } else if (result === 'PAGE2_VERIFICATION_FAILED') {
+      // All tried fields failed
+      Object.keys(page2FieldsTried).forEach((field) => {
+        if (page2FieldsTried[field as keyof typeof page2FieldsTried]) {
+          page2FieldResults[field as keyof typeof page2FieldResults] = 'failed';
+        }
+      });
+    }
+
     const newRun: WrapperRun = {
       runId: `run_${generateId()}`,
       timestamp: Date.now(),
@@ -855,6 +888,8 @@ export default function StaffJobDetailPage() {
       duration,
       page1Passed,
       errorMessage: result === 'PORTAL_ERROR' ? 'Portal timeout after 45 seconds' : undefined,
+      page2FieldsTried,
+      page2FieldResults,
     };
 
     // Update local job state
@@ -862,6 +897,7 @@ export default function StaffJobDetailPage() {
       let newStatus = prev.internalStatus;
       let newFacePageToken = prev.facePageToken;
       let newFullReportToken = prev.fullReportToken;
+      let escalationData = prev.escalationData;
 
       if (result === 'FULL') {
         newStatus = 'COMPLETED_FULL_REPORT';
@@ -870,8 +906,48 @@ export default function StaffJobDetailPage() {
       } else if (result === 'FACE_PAGE') {
         newStatus = 'FACE_PAGE_ONLY';
         newFacePageToken = `fp_token_${generateId()}`;
-      } else if (result === 'PAGE1_NOT_FOUND' || result === 'PAGE2_VERIFICATION_FAILED') {
+      } else if (result === 'PAGE1_NOT_FOUND') {
         newStatus = 'NEEDS_MORE_INFO';
+      } else if (result === 'PAGE2_VERIFICATION_FAILED') {
+        // V1.6.0: Check if all available fields have been exhausted for auto-escalation
+        const allRuns = [...prev.wrapperRuns, newRun];
+
+        // Get all fields that have ever failed across all runs
+        const allFailedFields = new Set<string>();
+        allRuns.forEach((run) => {
+          if (run.page2FieldResults) {
+            Object.entries(run.page2FieldResults).forEach(([field, fieldResult]) => {
+              if (fieldResult === 'failed') {
+                allFailedFields.add(field);
+              }
+            });
+          }
+        });
+
+        // Check if all available (non-empty) fields have been tried and failed
+        const availableFields = ['name', 'plate', 'driverLicense', 'vin'].filter((field) => {
+          if (field === 'name') return !!(page2Data.firstName || page2Data.lastName);
+          return !!page2Data[field as keyof typeof page2Data];
+        });
+
+        const allFieldsExhausted = availableFields.length > 0 &&
+          availableFields.every((field) => allFailedFields.has(field));
+
+        if (allFieldsExhausted) {
+          // Auto-escalate: all Page 2 fields have been tried and failed
+          newStatus = 'NEEDS_IN_PERSON_PICKUP';
+          escalationData = {
+            status: 'pending_authorization',
+            escalatedAt: Date.now(),
+            escalationReason: 'auto_exhausted',
+            escalationNotes: 'Auto-escalated: All verification fields exhausted',
+            authorizationRequested: true,
+            authorizationRequestedAt: Date.now(),
+          };
+          toast.warning('Auto-escalated: All verification fields exhausted. Manual pickup required.');
+        } else {
+          newStatus = 'NEEDS_MORE_INFO';
+        }
       } else if (result === 'PORTAL_ERROR') {
         newStatus = 'AUTOMATION_ERROR';
       }
@@ -882,6 +958,7 @@ export default function StaffJobDetailPage() {
         facePageToken: newFacePageToken,
         fullReportToken: newFullReportToken,
         wrapperRuns: [...prev.wrapperRuns, newRun],
+        escalationData,
       };
     });
 
@@ -908,8 +985,8 @@ export default function StaffJobDetailPage() {
     setIsAutoChecking(true);
     setAutoCheckResult(null);
 
-    // 3-5 second delay
-    await new Promise((resolve) => setTimeout(resolve, 3000 + Math.random() * 2000));
+    // Auto-check delay (uses dev config for faster testing)
+    await new Promise((resolve) => setTimeout(resolve, getDelay('autoCheck')));
 
     // 20% chance of finding full report
     const found = Math.random() < 0.2;
@@ -948,8 +1025,8 @@ export default function StaffJobDetailPage() {
 
     setIsUploading(true);
 
-    // Simulate upload (2-3 seconds)
-    await new Promise((resolve) => setTimeout(resolve, 2000 + Math.random() * 1000));
+    // Simulate upload (uses dev config for faster testing)
+    await new Promise((resolve) => setTimeout(resolve, getDelay('fileUpload')));
 
     const fileName = uploadType === 'face' ? 'face_page.pdf' : 'full_report.pdf';
     setUploadedFile(fileName);
@@ -979,6 +1056,61 @@ export default function StaffJobDetailPage() {
       internalStatus: 'COMPLETED_MANUAL',
     }));
     toast.success('Job marked as manually complete');
+  };
+
+  /**
+   * Handle claiming a pickup for escalated jobs (V1.6.0+)
+   */
+  const handleClaimPickup = async () => {
+    setIsClaimingPickup(true);
+
+    // Mock delay
+    await new Promise((resolve) => setTimeout(resolve, getDelay('formSubmit')));
+
+    setLocalJob((prev) => ({
+      ...prev,
+      escalationData: {
+        ...prev.escalationData!,
+        status: 'claimed' as EscalationStatus,
+        claimedBy: 'Current Staff',
+        claimedAt: Date.now(),
+      },
+    }));
+
+    setIsClaimingPickup(false);
+    toast.success('Pickup claimed successfully');
+  };
+
+  /**
+   * Handle scheduling a pickup time (V1.6.0+)
+   */
+  const handleSchedulePickup = async (time: PickupTimeSlot, date: string) => {
+    setIsSchedulingPickup(true);
+
+    // Mock delay
+    await new Promise((resolve) => setTimeout(resolve, getDelay('formSubmit')));
+
+    setLocalJob((prev) => ({
+      ...prev,
+      escalationData: {
+        ...prev.escalationData!,
+        status: 'pickup_scheduled' as EscalationStatus,
+        scheduledPickupTime: time,
+        scheduledPickupDate: date,
+      },
+    }));
+
+    setIsSchedulingPickup(false);
+    toast.success(`Pickup scheduled for ${time} on ${date}`);
+  };
+
+  /**
+   * Handle downloading authorization document (V1.6.0+)
+   */
+  const handleDownloadAuth = () => {
+    alert(
+      `[V1 Mock] Download Authorization Document would happen here.\n\nIn V2, this will fetch from Convex Storage.`
+    );
   };
 
   const handleDownload = (type: 'face' | 'full') => {
@@ -1726,6 +1858,38 @@ export default function StaffJobDetailPage() {
                 <p className="text-xs text-slate-500 mt-3">
                   All staff can see escalated jobs globally.
                 </p>
+              </StaffControlCard>
+            )}
+
+            {/* Pickup Scheduler - For escalated jobs (V1.6.0+) */}
+            {isEscalated && localJob.escalationData && (
+              <StaffControlCard title="Pickup Scheduler" icon={Calendar} animationDelay={650}>
+                <PickupScheduler
+                  onClaim={handleClaimPickup}
+                  onSchedule={handleSchedulePickup}
+                  onDownloadAuth={handleDownloadAuth}
+                  claimed={
+                    localJob.escalationData.status !== 'pending_authorization' &&
+                    localJob.escalationData.status !== 'authorization_received'
+                  }
+                  claimedBy={localJob.escalationData.claimedBy}
+                  scheduledTime={localJob.escalationData.scheduledPickupTime}
+                  scheduledDate={localJob.escalationData.scheduledPickupDate}
+                  hasAuthDocument={!!localJob.escalationData.authorizationDocumentToken}
+                  disabled={isClaimingPickup || isSchedulingPickup}
+                />
+
+                {/* Escalation Info */}
+                <div className="mt-4 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Escalation Info</p>
+                  <div className="space-y-1 text-sm text-slate-400">
+                    <p>Reason: <span className="text-slate-300">{localJob.escalationData.escalationReason || 'manual'}</span></p>
+                    <p>Status: <span className="text-slate-300">{localJob.escalationData.status}</span></p>
+                    {localJob.escalationData.escalatedAt && (
+                      <p>Escalated: <span className="text-slate-300">{formatDateTime(localJob.escalationData.escalatedAt)}</span></p>
+                    )}
+                  </div>
+                </div>
               </StaffControlCard>
             )}
 

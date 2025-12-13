@@ -7,8 +7,8 @@ interface FloatingActionButtonProps
   icon: React.ReactNode;
   /** Optional label (shown when extended) */
   label?: string;
-  /** Position on screen */
-  position?: 'bottom-right' | 'bottom-center';
+  /** Position on screen. Use 'static' when inside a flex container */
+  position?: 'bottom-right' | 'bottom-center' | 'static';
   /** Show label (extended mode) */
   extended?: boolean;
 }
@@ -32,8 +32,9 @@ const FloatingActionButton = forwardRef<
       <button
         ref={ref}
         className={cn(
-          // Base styles
-          'fixed z-50 flex items-center justify-center gap-2',
+          // Base styles - fixed only when not static
+          position !== 'static' && 'fixed z-50',
+          'flex items-center justify-center gap-2',
           'bg-gradient-to-r from-teal-600 to-teal-700',
           'text-white font-semibold',
           'shadow-lg shadow-teal-600/30',
@@ -49,12 +50,12 @@ const FloatingActionButton = forwardRef<
           // Size - 56px diameter or extended
           extended ? 'h-14 px-6 rounded-full' : 'h-14 w-14 rounded-full',
 
-          // Position styles
+          // Position styles (only for fixed positions)
           position === 'bottom-right' && 'bottom-6 right-6',
           position === 'bottom-center' && 'bottom-6 left-1/2 -translate-x-1/2',
 
-          // Hide on desktop
-          'md:hidden',
+          // Hide on desktop (only for fixed positions)
+          position !== 'static' && 'md:hidden',
 
           className
         )}

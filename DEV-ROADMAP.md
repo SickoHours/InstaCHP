@@ -8,12 +8,12 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 
 | Version | Focus | Duration | Status |
 |---------|-------|----------|--------|
-| **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.5.0) |
+| **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.6.0) |
 | **V2** | Backend Integration | 6 days | ⚪ Not Started |
 | **V3** | VAPI AI Caller | TBD | ⚪ Not Started |
 | **V4** | Open Router AI | TBD | ⚪ Not Started |
 
-**Current Version:** V1.5.0 (December 12, 2025)
+**Current Version:** V1.6.0 (December 12, 2025)
 
 ---
 
@@ -380,7 +380,7 @@ Complete, polished frontend with mock data. No backend dependencies.
 
 ### Post-Phase 6: Continued Enhancements ✅ COMPLETE
 
-**Status:** ✅ Complete (V1.0.5 - V1.5.0)
+**Status:** ✅ Complete (V1.0.5 - V1.6.0)
 
 After Phase 6 completion, additional enhancements were made to improve user experience and streamline workflows.
 
@@ -526,6 +526,62 @@ After Phase 6 completion, additional enhancements were made to improve user expe
 
 **Deliverable:** ✅ Complete closed-state UI cleanup for both staff and law firm views.
 
+#### V1.6.0: Manual Pickup Workflow & Fatal Reports ✅ COMPLETE
+
+- [x] **Face Page Completion Options** - Law firms choose to complete with face page or wait for full report
+  - `FacePageCompletionChoice` component - Two-button choice card
+  - New status: `COMPLETED_FACE_PAGE_ONLY` → maps to `REPORT_READY`
+  - "Change My Mind" feature with `FacePageReopenBanner` - Re-check for full report after completion
+- [x] **Auto-Escalation Logic** - Auto-escalate when Page 2 verification fields exhausted
+  - Track which Page 2 fields tried in each wrapper run
+  - `page2FieldsTried` and `page2FieldResults` in `WrapperRun`
+  - Aggregate across all runs to determine exhaustion
+  - New `escalationReason`: 'manual' | 'auto_exhausted' | 'fatal_report'
+- [x] **Manual Pickup Escalation Workflow** - Complete in-person pickup workflow
+  - `EscalationData` state machine: pending_authorization → authorization_received → claimed → pickup_scheduled → completed
+  - `AuthorizationUploadCard` component - Law firm uploads auth document (friendly messaging)
+  - `PickupScheduler` component - Staff scheduling with quick time buttons
+  - `/staff/escalations` page - Escalation queue for staff
+  - Business day scheduling (Mon-Fri only)
+  - Authorization document download for staff
+- [x] **Fatal Reports Handling** - Separate submission flow for fatal crashes
+  - `/law/jobs/new-fatal` page - Fatal report form
+  - Death certificate upload (conditional on clientWasDeceased)
+  - Authorization document upload (required for all fatal reports)
+  - Auto-escalation on submission (skips wrapper entirely)
+  - `FatalDetails` interface tracking
+- [x] **Friendly Law Firm Messaging** - CRITICAL: No technical jargon visible to law firms
+  - "We need your help" NOT "Escalation required"
+  - "Upload an authorization document" NOT "In-person pickup needed"
+  - "A team member is working on your request" NOT "Pickup claimed"
+- [x] **Staff Link Click → Auto-Notify** - Claiming pickup auto-notifies law firm
+- [x] **Pickup Scheduling UX** - Quick time buttons (9am, afternoon, 4pm) + date picker
+- [x] **Type System Updates** - ~80 lines of new types
+  - `EscalationData` interface (status, timestamps, auth, pickup details)
+  - `FatalDetails` interface (clientWasDeceased, deathCertificateToken)
+  - `EscalationStatus` type (5 states)
+  - `PickupTimeSlot` type ('9am' | 'afternoon' | '4pm')
+  - `EscalationReason` type
+  - Extended `Job` interface with isFatal, fatalDetails, escalationData
+  - Extended `WrapperRun` with page2FieldsTried, page2FieldResults
+  - 13 new `EventType` values for escalation and fatal flows
+- [x] **Mock Data Updates** - 4 new sample jobs covering:
+  - Face page with law firm completing early
+  - Auto-escalated job (exhausted Page 2 fields)
+  - Fatal report with deceased client
+  - Fatal report with surviving client
+- [x] **Component Library** - 4 new components created (~400 lines)
+- [x] **Timeline Events** - 13 new event types for escalation and fatal workflows
+
+**Key UX Improvements:**
+- Law firms get friendly, non-technical guidance for manual pickup cases
+- Staff have dedicated escalation queue with clear workflow states
+- Fatal reports streamlined with upfront authorization upload
+- Face page completion flexibility (complete early or wait for full)
+- Auto-escalation prevents dead-end scenarios
+
+**Deliverable:** ✅ Complete manual pickup workflow with fatal reports support and friendly law firm messaging.
+
 ---
 
 ## V2: Backend Integration (6 Days)
@@ -616,8 +672,10 @@ Add AI-powered assistance features.
 | 1 | Landing Page | `/` | Public | ✅ Complete |
 | 2 | Law Firm Dashboard | `/law` | Law Firm | ✅ Complete |
 | 3 | New Request Form | `/law/jobs/new` | Law Firm | ✅ Complete |
+| 3b | Fatal Report Form | `/law/jobs/new-fatal` | Law Firm | ✅ Complete (V1.6.0) |
 | 4 | Job Detail (Chat) | `/law/jobs/[jobId]` | Law Firm | ✅ Complete |
 | 5 | Staff Queue | `/staff` | Staff | ✅ Complete |
+| 5b | Escalation Queue | `/staff/escalations` | Staff | ✅ Complete (V1.6.0) |
 | 6 | Staff Job Detail | `/staff/jobs/[jobId]` | Staff | ✅ Complete |
 
 ---

@@ -5,6 +5,361 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2025-12-12
+
+### Added
+
+#### Development/Testing Environment Enhancements
+
+**Problem Solved:**
+Testing all V1.6.0 flows was blocked by required file uploads (fatal reports, authorization documents) and slow mock delays (8-13s wrapper runs, 3-5s auto-checks). Testing environment needed to support fast, repeatable end-to-end flow validation without real document uploads.
+
+**Implementation:**
+
+**1. DEV_MODE Configuration System**
+- **`src/lib/devConfig.ts`** - NEW (76 lines)
+  - Centralized development mode configuration
+  - `DEV_MODE` flag based on `process.env.NODE_ENV === 'development'`
+  - `DEV_CONFIG.skipFileUploads` - bypasses file validation in dev mode
+  - Configurable delays object with dev/prod variants:
+    - `wrapperRun`: 2s (dev) vs 8-13s (prod)
+    - `autoCheck`: 1.5s (dev) vs 3-5s (prod)
+    - `formSubmit`: 0.5s (dev) vs 1.5s (prod)
+    - `fileUpload`: 0.5s (dev) vs 2-3s (prod)
+  - Force testing flags: `forceWrapperResult`, `forceAutoCheckSuccess`
+  - `getDelay()` helper for consistent delay usage
+
+**2. Fatal Report Form Dev Mode Support**
+- **`src/app/law/jobs/new-fatal/page.tsx`** - UPDATED
+  - File validation skipped when `DEV_CONFIG.skipFileUploads` enabled
+  - Added `[DEV] Skip Upload` buttons for both authorization and death certificate
+  - Buttons inject mock File objects for testing without real PDFs
+  - Updated form submission delay to use `getDelay('formSubmit')`
+
+**3. Authorization Upload Integration (V1.6.0 Completion)**
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED
+  - **CRITICAL FIX**: `handleAuthorizationUpload()` handler was missing (claimed in V1.6.0 but not implemented)
+  - Integrated `AuthorizationUploadCard` component into law firm job detail page
+  - Added computed value `shouldShowAuthorizationUpload` for conditional rendering
+  - Handler updates `escalationData.status` to `'authorization_received'`
+  - Generates mock token: `auth_${Date.now()}`
+  - Adds `authorization_uploaded` event to timeline
+  - Added `[DEV] Skip Upload` button for dev mode testing
+  - Updated all delays to use `getDelay()` helper
+
+**4. Pickup Scheduler Integration (V1.6.0 Completion)**
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - UPDATED
+  - **CRITICAL FIX**: `handleClaimPickup()` and `handleSchedulePickup()` handlers were missing (claimed in V1.6.0 but not implemented)
+  - Imported and integrated `PickupScheduler` component into staff job detail page
+  - Added state management: `isClaimingPickup`, `isSchedulingPickup`
+  - `handleClaimPickup()`: Updates status to `'claimed'`, sets `claimedBy` and `claimedAt`
+  - `handleSchedulePickup()`: Updates status to `'pickup_scheduled'`, stores time/date
+  - `handleDownloadAuth()`: Mock handler for authorization document download
+  - Conditional rendering based on escalation status
+  - Updated all delays to use `getDelay()` helper
+
+**5. Dev Testing Jobs Added to Mock Data**
+- **`src/lib/mockData.ts`** - UPDATED (5 new jobs, ~150 lines)
+  - `job_dev_001`: Auth received, ready to claim (escalation workflow)
+  - `job_dev_002`: Claimed, ready to schedule (pickup scheduling)
+  - `job_dev_003`: Face page only, choice not made (face page workflow)
+  - `job_dev_004`: Completed with face page, reopen available (reopen workflow)
+  - `job_dev_005`: Pending authorization upload (law firm auth upload)
+  - All jobs prefixed with `[DEV]` in client names for easy identification
+
+**6. Dev Mode Visual Indicator**
+- **`src/app/layout.tsx`** - UPDATED
+  - Fixed bottom-left badge showing "DEV MODE"
+  - Amber background with monospace font
+  - High z-index (9999) to stay above all content
+  - Pointer-events-none to avoid click interference
+  - Only visible when `process.env.NODE_ENV === 'development'`
+
+**7. Consistent Delay Usage Across App**
+- **`src/app/law/jobs/new/page.tsx`** - UPDATED
+  - Form submission delay now uses `getDelay('formSubmit')`
+
+**Testing Benefits:**
+- Fatal report submission testable without PDF uploads
+- Authorization upload flow testable with skip button
+- Pickup claiming/scheduling workflow fully testable
+- Wrapper runs complete in 2s (dev) instead of 8-13s
+- Auto-checks complete in 1.5s (dev) instead of 3-5s
+- All V1.6.0 flows now fully testable end-to-end
+
+**Files Modified:** 7 files
+**Lines Added:** ~280 lines
+**Lines Modified:** ~60 lines
+
+### Fixed
+
+#### V1.6.0 Implementation Gaps
+- `handleAuthorizationUpload()` was documented in V1.6.0 but never implemented
+- `handleClaimPickup()` was documented in V1.6.0 but never implemented
+- `handleSchedulePickup()` was documented in V1.6.0 but never implemented
+- `AuthorizationUploadCard` component was created but never integrated into law firm pages
+- `PickupScheduler` component was created but never integrated into staff pages
+
+---
+
+## [1.6.0] - 2025-12-12
+
+### Added
+
+#### V1.6.0: Manual Pickup Workflow & Fatal Reports (Complete Implementation)
+
+**Problem Solved:**
+When the CHP wrapper exhausted all verification fields or when fatal crash reports were submitted, there was no workflow for staff to handle manual pickup and no way for law firms to provide necessary authorization documents.
+
+**8 Major Features Implemented:**
+
+**Feature 1: Face Page Completion Options**
+- Law firms now see TWO options when face page is received:
+  - "This is all I need" → Completes job with `COMPLETED_FACE_PAGE_ONLY` status
+  - "Wait for full report" → Sets up auto-checker
+- "Change my mind" reopen banner for completed jobs
+- Allows law firms to check for full report later if initially completed with face page
+
+**Feature 2: Auto-Escalation Logic**
+- System now tracks which Page 2 fields have been tried per wrapper run
+- Auto-escalates to `NEEDS_IN_PERSON_PICKUP` when ALL available Page 2 fields exhausted
+- Aggregates field attempts across all wrapper runs
+- Sets `escalationReason: 'auto_exhausted'` for staff tracking
+
+**Feature 3: Manual Pickup Escalation Workflow**
+- Complete workflow from escalation → authorization → claiming → scheduling → completion
+- Law firm uploads authorization document (friendly messaging, NO technical jargon)
+- Staff claims pickup and schedules time/date
+- Staff tracks pickup status through entire lifecycle
+
+**Feature 4-7: Authorization, Notifications, Scheduling**
+- Authorization upload with friendly messaging: "We need your help to complete your request"
+- Staff claim auto-notifies law firm: "A team member is actively working on your request"
+- Staff pickup scheduling with quick time slots (9am, afternoon, 4pm)
+- Next business day calculation (Mon-Fri only, skips weekends)
+
+**Feature 8: Fatal Reports Handling**
+- Separate "Fatal Report" button on law firm dashboard
+- Auto-escalates to manual pickup (skips wrapper entirely)
+- Collects death certificate if client was deceased
+- Always requires authorization document upfront
+
+**New Components Created (4 files):**
+
+- **`src/components/ui/FacePageCompletionChoice.tsx`** - NEW (~165 lines)
+  - Two-button choice card for face page completion options
+  - "This is all I need" (emerald) vs "Wait for full report" (blue)
+  - Glass-morphism styling with gradients
+  - Mobile: stacked buttons, Desktop: side-by-side
+
+- **`src/components/ui/FacePageReopenBanner.tsx`** - NEW (~75 lines)
+  - Compact banner for reopening completed-with-face-page jobs
+  - Shows last checked time
+  - "Check Now" button to search for full report
+  - Conditional visibility based on job status
+
+- **`src/components/ui/AuthorizationUploadCard.tsx`** - NEW (~215 lines)
+  - **CRITICAL**: Uses ONLY friendly messaging (no "in-person pickup", "escalation", etc.)
+  - Amber glass card with Upload icon
+  - PDF drag-and-drop upload with validation
+  - "We Need Your Help" heading
+  - "To complete your request, we need an authorization document"
+  - Upload state with file preview and remove button
+
+- **`src/components/ui/PickupScheduler.tsx`** - NEW (~320 lines)
+  - Staff-only pickup time and date selection
+  - Two-phase UI: Claim button → Scheduling form
+  - Quick time slots: 9am, afternoon, 4pm
+  - Date options: Today, Next Business Day, Custom picker
+  - Mon-Fri only validation (government building hours)
+  - Download authorization document button
+  - Confirm Schedule button triggers final scheduling
+
+**New Pages Created (2 files):**
+
+- **`src/app/staff/escalations/page.tsx`** - NEW (~340 lines)
+  - Escalation queue dashboard for staff
+  - Shows all `NEEDS_IN_PERSON_PICKUP` jobs
+  - Filter tabs: All, Awaiting Auth, Ready for Pickup, Scheduled
+  - Stats cards with counts per status
+  - Job cards with escalation status badges
+  - Refresh button with loading state
+
+- **`src/app/law/jobs/new-fatal/page.tsx`** - NEW (~665 lines)
+  - Separate form for fatal crash reports
+  - Required fields: Client Name, Report Number, Authorization Document
+  - "Was your client the deceased?" toggle
+  - Conditional death certificate upload (if deceased)
+  - Red/orange color scheme (AlertTriangle icon)
+  - Auto-escalates on submission
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - EXTENDED (~80 lines added)
+  - Added `COMPLETED_FACE_PAGE_ONLY` to `InternalStatus` enum
+  - `EscalationData` interface (~50 lines):
+    - `status`: 'pending_authorization' | 'authorization_received' | 'claimed' | 'pickup_scheduled' | 'completed'
+    - `escalationReason`: 'manual' | 'auto_exhausted' | 'fatal_report'
+    - Authorization fields: `authorizationDocumentToken`, `authorizationUploadedAt`
+    - Claiming fields: `claimedBy`, `claimedAt`
+    - Scheduling fields: `scheduledPickupTime`, `scheduledPickupDate`, `pickupNotes`
+  - `EscalationStatus`, `EscalationReason`, `PickupTimeSlot` types
+  - `FatalDetails` interface with `clientWasDeceased` and `deathCertificateToken`
+  - `WrapperRun` extended with `page2FieldsTried` and `page2FieldResults` for auto-escalation
+  - `Job` extended with `escalationData`, `isFatal`, `fatalDetails`, `facePageChoiceMade`
+  - `NewJobFormData` extended with optional fatal fields
+  - 13 new `EventType` values for V1.6.0 features
+
+**Page Updates:**
+
+- **`src/app/law/jobs/[jobId]/page.tsx`** - UPDATED (~120 lines added)
+  - Face page choice UI with FacePageCompletionChoice component
+  - Reopen banner for completed-with-face-page jobs
+  - Authorization upload card for escalated jobs (friendly messaging!)
+  - `handleFacePageChoice()` handler for choice selection
+  - `handleReopenFacePageJob()` handler for reopen action
+  - `handleAuthorizationUpload()` handler for document upload
+  - Status checks updated to include `COMPLETED_FACE_PAGE_ONLY`
+
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - UPDATED (~150 lines added)
+  - Auto-escalation logic in `handleRunWrapper()`
+  - Tracks `page2FieldsTried` and `page2FieldResults` per run
+  - Aggregates field attempts across all runs
+  - Auto-escalates when all available fields exhausted
+  - Pickup scheduler UI with claim and scheduling handlers
+  - `handleClaimPickup()` and `handleSchedulePickup()` handlers
+
+- **`src/app/staff/page.tsx`** - UPDATED (~30 lines added)
+  - Added escalations count to stats
+  - Added Escalations link button with badge count
+  - Links to `/staff/escalations` page
+  - Updated completed filter to include `COMPLETED_FACE_PAGE_ONLY`
+
+- **`src/app/law/page.tsx`** - UPDATED (~50 lines added)
+  - Added "Fatal Report" button on desktop (next to "New Request")
+  - Red/orange styling with AlertTriangle icon
+  - Mobile: Fatal Report FAB above primary FAB (stacked)
+  - Both buttons link to respective form pages
+
+**Status Mapping Updates:**
+
+- **`src/lib/statusMapping.ts`** - UPDATED (~10 lines added)
+  - Added `COMPLETED_FACE_PAGE_ONLY` mapping to `REPORT_READY`
+  - Color: green (emerald)
+  - Message: "Your report is ready to download."
+  - Updated `isCompletedStatus()` to include new status
+  - Updated `isActiveStatus()` to exclude new status
+  - Added `isEscalatedStatus()` helper function
+
+**Timeline Event Support:**
+
+- **`src/components/ui/TimelineMessage.tsx`** - UPDATED (~30 lines added)
+  - Icon mappings for 13 new event types:
+    - Face page: CheckCircle2 (emerald), Clock (blue), RefreshCw (teal)
+    - Escalation: AlertCircle (amber/red), FileText (amber), CheckCircle2 (emerald)
+    - Pickup: UserCheck (blue), Clock (cyan), CheckCircle2 (emerald)
+    - Fatal: AlertCircle (red), FileText (emerald)
+
+**Mock Data Updates:**
+
+- **`src/lib/mockData.ts`** - EXTENDED (~180 lines added)
+  - Added 4 new sample jobs (job_019 through job_022):
+    - `job_019`: `COMPLETED_FACE_PAGE_ONLY` - Daniel Foster (law firm chose to complete with face page)
+    - `job_020`: `NEEDS_IN_PERSON_PICKUP` (awaiting auth) - Sandra Williams (auto-escalated, 4 wrapper runs with all fields tried)
+    - `job_021`: `NEEDS_IN_PERSON_PICKUP` (pickup scheduled) - Richard Thompson (staff claimed, scheduled for next day)
+    - `job_022`: Fatal report - Estate of Michael Torres (auto-escalated, death cert uploaded)
+  - Added corresponding timeline events for all new jobs (~90 lines)
+  - Events demonstrate full escalation workflow and fatal report flow
+
+**Mock Data Manager Updates:**
+
+- **`src/lib/mockDataManager.ts`** - UPDATED (~80 lines changed)
+  - Updated `createJob()` to handle fatal reports
+  - Skips driver/passenger prompt for fatal reports
+  - Creates appropriate initial events based on job type
+  - Supports optional `internalStatus`, `escalationData`, `fatalDetails` in form data
+
+**Component Library Updates:**
+
+- **`src/components/ui/FloatingActionButton.tsx`** - UPDATED (~15 lines changed)
+  - Added `position="static"` option for use inside flex containers
+  - Allows FAB to be positioned relative instead of fixed
+  - Used for stacked mobile FABs on law firm dashboard
+
+- **`src/components/ui/StaffJobCard.tsx`** - UPDATED (~2 lines changed)
+  - Added `COMPLETED_FACE_PAGE_ONLY` to status color mappings
+
+**Build Verification:**
+- TypeScript compilation: ✅ No errors
+- Production build: ✅ Successful
+- All new routes accessible:
+  - `/staff/escalations` - Escalation queue
+  - `/law/jobs/new-fatal` - Fatal report form
+
+### Changed
+
+- **Face page completion flow** - Law firms now choose between completing immediately or waiting
+- **Auto-escalation behavior** - System auto-escalates when all Page 2 fields exhausted
+- **Law firm messaging** - **CRITICAL**: ALL escalation messaging uses friendly language only
+  - ❌ NEVER: "in-person pickup", "manual pickup", "escalation", "staff member going to office"
+  - ✅ ALWAYS: "We need your help", "To complete your request", "A team member is working on this"
+
+### UX Flow Summary
+
+**Face Page Options Flow:**
+
+| Action | Result |
+|--------|--------|
+| Law firm receives face page | See choice card with two options |
+| Click "This is all I need" | Job → `COMPLETED_FACE_PAGE_ONLY`, report ready for download |
+| Click "Wait for full report" | Job → `WAITING_FOR_FULL_REPORT`, auto-checker enabled |
+| Later change mind | Reopen banner shown, click "Check Now" to search again |
+
+**Auto-Escalation Flow:**
+
+| Step | System Behavior |
+|------|----------------|
+| Wrapper run 1 | Try name field → fails, record in `page2FieldResults` |
+| Wrapper run 2 | Try plate, driverLicense → both fail, record results |
+| Wrapper run 3 | Try VIN → fails, record result |
+| Auto-escalation | All 4 fields tried and failed → escalate to `NEEDS_IN_PERSON_PICKUP` |
+
+**Manual Pickup Flow:**
+
+| Stage | Law Firm Sees | Staff Sees |
+|-------|---------------|-----------|
+| Escalated | "We need your help... upload authorization" | Escalation details with reason |
+| Auth uploaded | "Thank you!" confirmation | Ready for pickup queue |
+| Staff claims | "A team member is working on your request" | Claim button → scheduling form |
+| Scheduled | (No notification in V1) | Pickup scheduled with date/time |
+| Completed | "Your report is ready" | Manual completion confirmation |
+
+**Fatal Report Flow:**
+
+| Step | Action |
+|------|--------|
+| Dashboard | Law firm clicks "Fatal Report" button |
+| Form | Fill client name, report number, upload auth |
+| Toggle | "Was your client deceased?" → if yes, upload death cert |
+| Submit | Job auto-escalates to `NEEDS_IN_PERSON_PICKUP` |
+| Queue | Appears in staff escalation queue with reason: 'fatal_report' |
+
+### Technical Notes
+
+- **V1 Limitations:** In-app notifications only (email in V2)
+- **Business Days:** Pickup scheduling restricted to Mon-Fri
+- **Mobile-First:** All new components use 48px touch targets, responsive to 375px
+- **Plain English:** Law firm messaging avoids ALL technical jargon
+- **State Persistence:** Escalation data persists in Job object (in-memory for V1)
+- **Auto-Escalation Threshold:** ALL available Page 2 fields must be tried and failed
+
+**Files Created:** 6 files (4 components, 2 pages)
+**Files Modified:** 12 files
+**Lines Added:** ~2,000 lines
+**Lines Changed:** ~200 lines
+
+---
+
 ## [1.5.0] - 2025-12-12
 
 ### Added

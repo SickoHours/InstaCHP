@@ -83,6 +83,22 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   auto_check_found: CheckCircle2,
   auto_check_not_found: Clock,
   auto_check_settings_updated: Clock,
+  // V1.6.0+ Face page completion events
+  face_page_complete_chosen: CheckCircle2,
+  face_page_wait_chosen: Clock,
+  face_page_reopened: RefreshCw,
+  // V1.6.0+ Escalation workflow events
+  escalation_auto_triggered: AlertCircle,
+  escalation_manual_triggered: AlertCircle,
+  escalation_fatal_triggered: AlertCircle,
+  authorization_requested: FileText,
+  authorization_uploaded: CheckCircle2,
+  pickup_claimed: UserCheck,
+  pickup_scheduled: Clock,
+  pickup_completed: CheckCircle2,
+  // V1.6.0+ Fatal report events
+  fatal_report_created: AlertCircle,
+  death_certificate_uploaded: FileText,
 };
 
 /**
@@ -133,6 +149,22 @@ const EVENT_COLORS: Record<EventType, string> = {
   auto_check_found: 'text-emerald-400',
   auto_check_not_found: 'text-slate-400',
   auto_check_settings_updated: 'text-slate-400',
+  // V1.6.0+ Face page completion events
+  face_page_complete_chosen: 'text-emerald-400',
+  face_page_wait_chosen: 'text-blue-400',
+  face_page_reopened: 'text-teal-400',
+  // V1.6.0+ Escalation workflow events
+  escalation_auto_triggered: 'text-amber-400',
+  escalation_manual_triggered: 'text-amber-400',
+  escalation_fatal_triggered: 'text-red-400',
+  authorization_requested: 'text-amber-400',
+  authorization_uploaded: 'text-emerald-400',
+  pickup_claimed: 'text-blue-400',
+  pickup_scheduled: 'text-cyan-400',
+  pickup_completed: 'text-emerald-400',
+  // V1.6.0+ Fatal report events
+  fatal_report_created: 'text-red-400',
+  death_certificate_uploaded: 'text-emerald-400',
 };
 
 const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(

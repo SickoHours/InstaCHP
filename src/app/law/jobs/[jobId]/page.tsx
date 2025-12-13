@@ -38,6 +38,10 @@ import InlineFieldsCard from '@/components/ui/InlineFieldsCard';
 import FlowWizard, { type FlowCompletionData } from '@/components/ui/FlowWizard';
 import DriverInfoRescueForm from '@/components/ui/DriverInfoRescueForm';
 import ContactingCHPBanner from '@/components/ui/ContactingCHPBanner';
+import FacePageCompletionChoice from '@/components/ui/FacePageCompletionChoice';
+import FacePageReopenBanner from '@/components/ui/FacePageReopenBanner';
+import AuthorizationUploadCard from '@/components/ui/AuthorizationUploadCard';
+import { DEV_CONFIG, getDelay } from '@/lib/devConfig';
 
 /**
  * Dark Mode Status Badge with glow effect
@@ -257,11 +261,29 @@ export default function JobDetailPage() {
   const statusMessage = getStatusMessage(job.internalStatus);
   const hasDownloads = job.facePageToken || job.fullReportToken;
 
-  // Show check button when: face page exists, no full report, applicable status (V1.4.0+)
+  // Show face page choice when: face page exists, no full report, FACE_PAGE_ONLY status, choice not yet made (V1.6.0+)
+  const shouldShowFacePageChoice = !!(
+    job.facePageToken &&
+    !job.fullReportToken &&
+    job.internalStatus === 'FACE_PAGE_ONLY' &&
+    !job.facePageChoiceMade
+  );
+
+  // Show check button when: face page exists, no full report, waiting status, choice was 'wait' (V1.4.0+, updated V1.6.0)
   const shouldShowCheckButton = !!(
     job.facePageToken &&
     !job.fullReportToken &&
-    ['FACE_PAGE_ONLY', 'WAITING_FOR_FULL_REPORT'].includes(job.internalStatus)
+    ['WAITING_FOR_FULL_REPORT'].includes(job.internalStatus) &&
+    job.facePageChoiceMade === 'wait'
+  );
+
+  // Show reopen banner when: completed with face page only (V1.6.0+)
+  const shouldShowReopenBanner = job.internalStatus === 'COMPLETED_FACE_PAGE_ONLY';
+
+  // Show authorization upload when: escalated to manual pickup and auth not yet uploaded (V1.6.0+)
+  const shouldShowAuthorizationUpload = !!(
+    job.internalStatus === 'NEEDS_IN_PERSON_PICKUP' &&
+    job.escalationData?.status === 'pending_authorization'
   );
 
   // Get auto-check settings (default if not set)
@@ -299,9 +321,9 @@ export default function JobDetailPage() {
       isUserFacing: true,
     });
 
-    // Mock 3-5 second delay
+    // Auto-check delay (uses dev config for faster testing)
     await new Promise((resolve) =>
-      setTimeout(resolve, 3000 + Math.random() * 2000)
+      setTimeout(resolve, getDelay('autoCheck'))
     );
 
     // 20% chance of finding full report (matching staff side)
@@ -355,6 +377,139 @@ export default function JobDetailPage() {
         ...autoCheckSettings,
         ...newSettings,
       },
+    });
+  };
+
+  /**
+   * Handle face page completion choice (V1.6.0+)
+   * Law firm chooses to complete with face page or wait for full report
+   */
+  const handleFacePageChoice = (choice: 'complete' | 'wait') => {
+    const now = Date.now();
+
+    if (choice === 'complete') {
+      // Complete the request with just the face page
+      updateJob(jobId, {
+        internalStatus: 'COMPLETED_FACE_PAGE_ONLY',
+        facePageChoiceMade: 'complete',
+        facePageChoiceTimestamp: now,
+      });
+
+      addEvent(jobId, {
+        eventType: 'face_page_complete_chosen',
+        message: "You've completed your request with the face page.",
+        isUserFacing: true,
+      });
+    } else {
+      // Wait for full report - enable auto-checker
+      updateJob(jobId, {
+        internalStatus: 'WAITING_FOR_FULL_REPORT',
+        facePageChoiceMade: 'wait',
+        facePageChoiceTimestamp: now,
+        autoCheckSettings: {
+          ...DEFAULT_AUTO_CHECK_SETTINGS,
+          enabled: true,
+        },
+      });
+
+      addEvent(jobId, {
+        eventType: 'face_page_wait_chosen',
+        message: "We'll automatically check for the full report and notify you when it's ready.",
+        isUserFacing: true,
+      });
+    }
+  };
+
+  /**
+   * Handle reopening a face-page-completed job (V1.6.0+)
+   * Runs auto-check and potentially changes status back to waiting
+   */
+  const handleReopenFacePageJob = async () => {
+    setIsAutoChecking(true);
+    setAutoCheckResult(null);
+
+    // Add event to timeline
+    addEvent(jobId, {
+      eventType: 'face_page_reopened',
+      message: "Checking if your full report is ready...",
+      isUserFacing: true,
+    });
+
+    // Auto-check delay (uses dev config for faster testing)
+    await new Promise((resolve) =>
+      setTimeout(resolve, getDelay('autoCheck'))
+    );
+
+    // 20% chance of finding full report (matching staff side)
+    const found = Math.random() < 0.2;
+
+    if (found) {
+      // Found! Update to full report complete
+      updateJob(jobId, {
+        fullReportToken: `fr_token_${Date.now()}`,
+        internalStatus: 'COMPLETED_FULL_REPORT',
+        reopenedFromFacePageComplete: true,
+        autoCheckSettings: {
+          ...autoCheckSettings,
+          lastManualCheck: Date.now(),
+        },
+      });
+
+      addEvent(jobId, {
+        eventType: 'auto_check_found',
+        message: "Great news! Your full report is now available for download.",
+        isUserFacing: true,
+      });
+
+      setAutoCheckResult('found');
+    } else {
+      // Not found - move to waiting status with auto-checker enabled
+      updateJob(jobId, {
+        internalStatus: 'WAITING_FOR_FULL_REPORT',
+        facePageChoiceMade: 'wait',
+        reopenedFromFacePageComplete: true,
+        autoCheckSettings: {
+          ...DEFAULT_AUTO_CHECK_SETTINGS,
+          enabled: true,
+          lastManualCheck: Date.now(),
+        },
+      });
+
+      addEvent(jobId, {
+        eventType: 'auto_check_not_found',
+        message: "The full report isn't ready yet. We'll keep checking automatically and notify you when it's available.",
+        isUserFacing: true,
+      });
+
+      setAutoCheckResult('not_found');
+    }
+
+    setIsAutoChecking(false);
+  };
+
+  /**
+   * Handle authorization document upload for escalated jobs (V1.6.0+)
+   * Called when law firm uploads auth document for manual pickup
+   */
+  const handleAuthorizationUpload = async (file: File) => {
+    // Mock upload delay
+    await new Promise((resolve) => setTimeout(resolve, getDelay('fileUpload')));
+
+    // Update job with authorization received
+    updateJob(jobId, {
+      escalationData: {
+        ...job.escalationData!,
+        status: 'authorization_received',
+        authorizationDocumentToken: `auth_${Date.now()}`,
+        authorizationUploadedAt: Date.now(),
+      },
+    });
+
+    // Add user-facing event
+    addEvent(jobId, {
+      eventType: 'authorization_uploaded',
+      message: 'Thank you! We received your authorization document and will begin processing your request.',
+      isUserFacing: true,
     });
   };
 
@@ -593,10 +748,10 @@ export default function JobDetailPage() {
       internalStatus: 'AUTOMATION_RUNNING',
     });
 
-    // Simulate 8-13s wrapper execution
+    // Wrapper execution delay (uses dev config for faster testing)
     const startTime = Date.now();
     await new Promise((resolve) =>
-      setTimeout(resolve, 8000 + Math.random() * 5000)
+      setTimeout(resolve, getDelay('wrapperRun'))
     );
     const duration = Date.now() - startTime;
 
@@ -829,13 +984,13 @@ export default function JobDetailPage() {
   const needsRescue = !!(
     job.wrapperRuns?.some((run) => run.result === 'PAGE2_VERIFICATION_FAILED') &&
     !job.interactiveState?.rescueInfoProvided &&
-    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus)
+    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus)
   );
 
   // Check if Page 1 correction is needed (PAGE1_NOT_FOUND)
   const needsPage1Correction = !!(
     job.wrapperRuns?.some((run) => run.result === 'PAGE1_NOT_FOUND') &&
-    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus)
+    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus)
   );
 
   // Show InlineFieldsCard only for Page 1 corrections (not by default after wizard)
@@ -843,7 +998,7 @@ export default function JobDetailPage() {
   const showInlineFieldsCard =
     !isWizardActive &&
     needsPage1Correction &&
-    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'CANCELLED'].includes(job.internalStatus);
+    !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'CANCELLED'].includes(job.internalStatus);
 
   return (
     <div className="min-h-screen bg-slate-950 relative overflow-hidden">
@@ -1021,7 +1176,7 @@ export default function JobDetailPage() {
         {/* Flow Wizard (active until completed) */}
         {/* Driver: hide when CONTACTING_CHP (CALL_IN_PROGRESS or AUTOMATION_RUNNING) */}
         {/* Passenger: show even during CONTACTING_CHP if info is missing */}
-        {isWizardActive && !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'CANCELLED', 'WAITING_FOR_FULL_REPORT', 'FACE_PAGE_ONLY'].includes(
+        {isWizardActive && !['COMPLETED_FULL_REPORT', 'COMPLETED_MANUAL', 'COMPLETED_FACE_PAGE_ONLY', 'CANCELLED', 'WAITING_FOR_FULL_REPORT', 'FACE_PAGE_ONLY'].includes(
           job.internalStatus
         ) && !(
           // Hide driver wizard completely during CONTACTING_CHP
@@ -1174,6 +1329,61 @@ export default function JobDetailPage() {
             </>
           )}
         </div>
+
+        {/* Face Page Completion Choice - When face page received but choice not made (V1.6.0+) */}
+        {shouldShowFacePageChoice && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
+          >
+            <div className="glass-card-dark rounded-xl p-5 border border-emerald-500/20">
+              <FacePageCompletionChoice
+                onSelect={handleFacePageChoice}
+                clientName={job.clientName}
+                disabled={isInteracting}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Reopen Banner - For face page completed jobs (V1.6.0+) */}
+        {shouldShowReopenBanner && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
+          >
+            <FacePageReopenBanner
+              onCheckNow={handleReopenFacePageJob}
+              lastChecked={autoCheckSettings.lastManualCheck}
+              disabled={isAutoChecking}
+            />
+          </div>
+        )}
+
+        {/* Authorization Upload - For escalated jobs pending auth (V1.6.0+) */}
+        {shouldShowAuthorizationUpload && (
+          <div
+            className="mb-8 animate-text-reveal"
+            style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
+          >
+            <AuthorizationUploadCard
+              onUpload={handleAuthorizationUpload}
+              uploaded={!!job.escalationData?.authorizationDocumentToken}
+              uploadedAt={job.escalationData?.authorizationUploadedAt}
+            />
+
+            {/* DEV MODE: Skip upload button */}
+            {DEV_CONFIG.skipFileUploads && !job.escalationData?.authorizationDocumentToken && (
+              <button
+                type="button"
+                onClick={() => handleAuthorizationUpload(new File(['mock'], 'mock-auth.pdf', { type: 'application/pdf' }))}
+                className="mt-3 px-3 py-1.5 text-xs font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30 transition-colors"
+              >
+                [DEV] Skip Upload
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Auto-Check Section - For face page jobs without full report (V1.4.0+) */}
         {shouldShowCheckButton && (

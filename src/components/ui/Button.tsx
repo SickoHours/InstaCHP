@@ -39,21 +39,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
           // Variant styles
           variant === 'primary' && [
-            'bg-gradient-to-r from-teal-600 to-teal-700',
-            'text-white shadow-lg shadow-teal-600/30',
+            'bg-gradient-to-r from-amber-400 to-amber-500',
+            'text-white shadow-lg shadow-amber-400/30',
             'hover:scale-102 hover:brightness-110',
             'active:scale-98',
-            'focus-visible:ring-teal-500/20',
+            'focus-visible:ring-amber-400/50',
           ],
           variant === 'secondary' && [
-            'bg-transparent border border-white/30',
-            'text-white',
-            'hover:bg-white/10',
+            'bg-transparent border border-[var(--border-default)]',
+            'text-[var(--text-primary)]',
+            'hover:bg-[var(--hover-bg)]',
             'active:scale-98',
-            'focus-visible:ring-white/20',
+            'focus-visible:ring-amber-400/30',
           ],
           variant === 'tertiary' && [
-            'text-teal-600 underline-offset-4',
+            'text-amber-500 underline-offset-4',
             'hover:underline',
           ],
 

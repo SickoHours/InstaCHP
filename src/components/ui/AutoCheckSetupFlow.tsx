@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface AutoCheckSetupFlowProps {
   onSave: (frequency: 'daily' | 'twice_daily') => void;
@@ -26,6 +27,8 @@ export default function AutoCheckSetupFlow({
   onCancel,
   disabled = false,
 }: AutoCheckSetupFlowProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [selectedFrequency, setSelectedFrequency] = useState<'daily' | 'twice_daily'>('daily');
 
   const handleSave = () => {
@@ -40,9 +43,9 @@ export default function AutoCheckSetupFlow({
           onClick={onCancel}
           disabled={disabled}
           className={cn(
-            'flex items-center gap-2 text-sm text-slate-400',
+            'flex items-center gap-2 text-sm',
             'transition-colors duration-200',
-            'hover:text-slate-200',
+            isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-700',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
@@ -53,11 +56,17 @@ export default function AutoCheckSetupFlow({
 
       {/* Title and description */}
       <div>
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <h3 className={cn(
+          'text-lg font-semibold flex items-center gap-2',
+          isDark ? 'text-white' : 'text-slate-900'
+        )}>
           <Clock className="w-5 h-5 text-blue-400" />
           Set Up Auto Checker
         </h3>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className={cn(
+          'text-sm mt-1',
+          isDark ? 'text-slate-400' : 'text-slate-600'
+        )}>
           Choose how often we check for your full report
         </p>
       </div>
@@ -74,7 +83,7 @@ export default function AutoCheckSetupFlow({
             'hover:scale-[1.02] active:scale-[0.98]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             selectedFrequency === 'daily'
-              ? 'bg-teal-500/15 border-teal-500/40 shadow-lg shadow-teal-500/10'
+              ? 'bg-amber-400/15 border-amber-400/40 shadow-lg shadow-amber-400/10'
               : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
           )}
         >
@@ -84,7 +93,7 @@ export default function AutoCheckSetupFlow({
               'w-5 h-5 rounded-full border-2 flex items-center justify-center',
               'transition-all duration-200',
               selectedFrequency === 'daily'
-                ? 'border-teal-400 bg-teal-400'
+                ? 'border-amber-400 bg-amber-400'
                 : 'border-slate-500'
             )}
           >
@@ -97,7 +106,9 @@ export default function AutoCheckSetupFlow({
           <span
             className={cn(
               'text-base font-semibold',
-              selectedFrequency === 'daily' ? 'text-teal-300' : 'text-slate-300'
+              selectedFrequency === 'daily'
+                ? 'text-amber-300'
+                : isDark ? 'text-slate-300' : 'text-slate-700'
             )}
           >
             Daily
@@ -108,8 +119,8 @@ export default function AutoCheckSetupFlow({
             className={cn(
               'px-3 py-1.5 rounded-lg text-sm',
               selectedFrequency === 'daily'
-                ? 'bg-teal-500/20 text-teal-300'
-                : 'bg-slate-700/50 text-slate-400'
+                ? 'bg-amber-400/20 text-amber-300'
+                : isDark ? 'bg-slate-700/50 text-slate-400' : 'bg-slate-100 text-slate-600'
             )}
           >
             4:30 PM PT
@@ -126,7 +137,7 @@ export default function AutoCheckSetupFlow({
             'hover:scale-[1.02] active:scale-[0.98]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             selectedFrequency === 'twice_daily'
-              ? 'bg-teal-500/15 border-teal-500/40 shadow-lg shadow-teal-500/10'
+              ? 'bg-amber-400/15 border-amber-400/40 shadow-lg shadow-amber-400/10'
               : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
           )}
         >
@@ -136,7 +147,7 @@ export default function AutoCheckSetupFlow({
               'w-5 h-5 rounded-full border-2 flex items-center justify-center',
               'transition-all duration-200',
               selectedFrequency === 'twice_daily'
-                ? 'border-teal-400 bg-teal-400'
+                ? 'border-amber-400 bg-amber-400'
                 : 'border-slate-500'
             )}
           >
@@ -149,7 +160,9 @@ export default function AutoCheckSetupFlow({
           <span
             className={cn(
               'text-base font-semibold',
-              selectedFrequency === 'twice_daily' ? 'text-teal-300' : 'text-slate-300'
+              selectedFrequency === 'twice_daily'
+                ? 'text-amber-300'
+                : isDark ? 'text-slate-300' : 'text-slate-700'
             )}
           >
             Twice Daily
@@ -161,8 +174,8 @@ export default function AutoCheckSetupFlow({
               className={cn(
                 'px-3 py-1 rounded-lg text-sm',
                 selectedFrequency === 'twice_daily'
-                  ? 'bg-teal-500/20 text-teal-300'
-                  : 'bg-slate-700/50 text-slate-400'
+                  ? 'bg-amber-400/20 text-amber-300'
+                  : isDark ? 'bg-slate-700/50 text-slate-400' : 'bg-slate-100 text-slate-600'
               )}
             >
               9:00 AM PT
@@ -171,8 +184,8 @@ export default function AutoCheckSetupFlow({
               className={cn(
                 'px-3 py-1 rounded-lg text-sm',
                 selectedFrequency === 'twice_daily'
-                  ? 'bg-teal-500/20 text-teal-300'
-                  : 'bg-slate-700/50 text-slate-400'
+                  ? 'bg-amber-400/20 text-amber-300'
+                  : isDark ? 'bg-slate-700/50 text-slate-400' : 'bg-slate-100 text-slate-600'
               )}
             >
               4:30 PM PT
@@ -187,12 +200,12 @@ export default function AutoCheckSetupFlow({
         disabled={disabled}
         className={cn(
           'w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl',
-          'bg-gradient-to-r from-teal-600 to-cyan-600',
+          'bg-gradient-to-r from-amber-500 to-cyan-600',
           'text-white font-semibold',
-          'border border-teal-500/30',
+          'border border-amber-400/30',
           'transition-all duration-300',
-          'hover:from-teal-500 hover:to-cyan-500',
-          'hover:shadow-lg hover:shadow-teal-500/20',
+          'hover:from-amber-400 hover:to-cyan-500',
+          'hover:shadow-lg hover:shadow-amber-400/20',
           'hover:scale-[1.01]',
           'active:scale-[0.99]',
           'disabled:opacity-50 disabled:cursor-not-allowed'

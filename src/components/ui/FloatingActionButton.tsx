@@ -35,9 +35,9 @@ const FloatingActionButton = forwardRef<
           // Base styles - fixed only when not static
           position !== 'static' && 'fixed z-50',
           'flex items-center justify-center gap-2',
-          'bg-gradient-to-r from-teal-600 to-teal-700',
+          'bg-gradient-to-r from-amber-500 to-amber-600',
           'text-white font-semibold',
-          'shadow-lg shadow-teal-600/30',
+          'shadow-lg shadow-amber-500/30',
           'transition-all duration-200',
 
           // Hover/active states
@@ -45,7 +45,7 @@ const FloatingActionButton = forwardRef<
           'active:scale-95',
 
           // Focus styles
-          'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-500/20',
+          'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/20',
 
           // Size - 56px diameter or extended
           extended ? 'h-14 px-6 rounded-full' : 'h-14 w-14 rounded-full',

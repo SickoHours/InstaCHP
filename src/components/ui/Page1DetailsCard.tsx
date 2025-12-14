@@ -82,7 +82,7 @@ export default function Page1DetailsCard({
               'bg-slate-800/50 border border-slate-700/50',
               'text-slate-200 text-base md:text-sm',
               'placeholder:text-slate-600',
-              'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+              'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
@@ -107,7 +107,7 @@ export default function Page1DetailsCard({
               'bg-slate-800/50 border border-slate-700/50',
               'text-slate-200 text-base md:text-sm',
               'placeholder:text-slate-600',
-              'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+              'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
@@ -133,7 +133,7 @@ export default function Page1DetailsCard({
               'bg-slate-800/50 border border-slate-700/50',
               'text-slate-200 text-base md:text-sm',
               'placeholder:text-slate-600',
-              'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+              'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
@@ -151,12 +151,12 @@ export default function Page1DetailsCard({
           'transition-all duration-300',
           hasAtLeastOneField && !disabled && !isSubmitting
             ? [
-                'bg-gradient-to-r from-teal-600 to-cyan-600',
+                'bg-gradient-to-r from-amber-500 to-cyan-600',
                 'text-white',
-                'hover:from-teal-500 hover:to-cyan-500',
+                'hover:from-amber-400 hover:to-cyan-500',
                 'hover:scale-[1.02]',
                 'active:scale-[0.98]',
-                'shadow-lg shadow-teal-500/20',
+                'shadow-lg shadow-amber-400/20',
               ]
             : [
                 'bg-slate-800/50 text-slate-600',

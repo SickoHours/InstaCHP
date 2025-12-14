@@ -133,7 +133,7 @@ export function NotificationBell({ userType }: NotificationBellProps) {
           'bg-slate-800/50 hover:bg-slate-700/50',
           'border border-slate-700/50 hover:border-slate-600/50',
           'transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
           isOpen && 'bg-slate-700/50 border-slate-600/50'
         )}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
@@ -178,7 +178,7 @@ export function NotificationBell({ userType }: NotificationBellProps) {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-xs text-slate-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:text-teal-400"
+                  className="text-xs text-slate-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:text-amber-400"
                 >
                   Mark all read
                 </button>
@@ -190,7 +190,7 @@ export function NotificationBell({ userType }: NotificationBellProps) {
                   'text-slate-400 hover:text-white',
                   'hover:bg-white/5',
                   'transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500'
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400'
                 )}
                 aria-label="Close notifications"
               >

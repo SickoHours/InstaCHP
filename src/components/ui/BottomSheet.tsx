@@ -189,7 +189,7 @@ export default function BottomSheet({
                   'text-slate-400 hover:text-white',
                   'hover:bg-slate-700/50',
                   'transition-colors duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-teal-500/50'
+                  'focus:outline-none focus:ring-2 focus:ring-amber-400/50'
                 )}
                 aria-label="Close"
               >
@@ -287,7 +287,7 @@ export function ConfirmSheet({
             'transition-colors duration-200',
             variant === 'danger'
               ? 'bg-red-600 text-white hover:bg-red-500'
-              : 'bg-teal-600 text-white hover:bg-teal-500'
+              : 'bg-amber-500 text-white hover:bg-amber-400'
           )}
         >
           {confirmLabel}

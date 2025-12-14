@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { FileText, Upload, CheckCircle2, Loader2, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface AuthorizationUploadCardProps {
   onUpload: (file: File) => Promise<void>;
@@ -24,6 +25,9 @@ export default function AuthorizationUploadCard({
   uploadedAt,
   disabled = false,
 }: AuthorizationUploadCardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -75,9 +79,10 @@ export default function AuthorizationUploadCard({
     return (
       <div
         className={cn(
-          'rounded-xl p-5',
-          'bg-gradient-to-br from-emerald-900/20 to-green-900/20',
-          'border border-emerald-500/30'
+          'rounded-xl p-5 border',
+          isDark
+            ? 'bg-gradient-to-br from-emerald-900/20 to-green-900/20 border-emerald-500/30'
+            : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-300'
         )}
       >
         <div className="flex items-center gap-3">
@@ -85,17 +90,26 @@ export default function AuthorizationUploadCard({
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-emerald-200 font-medium">
+            <h3 className={cn(
+              'font-medium',
+              isDark ? 'text-emerald-200' : 'text-emerald-700'
+            )}>
               Authorization document received
             </h3>
             {uploadedAt && (
-              <p className="text-sm text-emerald-400/70">
+              <p className={cn(
+                'text-sm',
+                isDark ? 'text-emerald-400/70' : 'text-emerald-600'
+              )}>
                 Uploaded {getRelativeTime(uploadedAt)}
               </p>
             )}
           </div>
         </div>
-        <p className="text-sm text-slate-400 mt-3">
+        <p className={cn(
+          'text-sm mt-3',
+          isDark ? 'text-slate-400' : 'text-slate-600'
+        )}>
           Thank you! We&apos;re working on completing your request.
         </p>
       </div>
@@ -105,9 +119,10 @@ export default function AuthorizationUploadCard({
   return (
     <div
       className={cn(
-        'rounded-xl p-5',
-        'bg-gradient-to-br from-amber-900/20 to-orange-900/20',
-        'border border-amber-500/30'
+        'rounded-xl p-5 border',
+        isDark
+          ? 'bg-gradient-to-br from-amber-900/20 to-orange-900/20 border-amber-500/30'
+          : 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300'
       )}
     >
       {/* Header - Friendly messaging, no technical details */}
@@ -116,10 +131,16 @@ export default function AuthorizationUploadCard({
           <HelpCircle className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-amber-200 font-medium">
+          <h3 className={cn(
+            'font-medium',
+            isDark ? 'text-amber-200' : 'text-amber-700'
+          )}>
             We need your help
           </h3>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className={cn(
+            'text-sm mt-1',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             To complete your request, please upload your Authorization to Obtain Governmental Agency Records and Reports.
           </p>
         </div>
@@ -138,7 +159,9 @@ export default function AuthorizationUploadCard({
           'border-2 border-dashed transition-all duration-200',
           dragOver
             ? 'border-amber-400 bg-amber-500/10'
-            : 'border-slate-600/50 hover:border-slate-500/50',
+            : isDark
+            ? 'border-slate-600/50 hover:border-slate-500/50'
+            : 'border-slate-300 hover:border-slate-400',
           'cursor-pointer'
         )}
       >
@@ -157,23 +180,40 @@ export default function AuthorizationUploadCard({
                 <FileText className="w-6 h-6 text-amber-400" />
               </div>
               <div>
-                <p className="text-slate-200 font-medium">{selectedFile.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className={cn(
+                  'font-medium',
+                  isDark ? 'text-slate-200' : 'text-slate-900'
+                )}>{selectedFile.name}</p>
+                <p className={cn(
+                  'text-xs',
+                  isDark ? 'text-slate-500' : 'text-slate-600'
+                )}>
                   {(selectedFile.size / 1024).toFixed(1)} KB
                 </p>
               </div>
             </>
           ) : (
             <>
-              <div className="p-3 rounded-lg bg-slate-700/50 border border-slate-600/50">
-                <Upload className="w-6 h-6 text-slate-400" />
+              <div className={cn(
+                'p-3 rounded-lg border',
+                isDark ? 'bg-slate-700/50 border-slate-600/50' : 'bg-slate-100 border-slate-200'
+              )}>
+                <Upload className={cn(
+                  'w-6 h-6',
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                )} />
               </div>
               <div>
-                <p className="text-slate-300">
+                <p className={cn(
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                )}>
                   Drop your PDF here or{' '}
                   <span className="text-amber-400">browse</span>
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className={cn(
+                  'text-xs mt-1',
+                  isDark ? 'text-slate-500' : 'text-slate-600'
+                )}>
                   Authorization to Obtain Governmental Agency Records and Reports
                 </p>
               </div>
@@ -214,7 +254,10 @@ export default function AuthorizationUploadCard({
       )}
 
       {/* Helper text */}
-      <p className="text-xs text-slate-500 text-center mt-4">
+      <p className={cn(
+        'text-xs text-center mt-4',
+        isDark ? 'text-slate-500' : 'text-slate-600'
+      )}>
         This helps us obtain your report faster
       </p>
     </div>

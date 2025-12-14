@@ -34,7 +34,7 @@ interface MobileNavProps extends React.HTMLAttributes<HTMLElement> {
  * Features:
  * - Fixed to bottom of screen
  * - 3-5 navigation items
- * - Active state with teal indicator
+ * - Active state with amber indicator
  * - Badge support for notifications
  * - Hidden on desktop (md:hidden)
  * - Safe area padding for notched phones
@@ -100,7 +100,7 @@ const MobileNav = forwardRef<HTMLElement, MobileNavProps>(
                   'flex-1 h-full',
                   'transition-colors duration-200',
                   // Active state
-                  isActive ? 'text-teal-400' : 'text-slate-400 hover:text-slate-200'
+                  isActive ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
                 )}
               >
                 {/* Active indicator */}
@@ -109,7 +109,7 @@ const MobileNav = forwardRef<HTMLElement, MobileNavProps>(
                     className={cn(
                       'absolute top-0 left-1/2 -translate-x-1/2',
                       'w-12 h-0.5 rounded-full',
-                      'bg-gradient-to-r from-teal-500 to-cyan-500',
+                      'bg-gradient-to-r from-amber-400 to-cyan-500',
                       'shadow-[0_0_10px_rgba(20,184,166,0.5)]'
                     )}
                   />
@@ -147,7 +147,7 @@ const MobileNav = forwardRef<HTMLElement, MobileNavProps>(
                     className={cn(
                       'mt-1 text-[10px] font-medium',
                       'transition-colors duration-200',
-                      isActive ? 'text-teal-300' : 'text-slate-500'
+                      isActive ? 'text-amber-300' : 'text-slate-500'
                     )}
                   >
                     {item.label}

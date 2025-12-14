@@ -151,7 +151,7 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
 
                   // Focus visible
                   'focus:outline-none',
-                  'focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+                  'focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
 
                   // Active state
                   isActive && [
@@ -171,7 +171,7 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
                       'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                       'transition-colors duration-300',
                       isActive
-                        ? 'bg-teal-500/30 text-teal-300'
+                        ? 'bg-amber-400/30 text-amber-300'
                         : 'bg-slate-700/50 text-slate-400'
                     )}
                   >
@@ -187,7 +187,7 @@ const TabBar = forwardRef<HTMLDivElement, TabBarProps>(
             <div
               className={cn(
                 'absolute bottom-0 h-0.5 rounded-full',
-                'bg-gradient-to-r from-teal-500 to-cyan-500',
+                'bg-gradient-to-r from-amber-400 to-cyan-500',
                 'transition-all duration-300 ease-out',
                 'shadow-[0_0_10px_rgba(20,184,166,0.5)]'
               )}

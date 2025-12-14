@@ -20,8 +20,13 @@ import {
   isCompletedStatus,
   needsAttention,
 } from '@/lib/statusMapping';
+import { useTheme } from '@/context/ThemeContext';
+import { cn } from '@/lib/utils';
 
 export default function LawFirmWelcome() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   // Get jobs for current law firm
   const jobs = useMemo(() => {
     return mockJobs.filter((job) => job.lawFirmId === DEFAULT_LAW_FIRM_ID);
@@ -49,15 +54,21 @@ export default function LawFirmWelcome() {
         {/* Welcome Section */}
         <div className="max-w-md text-center mb-8 animate-page-entrance">
           {/* Icon */}
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-600/10 border border-teal-500/20 flex items-center justify-center">
-            <FileText className="w-10 h-10 text-teal-400" />
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 border border-amber-400/20 flex items-center justify-center">
+            <FileText className="w-10 h-10 text-amber-400" />
           </div>
 
           {/* Welcome Text */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white font-serif mb-3">
+          <h1 className={cn(
+            'text-2xl md:text-3xl font-bold font-serif mb-3',
+            isDark ? 'text-white' : 'text-slate-900'
+          )}>
             Welcome to InstaTCR
           </h1>
-          <p className="text-slate-400 mb-6">
+          <p className={cn(
+            'mb-6',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             Select a request from the sidebar or create a new one to get started.
           </p>
 
@@ -69,7 +80,7 @@ export default function LawFirmWelcome() {
                 size="lg"
                 icon={<Plus className="w-5 h-5" />}
                 iconPosition="left"
-                className="shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-500/40"
+                className="shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-400/40"
               >
                 New Request
               </Button>
@@ -104,7 +115,7 @@ export default function LawFirmWelcome() {
                 <p className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
                   {statusCounts.active}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">In Progress</p>
+                <p className={cn('text-xs mt-1', isDark ? 'text-slate-500' : 'text-slate-500')}>In Progress</p>
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(59,130,246,0.15)] pointer-events-none" />
               </div>
 
@@ -116,7 +127,7 @@ export default function LawFirmWelcome() {
                 <p className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">
                   {statusCounts.completed}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Completed</p>
+                <p className={cn('text-xs mt-1', isDark ? 'text-slate-500' : 'text-slate-500')}>Completed</p>
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(16,185,129,0.15)] pointer-events-none" />
               </div>
 
@@ -128,7 +139,7 @@ export default function LawFirmWelcome() {
                 <p className="text-2xl font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
                   {statusCounts.needsAttention}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Need Info</p>
+                <p className={cn('text-xs mt-1', isDark ? 'text-slate-500' : 'text-slate-500')}>Need Info</p>
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_30px_rgba(251,191,36,0.15)] pointer-events-none" />
               </div>
             </div>
@@ -141,14 +152,13 @@ export default function LawFirmWelcome() {
         {/* Fatal Report (secondary) */}
         <Link href="/law/jobs/new-fatal">
           <button
-            className="
-              flex items-center gap-2 px-4 py-3 rounded-full
-              bg-slate-800/90 border border-red-500/30 backdrop-blur-md
-              text-red-300 text-sm font-medium
-              shadow-lg shadow-red-900/20
-              hover:bg-slate-700/90 hover:border-red-500/50
-              active:scale-95 transition-all duration-200
-            "
+            className={cn(
+              'flex items-center gap-2 px-4 py-3 rounded-full backdrop-blur-md',
+              'border border-red-500/30 text-red-400 text-sm font-medium',
+              'shadow-lg shadow-red-900/20',
+              'hover:border-red-500/50 active:scale-95 transition-all duration-200',
+              isDark ? 'bg-slate-800/90 hover:bg-slate-700/90' : 'bg-white/90 hover:bg-slate-50/90'
+            )}
           >
             <AlertTriangle className="w-5 h-5" />
             <span>Fatal Report</span>

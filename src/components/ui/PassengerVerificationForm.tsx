@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Users, User, Car, CreditCard, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PassengerVerificationData } from '@/lib/types';
+import { useTheme } from '@/context/ThemeContext';
 
 interface PassengerVerificationFormProps {
   clientName: string;
@@ -39,6 +40,9 @@ export default function PassengerVerificationForm({
   onCollapse,
   disabled = false,
 }: PassengerVerificationFormProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   // Generate unique IDs for name rows
   const generateId = () => `name-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -97,40 +101,70 @@ export default function PassengerVerificationForm({
   };
 
   return (
-    <div className="glass-card-dark rounded-xl p-5 border border-cyan-500/20 animate-text-reveal">
+    <div className={cn(
+      'rounded-xl p-5 border border-cyan-500/20 animate-text-reveal',
+      isDark ? 'glass-card-dark' : 'bg-white'
+    )}>
       {/* Header */}
       <div className="flex items-start gap-3 mb-5">
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10 flex-shrink-0">
           <Users className="w-5 h-5 text-cyan-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white mb-1">
+          <h3 className={cn(
+            'text-lg font-semibold mb-1',
+            isDark ? 'text-white' : 'text-slate-900'
+          )}>
             Help us verify your report
           </h3>
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <p className={cn(
+            'text-sm leading-relaxed',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             As a passenger, any of the following helps match you to the report.
-            <span className="text-slate-500 ml-1">All fields are optional.</span>
+            <span className={cn(
+              'ml-1',
+              isDark ? 'text-slate-500' : 'text-slate-600'
+            )}>All fields are optional.</span>
           </p>
         </div>
       </div>
 
       {/* Your Name (read-only display) */}
-      <div className="bg-slate-800/30 rounded-lg px-4 py-3 mb-6 border border-slate-700/30">
+      <div className={cn(
+        'rounded-lg px-4 py-3 mb-6 border',
+        isDark ? 'bg-slate-800/30 border-slate-700/30' : 'bg-slate-50 border-slate-200'
+      )}>
         <div className="flex items-center gap-3">
-          <User className="w-4 h-4 text-slate-500" />
+          <User className={cn(
+            'w-4 h-4',
+            isDark ? 'text-slate-500' : 'text-slate-400'
+          )} />
           <div>
-            <span className="text-xs text-slate-500 uppercase tracking-wider">Client&apos;s Name</span>
-            <p className="text-slate-200 font-medium">{clientName}</p>
+            <span className={cn(
+              'text-xs uppercase tracking-wider',
+              isDark ? 'text-slate-500' : 'text-slate-600'
+            )}>Client&apos;s Name</span>
+            <p className={cn(
+              'font-medium',
+              isDark ? 'text-slate-200' : 'text-slate-900'
+            )}>{clientName}</p>
           </div>
         </div>
       </div>
 
       {/* Section: Other people involved */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+        <h4 className={cn(
+          'text-sm font-semibold mb-3 flex items-center gap-2',
+          isDark ? 'text-cyan-300' : 'text-cyan-700'
+        )}>
           <Users className="w-4 h-4" />
           Other people involved
-          <span className="text-slate-500 font-normal">(optional)</span>
+          <span className={cn(
+            'font-normal',
+            isDark ? 'text-slate-500' : 'text-slate-600'
+          )}>(optional)</span>
         </h4>
 
         {/* Name rows */}
@@ -146,10 +180,11 @@ export default function PassengerVerificationForm({
                   disabled={disabled || isSubmitting}
                   className={cn(
                     'w-full h-12 md:h-10 px-3 rounded-lg',
-                    'bg-slate-800/50 border border-slate-700/50',
-                    'text-slate-200 text-base md:text-sm',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    'border text-base md:text-sm',
+                    isDark
+                      ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                      : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                    'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                     'transition-all duration-200',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
@@ -162,10 +197,11 @@ export default function PassengerVerificationForm({
                   disabled={disabled || isSubmitting}
                   className={cn(
                     'w-full h-12 md:h-10 px-3 rounded-lg',
-                    'bg-slate-800/50 border border-slate-700/50',
-                    'text-slate-200 text-base md:text-sm',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    'border text-base md:text-sm',
+                    isDark
+                      ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                      : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                    'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                     'transition-all duration-200',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
@@ -197,8 +233,9 @@ export default function PassengerVerificationForm({
           disabled={disabled || isSubmitting}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-lg',
-            'text-sm text-teal-400',
-            'hover:bg-teal-500/10',
+            'text-sm',
+            isDark ? 'text-amber-400' : 'text-amber-600',
+            'hover:bg-amber-400/10',
             'transition-all duration-200',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
@@ -210,20 +247,32 @@ export default function PassengerVerificationForm({
 
       {/* Section: Vehicle Information */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+        <h4 className={cn(
+          'text-sm font-semibold mb-3 flex items-center gap-2',
+          isDark ? 'text-cyan-300' : 'text-cyan-700'
+        )}>
           <Car className="w-4 h-4" />
           Vehicle Information
-          <span className="text-slate-500 font-normal">(optional)</span>
+          <span className={cn(
+            'font-normal',
+            isDark ? 'text-slate-500' : 'text-slate-600'
+          )}>(optional)</span>
         </h4>
 
         <div className="space-y-3">
           {/* License Plate */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               License Plate
             </label>
             <div className="relative">
-              <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Car className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={vehicleInfo.plate}
@@ -232,10 +281,11 @@ export default function PassengerVerificationForm({
                 disabled={disabled || isSubmitting}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -245,11 +295,17 @@ export default function PassengerVerificationForm({
 
           {/* Driver License */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Driver License
             </label>
             <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <CreditCard className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={vehicleInfo.driverLicense}
@@ -258,10 +314,11 @@ export default function PassengerVerificationForm({
                 disabled={disabled || isSubmitting}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -271,11 +328,17 @@ export default function PassengerVerificationForm({
 
           {/* VIN */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               VIN
             </label>
             <div className="relative">
-              <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Car className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={vehicleInfo.vin}
@@ -284,10 +347,11 @@ export default function PassengerVerificationForm({
                 disabled={disabled || isSubmitting}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -305,12 +369,12 @@ export default function PassengerVerificationForm({
           'w-full h-12 md:h-10 rounded-xl font-medium text-base md:text-sm',
           'flex items-center justify-center gap-2',
           'transition-all duration-300',
-          'bg-gradient-to-r from-teal-600 to-cyan-600',
+          'bg-gradient-to-r from-amber-500 to-cyan-600',
           'text-white',
-          'hover:from-teal-500 hover:to-cyan-500',
+          'hover:from-amber-400 hover:to-cyan-500',
           'hover:scale-[1.02]',
           'active:scale-[0.98]',
-          'shadow-lg shadow-teal-500/20',
+          'shadow-lg shadow-amber-400/20',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
         )}
       >
@@ -333,8 +397,8 @@ export default function PassengerVerificationForm({
         disabled={disabled || isSubmitting}
         className={cn(
           'w-full mt-3 py-2',
-          'text-sm text-slate-500',
-          'hover:text-slate-300',
+          'text-sm',
+          isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-600 hover:text-slate-700',
           'transition-colors duration-200',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}

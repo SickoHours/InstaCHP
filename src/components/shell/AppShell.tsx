@@ -61,14 +61,14 @@ function AppShellInner({ userType, children, className }: AppShellProps) {
   }, [userType]);
 
   return (
-    <div className="flex h-dvh bg-slate-950 overflow-hidden">
+    <div className="flex h-dvh bg-[var(--background-body)] overflow-hidden">
       {/* Background Orbs (single instance) */}
       <BackgroundOrbs />
 
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-shrink-0',
+          'hidden md:flex flex-shrink-0 relative z-30',
           'transition-[width] duration-300 ease-in-out',
           isCollapsed ? 'w-[72px]' : 'w-80'
         )}
@@ -100,7 +100,7 @@ function AppShellInner({ userType, children, className }: AppShellProps) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Header */}
+        {/* Header - positioned below sidebar on desktop */}
         <AppShellHeader userType={userType} />
 
         {/* Main Canvas */}
@@ -122,7 +122,7 @@ function AppShellInner({ userType, children, className }: AppShellProps) {
  */
 export function AppShell({ userType, children, className }: AppShellProps) {
   return (
-    <SidebarProvider>
+    <SidebarProvider userType={userType}>
       <AppShellInner userType={userType} className={className}>
         {children}
       </AppShellInner>

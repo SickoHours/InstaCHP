@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { Calendar, Clock, Shield, User, Car, CreditCard, Check } from 'lucide-react';
 import { cn, formatOfficerIdError } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Page1Data {
   crashDate: string;
@@ -52,6 +53,9 @@ export default function InlineFieldsCard({
   onSave,
   disabled = false,
 }: InlineFieldsCardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [formData, setFormData] = useState({
     page1: { ...initialPage1Data },
     page2: { ...initialPage2Data },
@@ -134,18 +138,32 @@ export default function InlineFieldsCard({
   };
 
   return (
-    <div className="glass-card-dark rounded-lg p-5 border border-cyan-500/20 animate-text-reveal">
+    <div className={cn(
+      'rounded-lg p-5 border border-cyan-500/20 animate-text-reveal',
+      isDark ? 'glass-card-dark' : 'bg-white'
+    )}>
       {/* Section 1: Crash Details (Page 1) */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-cyan-300 mb-4">Crash Details (Page 1)</h3>
+        <h3 className={cn(
+          'text-sm font-semibold mb-4',
+          isDark ? 'text-cyan-300' : 'text-cyan-600'
+        )}>
+          Crash Details (Page 1)
+        </h3>
         <div className="space-y-3">
           {/* Crash Date */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Crash Date
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Calendar className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="date"
                 value={formData.page1.crashDate}
@@ -158,9 +176,11 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200'
+                    : 'bg-white border-slate-300 text-slate-900',
+                  'border text-base md:text-sm',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -170,11 +190,17 @@ export default function InlineFieldsCard({
 
           {/* Crash Time (HHMM) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Crash Time (24-hour HHMM)
             </label>
             <div className="relative">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Clock className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={formData.page1.crashTime}
@@ -184,14 +210,17 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border',
-                  showTimeError ? 'border-red-500/50' : 'border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white text-slate-900 placeholder:text-slate-400',
+                  showTimeError
+                    ? 'border-red-500/50'
+                    : isDark ? 'border-slate-700/50' : 'border-slate-300',
                   'focus:outline-none',
                   showTimeError
                     ? 'focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20'
-                    : 'focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    : 'focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -206,11 +235,17 @@ export default function InlineFieldsCard({
 
           {/* Officer Badge */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Officer Badge Number
             </label>
             <div className="relative">
-              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Shield className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={formData.page1.officerId}
@@ -220,15 +255,18 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white text-slate-900 placeholder:text-slate-400',
                   'focus:outline-none focus:ring-2',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   showOfficerIdError
                     ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
-                    : 'border-slate-700/50 focus:border-teal-500/50 focus:ring-teal-500/20'
+                    : isDark
+                    ? 'border-slate-700/50 focus:border-amber-400/50 focus:ring-amber-400/20'
+                    : 'border-slate-300 focus:border-amber-400/50 focus:ring-amber-400/20'
                 )}
               />
             </div>
@@ -241,17 +279,28 @@ export default function InlineFieldsCard({
 
       {/* Section 2: Driver Information (Page 2) */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-cyan-300 mb-4">Driver Information (Page 2)</h3>
+        <h3 className={cn(
+          'text-sm font-semibold mb-4',
+          isDark ? 'text-cyan-300' : 'text-cyan-600'
+        )}>
+          Driver Information (Page 2)
+        </h3>
         <div className="space-y-3">
           {/* First Name & Last Name (2-column on desktop) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* First Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <label className={cn(
+                'text-xs font-medium uppercase tracking-wider',
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              )}>
                 First Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                <User className={cn(
+                  'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                )} />
                 <input
                   type="text"
                   value={formData.page2.firstName}
@@ -265,10 +314,11 @@ export default function InlineFieldsCard({
                   disabled={disabled || isSaving}
                   className={cn(
                     'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                    'bg-slate-800/50 border border-slate-700/50',
-                    'text-slate-200 text-base md:text-sm',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    'border text-base md:text-sm',
+                    isDark
+                      ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                      : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                    'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                     'transition-all duration-200',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
@@ -278,11 +328,17 @@ export default function InlineFieldsCard({
 
             {/* Last Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <label className={cn(
+                'text-xs font-medium uppercase tracking-wider',
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              )}>
                 Last Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                <User className={cn(
+                  'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                )} />
                 <input
                   type="text"
                   value={formData.page2.lastName}
@@ -296,10 +352,11 @@ export default function InlineFieldsCard({
                   disabled={disabled || isSaving}
                   className={cn(
                     'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                    'bg-slate-800/50 border border-slate-700/50',
-                    'text-slate-200 text-base md:text-sm',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    'border text-base md:text-sm',
+                    isDark
+                      ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                      : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                    'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                     'transition-all duration-200',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
@@ -310,11 +367,17 @@ export default function InlineFieldsCard({
 
           {/* License Plate */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               License Plate
             </label>
             <div className="relative">
-              <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Car className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={formData.page2.plate}
@@ -328,10 +391,11 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -341,11 +405,17 @@ export default function InlineFieldsCard({
 
           {/* Driver License */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Driver License
             </label>
             <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <CreditCard className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={formData.page2.driverLicense}
@@ -359,10 +429,11 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -372,11 +443,17 @@ export default function InlineFieldsCard({
 
           {/* VIN */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className={cn(
+              'text-xs font-medium uppercase tracking-wider',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               VIN
             </label>
             <div className="relative">
-              <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Car className={cn(
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+                isDark ? 'text-slate-500' : 'text-slate-400'
+              )} />
               <input
                 type="text"
                 value={formData.page2.vin}
@@ -390,10 +467,11 @@ export default function InlineFieldsCard({
                 disabled={disabled || isSaving}
                 className={cn(
                   'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                  'bg-slate-800/50 border border-slate-700/50',
-                  'text-slate-200 text-base md:text-sm',
-                  'placeholder:text-slate-600',
-                  'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  'border text-base md:text-sm',
+                  isDark
+                    ? 'bg-slate-800/50 border-slate-700/50 text-slate-200 placeholder:text-slate-600'
+                    : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+                  'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -413,14 +491,17 @@ export default function InlineFieldsCard({
           'transition-all duration-300',
           canSave && !isSaving
             ? [
-                'bg-gradient-to-r from-teal-600 to-cyan-600',
+                'bg-gradient-to-r from-amber-500 to-cyan-600',
                 'text-white',
-                'hover:from-teal-500 hover:to-cyan-500',
+                'hover:from-amber-400 hover:to-cyan-500',
                 'hover:scale-[1.02]',
                 'active:scale-[0.98]',
-                'shadow-lg shadow-teal-500/20',
+                'shadow-lg shadow-amber-400/20',
               ]
-            : ['bg-slate-800/50 text-slate-600', 'cursor-not-allowed']
+            : [
+                isDark ? 'bg-slate-800/50 text-slate-600' : 'bg-slate-100 text-slate-400',
+                'cursor-not-allowed'
+              ]
         )}
       >
         {isSaving ? (
@@ -438,12 +519,18 @@ export default function InlineFieldsCard({
 
       {/* Helper text */}
       {disabled && (
-        <p className="text-xs text-slate-500 text-center mt-3">
+        <p className={cn(
+          'text-xs text-center mt-3',
+          isDark ? 'text-slate-500' : 'text-slate-600'
+        )}>
           Please select Driver or Passenger first to enable form
         </p>
       )}
       {!hasAnyData && !disabled && (
-        <p className="text-xs text-slate-500 text-center mt-3">
+        <p className={cn(
+          'text-xs text-center mt-3',
+          isDark ? 'text-slate-500' : 'text-slate-600'
+        )}>
           Fill in any fields above to enable saving
         </p>
       )}

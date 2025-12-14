@@ -55,7 +55,7 @@ const STEP_CONFIG: Record<EscalationStep, {
     label: 'Schedule Time',
     actionLabel: 'Schedule Pickup Time',
     icon: Calendar,
-    buttonStyle: 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 shadow-teal-500/20',
+    buttonStyle: 'bg-gradient-to-r from-amber-500 to-cyan-600 hover:from-amber-400 hover:to-cyan-500 shadow-amber-400/20',
   },
   download_auth: {
     label: 'Download Auth',

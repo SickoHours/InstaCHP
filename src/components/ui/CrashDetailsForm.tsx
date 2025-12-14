@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { Calendar, Clock, Shield, Search } from 'lucide-react';
 import { cn, formatOfficerIdError } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 export interface CrashDetailsData {
   crashDate: string;
@@ -45,6 +46,9 @@ export default function CrashDetailsForm({
   onCollapse,
   disabled = false,
 }: CrashDetailsFormProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [formData, setFormData] = useState<CrashDetailsData>({
     crashDate: initialData?.crashDate || '',
     crashTime: initialData?.crashTime || '',
@@ -110,14 +114,26 @@ export default function CrashDetailsForm({
   };
 
   return (
-    <div className="glass-card-dark rounded-xl p-5 border border-cyan-500/20 animate-text-reveal">
+    <div className={cn(
+      'rounded-xl p-5 border border-cyan-500/20 animate-text-reveal',
+      isDark ? 'glass-card-dark' : 'bg-white'
+    )}>
       {/* Header */}
       <div className="mb-5">
-        <h3 className="text-lg font-semibold text-white mb-1">
+        <h3 className={cn(
+          'text-lg font-semibold mb-1',
+          isDark ? 'text-white' : 'text-slate-900'
+        )}>
           Crash Details
-          <span className="text-sm font-normal text-slate-500 ml-2">(all optional)</span>
+          <span className={cn(
+            'text-sm font-normal ml-2',
+            isDark ? 'text-slate-500' : 'text-slate-600'
+          )}>(all optional)</span>
         </h3>
-        <p className="text-sm text-slate-400">
+        <p className={cn(
+          'text-sm',
+          isDark ? 'text-slate-400' : 'text-slate-600'
+        )}>
           These help us locate your report faster
         </p>
       </div>
@@ -126,12 +142,21 @@ export default function CrashDetailsForm({
       <div className="space-y-4 mb-6">
         {/* Crash Date */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <label className={cn(
+            'text-xs font-medium uppercase tracking-wider flex items-center gap-2',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             Crash Date
-            <span className="text-slate-600 normal-case">(optional)</span>
+            <span className={cn(
+              'normal-case',
+              isDark ? 'text-slate-600' : 'text-slate-500'
+            )}>(optional)</span>
           </label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <Calendar className={cn(
+              'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+              isDark ? 'text-slate-500' : 'text-slate-400'
+            )} />
             <input
               type="date"
               value={formData.crashDate}
@@ -139,9 +164,11 @@ export default function CrashDetailsForm({
               disabled={disabled || isSubmitting}
               className={cn(
                 'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                'bg-slate-800/50 border border-slate-700/50',
-                'text-slate-200 text-base md:text-sm',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'border text-base md:text-sm',
+                isDark
+                  ? 'bg-slate-800/50 border-slate-700/50 text-slate-200'
+                  : 'bg-white border-slate-300 text-slate-900',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -151,12 +178,21 @@ export default function CrashDetailsForm({
 
         {/* Crash Time (HHMM) */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <label className={cn(
+            'text-xs font-medium uppercase tracking-wider flex items-center gap-2',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             Crash Time
-            <span className="text-slate-600 normal-case">(optional)</span>
+            <span className={cn(
+              'normal-case',
+              isDark ? 'text-slate-600' : 'text-slate-500'
+            )}>(optional)</span>
           </label>
           <div className="relative">
-            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <Clock className={cn(
+              'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+              isDark ? 'text-slate-500' : 'text-slate-400'
+            )} />
             <input
               type="text"
               value={formData.crashTime}
@@ -166,14 +202,17 @@ export default function CrashDetailsForm({
               disabled={disabled || isSubmitting}
               className={cn(
                 'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                'bg-slate-800/50 border',
-                showTimeError ? 'border-red-500/50' : 'border-slate-700/50',
-                'text-slate-200 text-base md:text-sm',
-                'placeholder:text-slate-600',
+                'border text-base md:text-sm',
+                showTimeError
+                  ? 'border-red-500/50'
+                  : isDark ? 'border-slate-700/50' : 'border-slate-300',
+                isDark
+                  ? 'bg-slate-800/50 text-slate-200 placeholder:text-slate-600'
+                  : 'bg-white text-slate-900 placeholder:text-slate-400',
                 'focus:outline-none',
                 showTimeError
                   ? 'focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20'
-                  : 'focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                  : 'focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -188,12 +227,21 @@ export default function CrashDetailsForm({
 
         {/* Officer Badge */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <label className={cn(
+            'text-xs font-medium uppercase tracking-wider flex items-center gap-2',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             Officer Badge
-            <span className="text-slate-600 normal-case">(optional)</span>
+            <span className={cn(
+              'normal-case',
+              isDark ? 'text-slate-600' : 'text-slate-500'
+            )}>(optional)</span>
           </label>
           <div className="relative">
-            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <Shield className={cn(
+              'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+              isDark ? 'text-slate-500' : 'text-slate-400'
+            )} />
             <input
               type="text"
               value={formData.officerId}
@@ -203,15 +251,18 @@ export default function CrashDetailsForm({
               disabled={disabled || isSubmitting}
               className={cn(
                 'w-full h-12 md:h-10 pl-10 pr-4 rounded-lg',
-                'bg-slate-800/50 border',
-                'text-slate-200 text-base md:text-sm',
-                'placeholder:text-slate-600',
+                'border text-base md:text-sm',
+                isDark
+                  ? 'bg-slate-800/50 text-slate-200 placeholder:text-slate-600'
+                  : 'bg-white text-slate-900 placeholder:text-slate-400',
                 'focus:outline-none focus:ring-2',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 showOfficerIdError
                   ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
-                  : 'border-slate-700/50 focus:border-teal-500/50 focus:ring-teal-500/20'
+                  : isDark
+                  ? 'border-slate-700/50 focus:border-amber-400/50 focus:ring-amber-400/20'
+                  : 'border-slate-300 focus:border-amber-400/50 focus:ring-amber-400/20'
               )}
             />
           </div>
@@ -229,12 +280,12 @@ export default function CrashDetailsForm({
           'w-full h-12 md:h-10 rounded-xl font-medium text-base md:text-sm',
           'flex items-center justify-center gap-2',
           'transition-all duration-300',
-          'bg-gradient-to-r from-teal-600 to-cyan-600',
+          'bg-gradient-to-r from-amber-500 to-cyan-600',
           'text-white',
-          'hover:from-teal-500 hover:to-cyan-500',
+          'hover:from-amber-400 hover:to-cyan-500',
           'hover:scale-[1.02]',
           'active:scale-[0.98]',
-          'shadow-lg shadow-teal-500/20',
+          'shadow-lg shadow-amber-400/20',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
         )}
       >
@@ -257,8 +308,8 @@ export default function CrashDetailsForm({
         disabled={disabled || isSubmitting}
         className={cn(
           'w-full mt-3 py-2',
-          'text-sm text-slate-500',
-          'hover:text-slate-300',
+          'text-sm',
+          isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-600 hover:text-slate-700',
           'transition-colors duration-200',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}

@@ -11,6 +11,8 @@
 import { cn } from '@/lib/utils';
 import { ChevronUp, Settings, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { ThemeToggleMenuItem } from '@/components/ui/ThemeToggle';
+import { useTheme } from '@/context/ThemeContext';
 
 interface SidebarProfileCardProps {
   /** Display name (law firm name or staff name) */
@@ -50,6 +52,8 @@ export function SidebarProfileCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = getInitials(name);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -85,9 +89,11 @@ export function SidebarProfileCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-lg',
           'glass-subtle',
-          'hover:bg-white/5 active:bg-white/10',
+          isDark
+            ? 'hover:bg-white/5 active:bg-white/10'
+            : 'hover:bg-slate-100 active:bg-slate-200',
           'transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-inset',
           isCollapsed && 'justify-center'
         )}
         aria-expanded={isMenuOpen}
@@ -100,7 +106,7 @@ export function SidebarProfileCard({
             'flex items-center justify-center',
             'text-sm font-semibold',
             userType === 'law_firm'
-              ? 'bg-gradient-to-br from-teal-500 to-teal-700 text-white'
+              ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white'
               : 'bg-gradient-to-br from-violet-500 to-violet-700 text-white'
           )}
         >
@@ -111,16 +117,23 @@ export function SidebarProfileCard({
         {!isCollapsed && (
           <>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-white truncate">{name}</p>
+              <p className={cn(
+                'text-sm font-medium truncate',
+                isDark ? 'text-white' : 'text-slate-900'
+              )}>{name}</p>
               {subtitle && (
-                <p className="text-xs text-slate-500 truncate">{subtitle}</p>
+                <p className={cn(
+                  'text-xs truncate',
+                  isDark ? 'text-slate-500' : 'text-slate-500'
+                )}>{subtitle}</p>
               )}
             </div>
 
             {/* Chevron */}
             <ChevronUp
               className={cn(
-                'w-4 h-4 text-slate-500 transition-transform duration-200',
+                'w-4 h-4 transition-transform duration-200',
+                isDark ? 'text-slate-500' : 'text-slate-400',
                 isMenuOpen && 'rotate-180'
               )}
             />
@@ -135,19 +148,33 @@ export function SidebarProfileCard({
             'absolute bottom-full left-0 right-0 mb-2',
             'glass-elevated rounded-lg overflow-hidden',
             'animate-in fade-in slide-in-from-bottom-2 duration-200',
-            'shadow-xl shadow-black/30',
-            'border border-slate-700/50'
+            isDark ? 'shadow-xl shadow-black/30' : 'shadow-xl shadow-slate-200/50',
+            'border',
+            isDark ? 'border-slate-700/50' : 'border-slate-200'
           )}
           role="menu"
         >
+          {/* Theme Toggle */}
+          <ThemeToggleMenuItem />
+
+          {/* Divider */}
+          <div className={cn(
+            'h-px',
+            isDark ? 'bg-slate-700/50' : 'bg-slate-200'
+          )} />
+
           {/* Settings option */}
           <button
             className={cn(
               'w-full flex items-center gap-3 px-4 py-3',
-              'text-sm text-slate-300',
-              'hover:bg-white/5 hover:text-white',
+              'text-sm',
+              isDark
+                ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               'transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:bg-white/5'
+              isDark
+                ? 'focus-visible:outline-none focus-visible:bg-white/5'
+                : 'focus-visible:outline-none focus-visible:bg-slate-50'
             )}
             role="menuitem"
             onClick={() => {
@@ -160,16 +187,23 @@ export function SidebarProfileCard({
           </button>
 
           {/* Divider */}
-          <div className="h-px bg-slate-700/50" />
+          <div className={cn(
+            'h-px',
+            isDark ? 'bg-slate-700/50' : 'bg-slate-200'
+          )} />
 
           {/* Sign out option */}
           <button
             className={cn(
               'w-full flex items-center gap-3 px-4 py-3',
-              'text-sm text-slate-300',
-              'hover:bg-white/5 hover:text-white',
+              'text-sm',
+              isDark
+                ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               'transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:bg-white/5'
+              isDark
+                ? 'focus-visible:outline-none focus-visible:bg-white/5'
+                : 'focus-visible:outline-none focus-visible:bg-slate-50'
             )}
             role="menuitem"
             onClick={() => {

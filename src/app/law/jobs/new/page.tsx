@@ -9,6 +9,7 @@ import { cn, isValidReportNumber } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
 import { useMockData } from '@/context/MockDataContext';
 import { getDelay } from '@/lib/devConfig';
+import { useTheme } from '@/context/ThemeContext';
 
 // Form state interface - only 2 fields per PRD
 interface FormState {
@@ -26,6 +27,8 @@ export default function NewRequestPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { createJob } = useMockData();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Form state - simplified to just clientName and reportNumber
   const [formState, setFormState] = useState<FormState>({
@@ -190,13 +193,19 @@ export default function NewRequestPage() {
           <div className="flex items-center justify-between mb-8 animate-page-entrance">
             <div>
               <h1
-                className="text-2xl md:text-3xl font-bold text-white font-serif animate-text-reveal"
+                className={cn(
+                  'text-2xl md:text-3xl font-bold font-serif animate-text-reveal',
+                  isDark ? 'text-white' : 'text-slate-900'
+                )}
                 style={{ animationDelay: '100ms' }}
               >
                 New Request
               </h1>
               <p
-                className="text-slate-400 mt-2 animate-text-reveal"
+                className={cn(
+                  'mt-2 animate-text-reveal',
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                )}
                 style={{ animationDelay: '200ms' }}
               >
                 Submit a CHP crash report request
@@ -206,10 +215,10 @@ export default function NewRequestPage() {
               href="/law"
               className={cn(
                 'flex items-center justify-center w-10 h-10 rounded-full',
-                'text-slate-400 hover:text-white',
-                'hover:bg-slate-800/50',
-                'transition-all duration-200',
-                'active:scale-95'
+                'transition-all duration-200 active:scale-95',
+                isDark
+                  ? 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
               )}
               title="Cancel"
             >
@@ -254,7 +263,7 @@ export default function NewRequestPage() {
                       onBlur={() => handleBlur('clientName')}
                       error={touched.clientName ? errors.clientName : undefined}
                       isValid={isFieldValid('clientName')}
-                      theme="dark"
+                      theme={isDark ? 'dark' : 'light'}
                       required
                       autoComplete="name"
                     />
@@ -274,7 +283,7 @@ export default function NewRequestPage() {
                       error={touched.reportNumber ? errors.reportNumber : undefined}
                       isValid={isFieldValid('reportNumber')}
                       helperText="Format: 9XXX-YYYY-ZZZZZ"
-                      theme="dark"
+                      theme={isDark ? 'dark' : 'light'}
                       required
                       inputMode="numeric"
                       maxLength={15}
@@ -341,9 +350,9 @@ function SubmitButton({
         fullWidth && 'w-full',
         // Default state
         !isSuccess && [
-          'bg-gradient-to-r from-teal-600 to-teal-700',
-          'text-white shadow-lg shadow-teal-600/40',
-          'hover:scale-102 hover:brightness-110 hover:shadow-xl hover:shadow-teal-500/50',
+          'bg-gradient-to-r from-amber-500 to-amber-600',
+          'text-white shadow-lg shadow-amber-500/40',
+          'hover:scale-102 hover:brightness-110 hover:shadow-xl hover:shadow-amber-400/50',
           'active:scale-98',
         ],
         // Success state

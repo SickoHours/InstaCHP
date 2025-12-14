@@ -7,11 +7,12 @@
  * 1. Complete now with just the face page
  * 2. Set up auto-checker (configure when to check for full report)
  *
- * Uses dark glass-morphism styling consistent with the app design.
+ * Theme-aware styling for light/dark modes.
  */
 
 import { CheckCircle2, Settings, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface FacePageCompletionChoiceProps {
   onSelect: (choice: 'complete' | 'wait') => void;
@@ -24,6 +25,9 @@ export default function FacePageCompletionChoice({
   disabled = false,
   clientName,
 }: FacePageCompletionChoiceProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -32,10 +36,16 @@ export default function FacePageCompletionChoice({
           <FileText className="w-5 h-5 text-emerald-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className={cn(
+            'text-lg font-semibold',
+            isDark ? 'text-white' : 'text-slate-900'
+          )}>
             Your face page is ready!
           </h3>
-          <p className="text-sm text-slate-400">
+          <p className={cn(
+            'text-sm',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             {clientName ? `For ${clientName}` : 'A preliminary copy is available'}
           </p>
         </div>
@@ -64,10 +74,16 @@ export default function FacePageCompletionChoice({
             <CheckCircle2 className="w-5 h-5 text-emerald-300" />
           </div>
           <div className="flex-1">
-            <span className="text-emerald-200 font-medium block">
+            <span className={cn(
+              'font-medium block',
+              isDark ? 'text-emerald-200' : 'text-emerald-700'
+            )}>
               This is all I need
             </span>
-            <span className="text-slate-400 text-sm block mt-1">
+            <span className={cn(
+              'text-sm block mt-1',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Complete your request now and download the face page
             </span>
           </div>
@@ -95,10 +111,16 @@ export default function FacePageCompletionChoice({
             <Settings className="w-5 h-5 text-blue-300" />
           </div>
           <div className="flex-1">
-            <span className="text-blue-200 font-medium block">
+            <span className={cn(
+              'font-medium block',
+              isDark ? 'text-blue-200' : 'text-blue-700'
+            )}>
               Set Up Auto Checker
             </span>
-            <span className="text-slate-400 text-sm block mt-1">
+            <span className={cn(
+              'text-sm block mt-1',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Configure when we check for the full report
             </span>
           </div>
@@ -106,7 +128,10 @@ export default function FacePageCompletionChoice({
       </div>
 
       {/* Helper text */}
-      <p className="text-xs text-slate-500 text-center mt-2">
+      <p className={cn(
+        'text-xs text-center mt-2',
+        isDark ? 'text-slate-500' : 'text-slate-600'
+      )}>
         You can change your mind later if needed
       </p>
     </div>

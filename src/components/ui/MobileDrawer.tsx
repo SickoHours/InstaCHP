@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import FocusTrap from 'focus-trap-react';
 import { cn } from '@/lib/utils';
 import { usePrefersReducedMotion } from '@/hooks/useMediaQuery';
+import { useTheme } from '@/context/ThemeContext';
 
 interface MobileDrawerProps {
   /** Whether the drawer is open */
@@ -59,6 +60,8 @@ export default function MobileDrawer({
 }: MobileDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Handle escape key
   const handleKeyDown = useCallback(
@@ -137,12 +140,12 @@ export default function MobileDrawer({
             width,
             // Position
             isLeft ? 'left-0' : 'right-0',
-            // Glass-morphism styling
+            // Glass-morphism styling - use theme-aware class
             'glass-card-dark',
             isLeft
-              ? 'border-r border-slate-700/50'
-              : 'border-l border-slate-700/50',
-            'shadow-2xl shadow-black/50',
+              ? cn('border-r', isDark ? 'border-slate-700/50' : 'border-slate-200')
+              : cn('border-l', isDark ? 'border-slate-700/50' : 'border-slate-200'),
+            isDark ? 'shadow-2xl shadow-black/50' : 'shadow-2xl shadow-slate-300/50',
             // Animation
             !prefersReducedMotion && [
               'animate-in',
@@ -157,7 +160,8 @@ export default function MobileDrawer({
             <div
               className={cn(
                 'flex items-center h-16 px-4',
-                'border-b border-slate-700/50',
+                'border-b',
+                isDark ? 'border-slate-700/50' : 'border-slate-200',
                 isLeft ? 'justify-end' : 'justify-start'
               )}
             >
@@ -165,10 +169,11 @@ export default function MobileDrawer({
                 onClick={onClose}
                 className={cn(
                   'flex items-center justify-center w-10 h-10 rounded-full',
-                  'text-slate-400 hover:text-white',
-                  'hover:bg-slate-700/50',
+                  isDark
+                    ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100',
                   'transition-colors duration-200',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50'
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50'
                 )}
                 aria-label="Close menu"
               >
@@ -253,7 +258,7 @@ export function NavigationDrawer({
                   'text-base font-medium',
                   'transition-colors duration-200',
                   isActive
-                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                    ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                     : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
                 )}
               >
@@ -261,7 +266,7 @@ export function NavigationDrawer({
                   <span
                     className={cn(
                       'w-5 h-5',
-                      isActive ? 'text-teal-400' : 'text-slate-400'
+                      isActive ? 'text-amber-400' : 'text-slate-400'
                     )}
                   >
                     {item.icon}
@@ -273,7 +278,7 @@ export function NavigationDrawer({
                     className={cn(
                       'px-2 py-0.5 rounded-full text-xs font-semibold',
                       isActive
-                        ? 'bg-teal-500/30 text-teal-300'
+                        ? 'bg-amber-400/30 text-amber-300'
                         : 'bg-slate-700 text-slate-300'
                     )}
                   >

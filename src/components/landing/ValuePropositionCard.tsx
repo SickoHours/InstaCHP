@@ -15,7 +15,7 @@ export default function ValuePropositionCard({
     <Card variant="glass" padding="lg" hover>
       <div className="flex flex-col items-center text-center">
         {/* Icon */}
-        <div className="mb-4 text-teal-400" aria-hidden="true">
+        <div className="mb-4 text-amber-400" aria-hidden="true">
           {icon}
         </div>
 

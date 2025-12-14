@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { mockJobs } from '@/lib/mockData';
+import { useTheme } from '@/context/ThemeContext';
 import type { Job, InternalStatus, PublicStatus } from '@/lib/types';
 import { getPublicStatus, formatPublicStatus } from '@/lib/statusMapping';
 import { hasAuthorizationUploaded, isReadyToClaim } from '@/lib/jobUIHelpers';
@@ -89,6 +90,9 @@ const PUBLIC_STATUS_COLORS: Record<PublicStatus, string> = {
 };
 
 export default function StaffQueuePage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   // V1.7.0: Default to 'escalated' filter - human intervention needed first
   const [activeFilter, setActiveFilter] = useState<FilterId>('escalated');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -199,7 +203,10 @@ export default function StaffQueuePage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl md:text-2xl font-bold text-white font-serif">
+            <h1 className={cn(
+              'text-xl md:text-2xl font-bold font-serif',
+              isDark ? 'text-white' : 'text-slate-900'
+            )}>
               Job Queue
             </h1>
             {/* Escalation count badge */}
@@ -219,9 +226,10 @@ export default function StaffQueuePage() {
             disabled={isRefreshing}
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-lg',
-              'text-sm text-slate-400 hover:text-white',
-              'bg-slate-800/50 hover:bg-slate-700/50',
-              'transition-all duration-200',
+              'text-sm transition-all duration-200',
+              isDark
+                ? 'text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700/50'
+                : 'text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
@@ -346,9 +354,12 @@ export default function StaffQueuePage() {
             <div className="glass-surface rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-800/50">
+                  <tr className={cn('border-b', isDark ? 'border-slate-800/50' : 'border-slate-200')}>
                     {['Client', 'Report #', 'Law Firm', 'Internal', 'Public', 'Created', 'Actions'].map((header) => (
-                      <th key={header} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                      <th key={header} className={cn(
+                        'text-left text-xs font-semibold uppercase tracking-wider px-5 py-4',
+                        isDark ? 'text-slate-500' : 'text-slate-500'
+                      )}>
                         {header}
                       </th>
                     ))}
@@ -367,26 +378,26 @@ export default function StaffQueuePage() {
             <div className="glass-surface rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-800/50">
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                  <tr className={cn('border-b', isDark ? 'border-slate-800/50' : 'border-slate-200')}>
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Client
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Report #
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Law Firm
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Internal
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Public
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-left text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Created
                     </th>
-                    <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-4">
+                    <th className={cn('text-right text-xs font-semibold uppercase tracking-wider px-5 py-4', isDark ? 'text-slate-500' : 'text-slate-500')}>
                       Actions
                     </th>
                   </tr>
@@ -399,24 +410,25 @@ export default function StaffQueuePage() {
                       <tr
                         key={job._id}
                         className={cn(
-                          'border-b border-slate-800/30 last:border-0',
-                          'hover:bg-slate-800/30 transition-colors duration-200',
+                          'border-b last:border-0',
+                          isDark ? 'border-slate-800/30 hover:bg-slate-800/30' : 'border-slate-100 hover:bg-slate-50',
+                          'transition-colors duration-200',
                           'opacity-0 animate-message-cascade'
                         )}
                         style={{ animationDelay: `${700 + index * 50}ms` }}
                       >
                         <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-slate-200">
+                          <span className={cn('text-sm font-medium', isDark ? 'text-slate-200' : 'text-slate-800')}>
                             {job.clientName}
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="text-sm text-slate-400 font-mono">
+                          <span className={cn('text-sm font-mono', isDark ? 'text-slate-400' : 'text-slate-600')}>
                             {job.reportNumber}
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="text-sm text-slate-400">
+                          <span className={cn('text-sm', isDark ? 'text-slate-400' : 'text-slate-600')}>
                             {job.lawFirmName}
                           </span>
                         </td>
@@ -441,7 +453,7 @@ export default function StaffQueuePage() {
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="text-sm text-slate-500">
+                          <span className={cn('text-sm', isDark ? 'text-slate-500' : 'text-slate-500')}>
                             {formatRelativeTime(job.createdAt)}
                           </span>
                         </td>
@@ -450,8 +462,8 @@ export default function StaffQueuePage() {
                             href={`/staff/jobs/${job._id}`}
                             className={cn(
                               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
-                              'text-sm font-medium text-teal-400',
-                              'bg-teal-500/10 hover:bg-teal-500/20',
+                              'text-sm font-medium text-amber-400',
+                              'bg-amber-400/10 hover:bg-amber-400/20',
                               'transition-colors duration-200'
                             )}
                           >

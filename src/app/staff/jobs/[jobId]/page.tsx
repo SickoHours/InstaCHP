@@ -194,8 +194,8 @@ function StaffControlCard({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20">
-              <Icon className="w-4 h-4 text-teal-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20">
+              <Icon className="w-4 h-4 text-amber-400" />
             </div>
           )}
           <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">{title}</h3>
@@ -249,7 +249,7 @@ function DarkInput({
           className={cn(
             'w-full h-12 md:h-10 rounded-lg border bg-slate-800/50 text-slate-200',
             'text-base md:text-sm',
-            'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+            'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
             'placeholder:text-slate-500',
             'transition-all duration-200',
             Icon ? 'pl-10 pr-4' : 'px-4',
@@ -303,32 +303,32 @@ function DownloadButton({
         'transition-all duration-300 ease-out',
         'hover:scale-[1.02] active:scale-[0.98]',
         variant === 'primary' && [
-          'bg-gradient-to-r from-teal-600/90 to-cyan-600/90',
-          'border border-teal-500/30',
-          'hover:from-teal-500/90 hover:to-cyan-500/90',
-          'shadow-lg shadow-teal-500/20',
+          'bg-gradient-to-r from-amber-500/90 to-cyan-600/90',
+          'border border-amber-400/30',
+          'hover:from-amber-400/90 hover:to-cyan-500/90',
+          'shadow-lg shadow-amber-400/20',
         ],
         variant === 'secondary' && [
           'glass-card-dark',
           'border border-slate-600/30',
-          'hover:border-teal-500/30',
+          'hover:border-amber-400/30',
         ]
       )}
     >
       <div
         className={cn(
           'flex items-center justify-center w-12 h-12 rounded-lg',
-          variant === 'primary' ? 'bg-white/10' : 'bg-teal-500/10'
+          variant === 'primary' ? 'bg-white/10' : 'bg-amber-400/10'
         )}
       >
-        <Icon className={cn('w-6 h-6', variant === 'primary' ? 'text-white' : 'text-teal-400')} />
+        <Icon className={cn('w-6 h-6', variant === 'primary' ? 'text-white' : 'text-amber-400')} />
       </div>
       <div className="flex-1 text-left">
         <p className={cn('font-semibold', variant === 'primary' ? 'text-white' : 'text-slate-200')}>
           {label}
         </p>
         {subLabel && (
-          <p className={cn('text-sm', variant === 'primary' ? 'text-teal-100' : 'text-slate-400')}>
+          <p className={cn('text-sm', variant === 'primary' ? 'text-amber-100' : 'text-slate-400')}>
             {subLabel}
           </p>
         )}
@@ -383,7 +383,7 @@ function EscalationDialog({
             className={cn(
               'w-full h-24 rounded-lg border bg-slate-800/50 text-slate-200',
               'text-base md:text-sm p-3',
-              'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+              'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
               'placeholder:text-slate-500',
               'resize-none'
             )}
@@ -445,7 +445,7 @@ function InfoRow({
             className="p-1 rounded hover:bg-slate-700/50 transition-colors"
             title="Copy to clipboard"
           >
-            <Copy className="w-3 h-3 text-slate-500 hover:text-teal-400" />
+            <Copy className="w-3 h-3 text-slate-500 hover:text-amber-400" />
           </button>
         )}
       </div>
@@ -560,7 +560,7 @@ function JobSummaryCard({
               </div>
               <span className={cn(
                 'px-2 py-0.5 rounded-md text-xs font-medium border',
-                'bg-teal-500/20 text-teal-200 border-teal-500/30'
+                'bg-amber-400/20 text-amber-200 border-amber-400/30'
               )}>
                 {job.clientType.charAt(0).toUpperCase() + job.clientType.slice(1)}
               </span>
@@ -605,7 +605,7 @@ function JobSummaryCard({
             'flex items-center justify-center gap-2',
             'border border-slate-600/50',
             canRunWrapper && !isWrapperRunning
-              ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:border-teal-500/30 active:scale-98'
+              ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:border-amber-400/30 active:scale-98'
               : 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
           )}
         >
@@ -636,7 +636,7 @@ function AllEventsCard({ jobId }: { jobId: string }) {
   const eventTypeColors: Record<string, string> = {
     job_created: 'text-slate-400',
     status_change: 'text-blue-400',
-    page1_updated: 'text-teal-400',
+    page1_updated: 'text-amber-400',
     page2_updated: 'text-cyan-400',
     wrapper_triggered: 'text-purple-400',
     wrapper_completed: 'text-emerald-400',
@@ -661,7 +661,7 @@ function AllEventsCard({ jobId }: { jobId: string }) {
               <div
                 className={cn(
                   'w-2 h-2 rounded-full mt-1.5 flex-shrink-0',
-                  event.isUserFacing ? 'bg-teal-400' : 'bg-slate-500'
+                  event.isUserFacing ? 'bg-amber-400' : 'bg-slate-500'
                 )}
               />
               <div className="flex-1 min-w-0">
@@ -675,7 +675,7 @@ function AllEventsCard({ jobId }: { jobId: string }) {
                     {event.eventType.replace(/_/g, ' ')}
                   </span>
                   {event.isUserFacing && (
-                    <span className="text-xs text-teal-400/60">(visible to law firm)</span>
+                    <span className="text-xs text-amber-400/60">(visible to law firm)</span>
                   )}
                 </div>
                 <p className="text-sm text-slate-300">{event.message}</p>
@@ -1268,8 +1268,8 @@ export default function StaffJobDetailPage() {
                 style={{ animationDelay: '400ms' }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-500/10">
-                    <Sparkles className="w-5 h-5 text-teal-400" />
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-400/10">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">
@@ -1290,7 +1290,7 @@ export default function StaffJobDetailPage() {
                 </h2>
                 <div
                   ref={timelineRef}
-                  className="relative max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+                  className="relative max-h-[300px] overflow-y-auto pl-6 pr-2 pt-4 pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
                 >
                   {userFacingEvents.length === 0 ? (
                     <div className="text-center py-8">
@@ -1460,7 +1460,7 @@ export default function StaffJobDetailPage() {
                             name="uploadType"
                             checked={uploadType === 'face'}
                             onChange={() => setUploadType('face')}
-                            className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                            className="w-4 h-4 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
                           />
                           <span className="text-sm text-slate-300">Face Page</span>
                         </label>
@@ -1470,7 +1470,7 @@ export default function StaffJobDetailPage() {
                             name="uploadType"
                             checked={uploadType === 'full'}
                             onChange={() => setUploadType('full')}
-                            className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                            className="w-4 h-4 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
                           />
                           <span className="text-sm text-slate-300">Full Report</span>
                         </label>
@@ -1547,7 +1547,7 @@ export default function StaffJobDetailPage() {
                         className={cn(
                           'w-full h-20 rounded-lg border bg-slate-800/50 text-slate-200',
                           'text-base md:text-sm p-3',
-                          'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                          'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                           'placeholder:text-slate-500',
                           'resize-none'
                         )}
@@ -1589,7 +1589,7 @@ export default function StaffJobDetailPage() {
                   onClick={handleCallCHP}
                   className={cn(
                     'flex items-center justify-center gap-2 h-12 md:h-10 rounded-lg',
-                    'bg-teal-600 hover:bg-teal-500 text-white font-medium',
+                    'bg-amber-500 hover:bg-amber-400 text-white font-medium',
                     'transition-all duration-200',
                     'active:scale-95'
                   )}
@@ -1665,8 +1665,8 @@ export default function StaffJobDetailPage() {
             <StaffControlCard title="Page 2 Verification" icon={User} animationDelay={200}>
               {/* Passenger-Provided Data Quick-Fill Banner */}
               {localJob.passengerProvidedData && (
-                <div className="mb-4 p-3 rounded-lg bg-teal-500/10 border border-teal-500/20">
-                  <p className="text-xs text-teal-400 mb-2 uppercase tracking-wider">
+                <div className="mb-4 p-3 rounded-lg bg-amber-400/10 border border-amber-400/20">
+                  <p className="text-xs text-amber-400 mb-2 uppercase tracking-wider">
                     Passenger Provided:
                   </p>
                   <div className="space-y-2">
@@ -1680,11 +1680,11 @@ export default function StaffJobDetailPage() {
                         }
                         className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
                       >
-                        <Car className="w-4 h-4 text-teal-400" />
+                        <Car className="w-4 h-4 text-amber-400" />
                         <span className="text-sm text-slate-300 flex-1">
                           Plate: {localJob.passengerProvidedData.plate}
                         </span>
-                        <Copy className="w-4 h-4 text-teal-400" />
+                        <Copy className="w-4 h-4 text-amber-400" />
                       </button>
                     )}
                     {localJob.passengerProvidedData.driverLicense && (
@@ -1697,11 +1697,11 @@ export default function StaffJobDetailPage() {
                         }
                         className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
                       >
-                        <CreditCard className="w-4 h-4 text-teal-400" />
+                        <CreditCard className="w-4 h-4 text-amber-400" />
                         <span className="text-sm text-slate-300 flex-1">
                           Driver License: {localJob.passengerProvidedData.driverLicense}
                         </span>
-                        <Copy className="w-4 h-4 text-teal-400" />
+                        <Copy className="w-4 h-4 text-amber-400" />
                       </button>
                     )}
                     {localJob.passengerProvidedData.vin && (
@@ -1714,11 +1714,11 @@ export default function StaffJobDetailPage() {
                         }
                         className="flex items-center gap-2 w-full text-left p-2 rounded bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
                       >
-                        <Car className="w-4 h-4 text-teal-400" />
+                        <Car className="w-4 h-4 text-amber-400" />
                         <span className="text-sm text-slate-300 flex-1">
                           VIN: {localJob.passengerProvidedData.vin}
                         </span>
-                        <Copy className="w-4 h-4 text-teal-400" />
+                        <Copy className="w-4 h-4 text-amber-400" />
                       </button>
                     )}
                   </div>
@@ -1810,7 +1810,7 @@ export default function StaffJobDetailPage() {
                   'transition-all duration-200',
                   'flex items-center justify-center gap-2',
                   canRunWrapper && !isWrapperRunning
-                    ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-500 hover:to-cyan-500 active:scale-98'
+                    ? 'bg-gradient-to-r from-amber-500 to-cyan-600 text-white hover:from-amber-400 hover:to-cyan-500 active:scale-98'
                     : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                 )}
               >
@@ -1831,7 +1831,7 @@ export default function StaffJobDetailPage() {
               {isWrapperRunning && (
                 <div className="mt-3 h-2 bg-slate-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-100"
+                    className="h-full bg-gradient-to-r from-amber-400 to-cyan-500 transition-all duration-100"
                     style={{ width: `${wrapperProgress}%` }}
                   />
                 </div>
@@ -1931,7 +1931,7 @@ export default function StaffJobDetailPage() {
                               onClick={() =>
                                 handleDownload(run.result === 'FULL' ? 'full' : 'face')
                               }
-                              className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                              className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1"
                             >
                               <Download className="w-3 h-3" />
                               Download
@@ -2026,7 +2026,7 @@ export default function StaffJobDetailPage() {
                   'transition-all duration-200',
                   'flex items-center justify-center gap-2',
                   canRunAutoChecker && !isAutoChecking
-                    ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-500 hover:to-cyan-500 active:scale-98'
+                    ? 'bg-gradient-to-r from-amber-500 to-cyan-600 text-white hover:from-amber-400 hover:to-cyan-500 active:scale-98'
                     : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                 )}
               >
@@ -2110,7 +2110,7 @@ export default function StaffJobDetailPage() {
                       name="uploadType"
                       checked={uploadType === 'face'}
                       onChange={() => setUploadType('face')}
-                      className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                      className="w-4 h-4 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
                     />
                     <span className="text-sm text-slate-300">Face Page</span>
                   </label>
@@ -2120,7 +2120,7 @@ export default function StaffJobDetailPage() {
                       name="uploadType"
                       checked={uploadType === 'full'}
                       onChange={() => setUploadType('full')}
-                      className="w-4 h-4 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+                      className="w-4 h-4 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
                     />
                     <span className="text-sm text-slate-300">Full Report</span>
                   </label>
@@ -2197,7 +2197,7 @@ export default function StaffJobDetailPage() {
                   className={cn(
                     'w-full h-20 rounded-lg border bg-slate-800/50 text-slate-200',
                     'text-base md:text-sm p-3',
-                    'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                    'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                     'placeholder:text-slate-500',
                     'resize-none'
                   )}

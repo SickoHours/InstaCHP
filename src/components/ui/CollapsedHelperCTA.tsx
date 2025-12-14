@@ -12,6 +12,7 @@
 
 import { Zap, Users, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface CollapsedHelperCTAProps {
   variant: 'driver' | 'passenger';
@@ -24,6 +25,9 @@ export default function CollapsedHelperCTA({
   onExpand,
   disabled = false,
 }: CollapsedHelperCTAProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const isDriver = variant === 'driver';
 
   const Icon = isDriver ? Zap : Users;
@@ -39,14 +43,13 @@ export default function CollapsedHelperCTA({
       disabled={disabled}
       className={cn(
         'w-full flex items-center gap-3 p-4 rounded-xl',
-        'glass-card-dark',
-        'border border-slate-700/50',
-        'transition-all duration-300',
-        'hover:border-slate-600/50',
-        'hover:bg-slate-800/50',
+        'border transition-all duration-300',
         'active:scale-[0.98]',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'animate-text-reveal'
+        'animate-text-reveal',
+        isDark
+          ? 'glass-card-dark border-slate-700/50 hover:border-slate-600/50 hover:bg-slate-800/50'
+          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
       )}
     >
       {/* Icon */}
@@ -60,12 +63,18 @@ export default function CollapsedHelperCTA({
       </div>
 
       {/* Text */}
-      <span className="flex-1 text-left text-sm text-slate-300 font-medium">
+      <span className={cn(
+        'flex-1 text-left text-sm font-medium',
+        isDark ? 'text-slate-300' : 'text-slate-700'
+      )}>
         {text}
       </span>
 
       {/* Expand arrow */}
-      <ChevronRight className="w-4 h-4 text-slate-500 transition-transform duration-200 group-hover:translate-x-0.5" />
+      <ChevronRight className={cn(
+        'w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5',
+        isDark ? 'text-slate-500' : 'text-slate-400'
+      )} />
     </button>
   );
 }

@@ -20,6 +20,8 @@ import SpeedUpPrompt from './SpeedUpPrompt';
 import CrashDetailsForm, { type CrashDetailsData } from './CrashDetailsForm';
 import PassengerVerificationForm from './PassengerVerificationForm';
 import CollapsedHelperCTA from './CollapsedHelperCTA';
+import { useTheme } from '@/context/ThemeContext';
+import { cn } from '@/lib/utils';
 
 export interface FlowCompletionData {
   clientType: 'driver' | 'passenger';
@@ -81,6 +83,9 @@ export default function FlowWizard({
   onExpand,
   disabled = false,
 }: FlowWizardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   // Track collected data during the wizard
   const [collectedData, setCollectedData] = useState<Partial<FlowCompletionData>>({});
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -188,9 +193,20 @@ export default function FlowWizard({
     >
       {/* Step: Driver/Passenger Selection */}
       {currentStep === 'selection' && (
-        <div className="glass-card-dark rounded-lg p-5 border border-cyan-500/30 animate-text-reveal">
-          <h2 className="text-lg font-semibold text-white mb-2">First, let us know:</h2>
-          <p className="text-sm text-slate-400 mb-4">
+        <div className={cn(
+          'rounded-lg p-5 border animate-text-reveal',
+          isDark ? 'glass-card-dark border-cyan-500/30' : 'bg-white border-cyan-500/30'
+        )}>
+          <h2 className={cn(
+            'text-lg font-semibold mb-2',
+            isDark ? 'text-white' : 'text-slate-900'
+          )}>
+            First, let us know:
+          </h2>
+          <p className={cn(
+            'text-sm mb-4',
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          )}>
             Is this request for the driver or a passenger?
           </p>
           <DriverPassengerChoice

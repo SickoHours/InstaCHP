@@ -117,7 +117,7 @@ const StaffJobCard = forwardRef<HTMLDivElement, StaffJobCardProps>(
             'hover:bg-slate-800/30',
             'transition-colors duration-200',
             // Focus styles
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset',
             // Rounded top if has quick actions, rounded all if not
             shouldShowQuickActions ? 'rounded-t-xl' : 'rounded-xl'
           )}

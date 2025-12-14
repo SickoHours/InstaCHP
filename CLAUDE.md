@@ -37,6 +37,7 @@ InstaTCR is a web application that helps personal injury law firms request, trac
 | CHP wrapper specs | [docs/prd/04-chp-wrapper.md](docs/prd/04-chp-wrapper.md) |
 | UI components | [docs/prd/05-component-library.md](docs/prd/05-component-library.md) |
 | Implementation guide | [docs/prd/06-implementation-guide.md](docs/prd/06-implementation-guide.md) |
+| **Color system & themes** | [docs/prd/07-color-system.md](docs/prd/07-color-system.md) ← **NEW (V3.0)** |
 | What's shipped | [CHANGELOG.md](CHANGELOG.md) ← **READ FIRST** |
 | What's next | [DEV-ROADMAP.md](DEV-ROADMAP.md) |
 
@@ -112,7 +113,8 @@ src/
 │       ├── NotificationBell.tsx    # V2.0.0 with keyboard support
 │       └── ...                     # Other UI components
 ├── context/
-│   └── SidebarContext.tsx          # Sidebar state (V2.2.0)
+│   ├── SidebarContext.tsx          # Sidebar state (V2.2.0)
+│   └── ThemeContext.tsx            # Theme state (V3.0.0) - light/dark mode
 ├── lib/
 │   ├── mockData.ts                 # 29 sample jobs (24 prod + 5 dev)
 │   ├── statusMapping.ts            # Status conversion (CANONICAL)
@@ -133,6 +135,41 @@ src/
 - **Icons:** lucide-react
 - **Data:** Mock data (no backend)
 - **Deployment:** Vercel
+
+---
+
+## 🌓 Theme System (V3.0)
+
+**Dual light/dark mode with system preference detection.**
+
+| Setting | Value |
+|---------|-------|
+| Default | System preference |
+| Storage | `localStorage.getItem('instaTCR_theme')` |
+| HTML Attribute | `data-theme="light\|dark"` on `<html>` |
+| Context | `useTheme()` from `ThemeContext` |
+
+**Brand Colors:**
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Brand Navy | `#1a3c5b` | Headers, dark backgrounds |
+| Amber 400 | `#fbbf24` | Primary accent (buttons, active states) |
+
+**Theme Hook:**
+```typescript
+const { theme, toggleTheme, preference, setTheme } = useTheme();
+// theme: 'light' | 'dark' (resolved)
+// preference: 'light' | 'dark' | 'system'
+```
+
+**Toggle Locations:**
+1. Header (next to NotificationBell)
+2. Profile dropdown (first menu item)
+
+**Light Mode:** Solid backgrounds, no glass on surfaces, no orbs
+**Dark Mode:** Glass morphism, animated orbs
+
+👉 **Full details:** [docs/prd/07-color-system.md](docs/prd/07-color-system.md)
 
 ---
 

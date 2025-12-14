@@ -5,6 +5,647 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.7] - 2025-12-13
+
+### Fixed
+
+#### Timeline Icon Clipping and Sizing Issues
+
+**Purpose:**
+Fix timeline icons being clipped by container borders and ensure proper icon sizing for better visual proportion.
+
+**Key Changes:**
+
+1. **Icon Sizing (`src/components/ui/TimelineMessage.tsx`)**
+   - Restored icon size to `w-5 h-5` (20px) for proper proportion
+   - Reduced container padding to `p-1.5` (6px) to provide adequate breathing room
+   - Added `overflow-visible` to timeline node container to prevent clipping
+   - Icon now has ~3px breathing room within 40px container (20px icon + 6px padding × 2 + 1px border × 2 = 34px used, 6px remaining)
+
+2. **Timeline Scroll Container Padding (`src/app/law/jobs/[jobId]/page.tsx`)**
+   - Added `pt-4` (top padding) to active job timeline scroll container
+   - Added `pt-4` (top padding) to collapsed job timeline scroll container
+   - Added `pb-2` (bottom padding) for visual consistency
+   - Prevents icons from being clipped at the top edge of scroll containers
+
+3. **Staff Timeline Container (`src/app/staff/jobs/[jobId]/page.tsx`)**
+   - Added `pt-4` (top padding) to timeline scroll container
+   - Added `pb-2` (bottom padding) for consistency
+   - Ensures consistent behavior across law firm and staff views
+
+**Technical Implementation:**
+
+- Icon container: `w-10 h-10` (40px) with `p-1.5` (6px padding)
+- Icon size: `w-5 h-5` (20px) - restored to original size
+- Timeline node container: `overflow-visible` to allow glow effects to extend
+- Scroll containers: `pt-4 pb-2` to prevent top/bottom clipping
+- Box-shadow glow effects remain intact and visible
+
+**Files Changed (3):**
+
+| File | Changes |
+|------|---------|
+| `src/components/ui/TimelineMessage.tsx` | Fixed icon size (w-5 h-5), reduced padding (p-1.5), added overflow-visible |
+| `src/app/law/jobs/[jobId]/page.tsx` | Added pt-4/pb-2 to both active and collapsed timeline scroll containers |
+| `src/app/staff/jobs/[jobId]/page.tsx` | Added pt-4/pb-2 to timeline scroll container |
+
+**User Impact:**
+
+- ✅ Timeline icons are properly sized and proportionate
+- ✅ Icons no longer clipped by container borders
+- ✅ Top edge clipping fixed with proper scroll container padding
+- ✅ Glow effects remain visible and extend beyond containers
+- ✅ Consistent behavior across all timeline views (law firm and staff)
+
+**Version:** V2.2.7
+
+---
+
+## [2.2.6] - 2025-12-13
+
+### Fixed
+
+#### App Shell Header and Sidebar Layout Improvements
+
+**Purpose:**
+Fix header overlap with sidebar, improve collapsed sidebar layout, and ensure proper default state for law firm users.
+
+**Key Changes:**
+
+1. **Z-Index Layering (`src/components/shell/AppShell.tsx`)**
+   - Sidebar: `z-30` (highest, stays above header)
+   - Header: `z-20` (reduced from `z-40`, below sidebar)
+   - Main content: `z-10` (base layer)
+   - Prevents header from overlapping sidebar on desktop
+
+2. **Header Styling (`src/components/shell/AppShellHeader.tsx`)**
+   - Removed bottom border (`border-b-0`) to eliminate boxy appearance
+   - Removed collapse button from header (now only in sidebar)
+   - Removed logo from desktop header when sidebar is collapsed (logo stays in sidebar)
+   - Cleaner, borderless header design
+
+3. **Sidebar Layout (`src/components/shell/AppShellSidebar.tsx`)**
+   - **When expanded:** Logo on left, collapse button on right (unchanged)
+   - **When collapsed:** Logo centered in header, collapse button moved to bottom of sidebar
+   - Eliminates awkward vertical stacking of logo and button
+   - Better visual hierarchy and spacing
+
+4. **Default Sidebar State (`src/context/SidebarContext.tsx`)**
+   - Law firm users: Sidebar defaults to **open** (not collapsed) on **first visit**
+   - On first visit (no localStorage): Sidebar is open by default
+   - If user collapses sidebar: Preference is saved and respected on subsequent visits
+   - If user opens sidebar: Preference is saved and respected on subsequent visits
+   - Staff users: Use their default or localStorage preference
+   - Improved code clarity with explicit comments explaining first-visit behavior
+
+**Behavior:**
+
+| State | Sidebar Header | Collapse Button Location |
+|-------|----------------|--------------------------|
+| Expanded | Logo left, button right | Top right of sidebar header |
+| Collapsed | Logo centered | Bottom of sidebar (separated by border) |
+
+**Technical Implementation:**
+
+- Z-index hierarchy ensures proper stacking order
+- Sidebar collapse button always remains in sidebar (never moves to header)
+- Logo visible in sidebar at all times (expanded and collapsed states)
+- Header uses `border-b-0` to override CSS class border-bottom
+- Law firm default state checked in `useState` initializer with localStorage fallback
+- First-visit detection: `localStorage.getItem()` returns `null` → sidebar defaults to open
+- User preference persistence: Collapsed state (`'true'`) saved to `instaTCR_sidebar_collapsed_law_firm`
+
+**Files Changed (4):**
+
+| File | Changes |
+|------|---------|
+| `src/components/shell/AppShell.tsx` | Adjusted z-index values for proper layering |
+| `src/components/shell/AppShellHeader.tsx` | Removed border, collapse button, and logo logic |
+| `src/components/shell/AppShellSidebar.tsx` | Improved collapsed layout (logo centered, button at bottom) |
+| `src/context/SidebarContext.tsx` | Law firm users default to open sidebar |
+
+**User Impact:**
+
+- ✅ Fixed header overlap issue on desktop
+- ✅ Cleaner header without boxy borders
+- ✅ Better sidebar layout when collapsed
+- ✅ Law firm users see sidebar **open by default on first visit**
+- ✅ User preferences are respected and persisted across sessions
+- ✅ Improved visual consistency and hierarchy
+
+**Version:** V2.2.6
+
+---
+
+## [2.2.5] - 2025-12-13
+
+### Added
+
+#### Toggle Job Selection in Sidebar
+
+**Purpose:**
+Allow users to close the job detail view by clicking the same job card again in the sidebar, providing a quick way to return to the welcome/queue page.
+
+**Key Changes:**
+
+1. **SidebarJobCard Component (`src/components/ui/SidebarJobCard.tsx`)**
+   - Added `useRouter` hook from Next.js for programmatic navigation
+   - Implemented `handleClick` handler that detects when a job is already selected
+   - When a selected job is clicked again, prevents default navigation and navigates to base path (`/law` or `/staff`)
+   - Maintains existing behavior for unselected jobs (normal navigation to job detail)
+
+**Behavior:**
+
+| Action | Result |
+|--------|--------|
+| Click unselected job | Navigates to job detail page |
+| Click selected job again | Navigates back to base path (closes job view) |
+
+**Technical Implementation:**
+
+- Uses `isSelected` prop to detect current selection state
+- Prevents default link behavior when toggling off (`e.preventDefault()`)
+- Uses `router.push(basePath)` to navigate programmatically
+- Works for both law firm (`/law`) and staff (`/staff`) routes
+- Mobile drawer closes automatically via existing `onSelect` callback
+
+**Files Changed (1):**
+
+| File | Changes |
+|------|---------|
+| `src/components/ui/SidebarJobCard.tsx` | Added toggle selection logic with `useRouter` and `handleClick` handler |
+
+**User Impact:**
+- Improved UX: Users can quickly close job detail view without using browser back button
+- Consistent behavior across law firm and staff interfaces
+- Mobile-friendly: Works seamlessly with mobile drawer behavior
+
+**Version:** V2.2.5
+
+---
+
+## [2.2.4] - 2025-12-13
+
+### Changed
+
+#### Route-Based Theme Defaults with User Type Enforcement
+
+**Purpose:**
+Enforce user-type-specific theme defaults based on route detection. Staff users always see dark mode (no toggle), while law firm users default to dark mode but can toggle to light mode.
+
+**Key Changes:**
+
+1. **ThemeContext V2.0.0 (`src/context/ThemeContext.tsx`)**
+   - Added pathname-based user type detection (`/staff/*` = staff, others = law_firm)
+   - Staff routes: Always dark mode (enforced, toggle disabled)
+   - Law firm routes: Dark mode default (toggle enabled)
+   - Separate localStorage key for law firm preferences (`instaTCR_theme_law_firm`)
+   - Added `canToggleTheme` and `userType` to context value
+   - `toggleTheme()` and `setTheme()` are no-ops for staff users
+
+2. **ThemeToggle Component Updates (`src/components/ui/ThemeToggle.tsx`)**
+   - Both `ThemeToggle` and `ThemeToggleMenuItem` check `canToggleTheme`
+   - Return `null` for staff users (components hidden)
+   - Law firm users see toggle in header and profile dropdown
+
+3. **Root Layout Theme Script (`src/app/layout.tsx`)**
+   - Updated inline script to check pathname before React hydration
+   - Staff routes: Always set to dark mode
+   - Law firm routes: Use stored preference or default to dark
+   - Prevents flash of wrong theme on initial page load
+
+**Behavior:**
+
+| User Type | Route Pattern | Default Theme | Toggle Allowed |
+|-----------|---------------|---------------|----------------|
+| Staff | `/staff/*` | Dark | ❌ No (always dark) |
+| Law Firm | `/law/*` and others | Dark | ✅ Yes (can switch to light) |
+| Landing | `/` | Dark (treated as law firm) | ✅ Yes |
+
+**Technical Implementation:**
+
+- Uses `usePathname()` hook from Next.js navigation to detect route
+- Theme enforcement happens in `useEffect` when pathname changes
+- Staff theme preference never persisted (always dark)
+- Law firm preference stored separately to avoid conflicts
+- Theme script runs before React hydration to prevent flash
+
+**Files Changed (3):**
+
+| File | Changes |
+|------|---------|
+| `src/context/ThemeContext.tsx` | V2.0.0: Added user type detection, route-based defaults, separate storage keys |
+| `src/components/ui/ThemeToggle.tsx` | Added `canToggleTheme` check, hide for staff users |
+| `src/app/layout.tsx` | Updated theme script to handle route-based defaults |
+
+**User Impact:**
+- Staff users: Always see dark mode (consistent experience, no toggle confusion)
+- Law firm users: Default to dark mode but can switch to light if preferred
+- No theme flash on page load (script sets correct theme before React hydration)
+
+**Version:** V2.2.4
+
+---
+
+## [2.2.3] - 2025-12-13
+
+### Fixed
+
+#### Comprehensive Light Mode Contrast Fixes - Law Firm Job View (WCAG AA Compliance)
+
+**Problems Solved:**
+Following V2.2.2, additional components in the law firm job view required light mode contrast improvements to achieve WCAG AA accessibility standards (4.5:1 minimum contrast ratio).
+
+**Affected Areas:**
+1. **Form Components**: CrashDetailsForm, PassengerVerificationForm had dark-only styling
+2. **Choice/Selection Components**: DriverPassengerChoice, SpeedUpPrompt, FacePageCompletionChoice were theme-unaware
+3. **Helper Components**: CollapsedHelperCTA, AuthorizationUploadCard, AutoCheckSetupFlow used hardcoded dark colors
+4. **Job Detail Page**: Section headings and Auto-Check Settings used insufficient contrast in light mode
+
+**Root Causes & Fixes:**
+
+**1. CrashDetailsForm (`src/components/ui/CrashDetailsForm.tsx`)**
+- **Problem**: All form inputs, labels, and container used dark mode colors only
+- **Fixes Applied**:
+  - Lines 16, 48-49: Added `useTheme()` hook for theme detection
+  - Line 115: Container background - Dark: `glass-card-dark`, Light: `bg-white`
+  - Lines 121, 131: Headers and descriptions - Dark: `text-white/text-slate-400`, Light: `text-slate-900/text-slate-600`
+  - All input fields (crash date, time, officer badge):
+    - Labels: Dark `text-slate-400`, Light `text-slate-600`
+    - Icons: Dark `text-slate-500`, Light `text-slate-400`
+    - Inputs: Dark `bg-slate-800/50 border-slate-700/50 text-slate-200`, Light `bg-white border-slate-300 text-slate-900`
+    - Placeholders: Dark `text-slate-600`, Light `text-slate-400`
+  - Line 261: Skip button text - Dark `text-slate-500`, Light `text-slate-600`
+
+**2. PassengerVerificationForm (`src/components/ui/PassengerVerificationForm.tsx`)**
+- **Problem**: Repeatable name fields and vehicle inputs used dark-only styling
+- **Fixes Applied**:
+  - Lines 18, 42-43: Added theme detection
+  - Line 102: Container - Dark: `glass-card-dark`, Light: `bg-white`
+  - Lines 112, 118: Headers - Dark: `text-white/text-slate-400`, Light: `text-slate-900/text-slate-600`
+  - Line 132: Client name display - Dark: `bg-slate-800/30 border-slate-700/30`, Light: `bg-slate-50 border-slate-200`
+  - Lines 156, 216: Section headings - Dark: `text-cyan-300`, Light: `text-cyan-700`
+  - All form fields (names, plate, license, VIN) follow same pattern as CrashDetailsForm
+  - Line 201: "Add another person" button - Dark: `text-amber-400`, Light: `text-amber-600`
+  - Line 337: Skip button - Dark: `text-slate-500`, Light: `text-slate-600`
+
+**3. DriverPassengerChoice (`src/components/ui/DriverPassengerChoice.tsx`)**
+- **Problem**: Selection buttons had dark gradients with light text
+- **Fixes Applied**:
+  - Lines 12, 23-24: Added theme detection
+  - Driver button (lines 42-43):
+    - Dark: `from-amber-500/20 to-cyan-600/20 border-amber-400/30 text-amber-300`
+    - Light: `from-amber-50 to-cyan-50 border-amber-300 text-amber-700`
+  - Passenger button (lines 64-65):
+    - Dark: `from-cyan-600/20 to-blue-600/20 border-cyan-500/30 text-cyan-300`
+    - Light: `from-cyan-50 to-blue-50 border-cyan-300 text-cyan-700`
+
+**4. AuthorizationUploadCard (`src/components/ui/AuthorizationUploadCard.tsx`)**
+- **Problem**: "We need your help" heading and upload area had poor light mode contrast
+- **Fixes Applied**:
+  - Lines 13, 28-29: Added theme detection
+  - Uploaded state (lines 80-81):
+    - Dark: `from-emerald-900/20 to-green-900/20 border-emerald-500/30`
+    - Light: `from-emerald-50 to-green-50 border-emerald-300`
+  - "We need your help" title (line 132):
+    - Dark: `text-amber-200`, Light: `text-amber-700`
+  - Upload state gradient (lines 120-121):
+    - Dark: `from-amber-900/20 to-orange-900/20 border-amber-500/30`
+    - Light: `from-amber-50 to-orange-50 border-amber-300`
+  - Drag area border (lines 142-143):
+    - Dark: `border-slate-600/50`, Light: `border-slate-300`
+  - Upload icon container (line 176):
+    - Dark: `bg-slate-700/50 border-slate-600/50`, Light: `bg-slate-100 border-slate-200`
+  - All text elements made theme-aware (lines 162, 166, 185, 192, 219)
+
+**5. CollapsedHelperCTA (`src/components/ui/CollapsedHelperCTA.tsx`)**
+- **Problem**: "Have more info to share?" compact CTA was dark-only
+- **Fixes Applied**:
+  - Lines 15, 28-29: Added theme detection
+  - Container (lines 51-52):
+    - Dark: `glass-card-dark border-slate-700/50 hover:bg-slate-800/50`
+    - Light: `bg-white border-slate-200 hover:bg-slate-50`
+  - Text (line 68): Dark `text-slate-300`, Light `text-slate-700`
+  - Arrow icon (line 76): Dark `text-slate-500`, Light `text-slate-400`
+
+**6. SpeedUpPrompt (`src/components/ui/SpeedUpPrompt.tsx`)**
+- **Problem**: Binary yes/no choice for crash details was dark-only
+- **Fixes Applied**:
+  - Lines 12, 25-26: Added theme detection
+  - Container (line 31): Dark: `glass-card-dark`, Light: `bg-white`
+  - Heading (line 41): Dark: `text-white`, Light: `text-slate-900`
+  - Description (line 47): Dark: `text-slate-400`, Light: `text-slate-600`
+  - "No thanks" button (lines 82-83):
+    - Dark: `bg-slate-800/50 border-slate-700/50 text-slate-300`
+    - Light: `bg-white border-slate-300 text-slate-700`
+
+**7. AutoCheckSetupFlow (`src/components/ui/AutoCheckSetupFlow.tsx`)**
+- **Problem**: Auto-checker configuration flow used dark-only colors
+- **Fixes Applied**:
+  - Lines 17, 30-31: Added theme detection
+  - Back button (line 48):
+    - Dark: `text-slate-400 hover:text-slate-200`, Light: `text-slate-600 hover:text-slate-700`
+  - Title and description (lines 61, 68):
+    - Dark: `text-white/text-slate-400`, Light: `text-slate-900/text-slate-600`
+  - Frequency labels (lines 102, 154):
+    - Dark: `text-slate-300`, Light: `text-slate-700`
+  - Time badges (lines 114, 167, 177):
+    - Dark: `bg-slate-700/50 text-slate-400`, Light: `bg-slate-100 text-slate-600`
+
+**8. FacePageCompletionChoice (`src/components/ui/FacePageCompletionChoice.tsx`)**
+- **Problem**: "Your face page is ready!" choice buttons were dark-only
+- **Fixes Applied**:
+  - Lines 15, 28-29: Added theme detection
+  - Header (line 41): Dark: `text-white`, Light: `text-slate-900`
+  - Description (line 47): Dark: `text-slate-400`, Light: `text-slate-600`
+  - "This is all I need" button text (line 69):
+    - Dark: `text-emerald-200`, Light: `text-emerald-700`
+  - "Set Up Auto Checker" button text (line 100):
+    - Dark: `text-blue-200`, Light: `text-blue-700`
+  - Helper text (line 117): Dark: `text-slate-500`, Light: `text-slate-600`
+
+**9. Job Detail Page (`src/app/law/jobs/[jobId]/page.tsx`)**
+- **Problem**: Section headings used `text-slate-500` (~4.8:1 contrast, below WCAG AA minimum)
+- **Fixes Applied**:
+  - Lines 1051, 1082, 1116, 1197: Section headings now use theme-aware colors:
+    - Dark: `text-slate-400`, Light: `text-slate-600` (achieves ~6:1 contrast)
+  - Lines 1533, 1545, 1549: Auto-Check Settings section:
+    - "Last checked" timestamp: Dark `text-slate-500`, Light `text-slate-600`
+    - Border divider: Dark `border-slate-700/50`, Light `border-slate-200`
+    - "Auto-Check Settings" heading: Dark `text-slate-300`, Light `text-slate-700`
+
+**WCAG Compliance Achieved:**
+
+All text elements now meet or exceed WCAG AA standards:
+- **WCAG AA**: 4.5:1 minimum contrast ratio ✅
+- `text-slate-600` on white: ~6:1 contrast ratio
+- `text-slate-700` on white: ~10:1 contrast ratio (exceeds AAA standard of 7:1)
+
+**Theme Pattern Consistency:**
+
+All components follow the established pattern:
+```typescript
+import { useTheme } from '@/context/ThemeContext';
+
+const { theme } = useTheme();
+const isDark = theme === 'dark';
+
+// Conditional styling:
+className={cn(
+  isDark ? 'dark-mode-classes' : 'light-mode-classes'
+)}
+```
+
+**Light Mode Color Palette Applied:**
+- Card backgrounds: `bg-white` with `border-slate-200/300`
+- Primary text: `text-slate-700/900` (high contrast)
+- Secondary text: `text-slate-600` (meets WCAG AA)
+- Tertiary text: `text-slate-500` (for less critical info)
+- Input backgrounds: `bg-white border-slate-300`
+- Gradient backgrounds: Lighter variants (`from-amber-50`, `from-cyan-50`, etc.)
+- Hover states: `bg-slate-50/100`
+
+**Files Changed (9):**
+
+| File | Key Changes |
+|------|-------------|
+| `src/components/ui/CrashDetailsForm.tsx` | Added theme detection, made all inputs/labels theme-aware |
+| `src/components/ui/PassengerVerificationForm.tsx` | Added theme detection, converted repeatable name fields and vehicle inputs |
+| `src/components/ui/DriverPassengerChoice.tsx` | Added theme detection, created light mode gradient variants |
+| `src/components/ui/AuthorizationUploadCard.tsx` | Added theme detection, made "We need your help" section readable in light mode |
+| `src/components/ui/CollapsedHelperCTA.tsx` | Added theme detection, fixed "Have more info?" CTA contrast |
+| `src/components/ui/SpeedUpPrompt.tsx` | Added theme detection, made binary choice buttons theme-aware |
+| `src/components/ui/AutoCheckSetupFlow.tsx` | Added theme detection, converted frequency selection UI |
+| `src/components/ui/FacePageCompletionChoice.tsx` | Added theme detection, fixed "Your face page is ready!" contrast |
+| `src/app/law/jobs/[jobId]/page.tsx` | Fixed 5 section headings and Auto-Check Settings section contrast |
+
+**User Impact:**
+Law firm users can now comfortably use the application in light mode with proper text readability across all forms, cards, and interactive elements. All text meets WCAG AA accessibility standards.
+
+## [2.2.2] - 2025-12-13
+
+### Fixed
+
+#### Light Mode Contrast Issues in Activity Timeline and Job Detail Cards
+
+**Problems Solved:**
+After implementing the theme system in V2.x, several components in the activity timeline and job detail cards had hardcoded dark mode colors, causing poor contrast and readability issues in light mode.
+
+**Affected Areas:**
+1. **Activity Timeline**: Timeline messages, icons, and connector lines were barely visible in light mode
+2. **Job Detail Cards**: Interactive forms and notification cards had dark backgrounds with dark text
+3. **Form Inputs**: All input fields used dark backgrounds regardless of theme
+4. **Status Cards**: Flow wizard, CHP nudge, and inline fields cards were theme-unaware
+
+**Root Causes:**
+
+**TimelineMessage Component:**
+- `src/components/ui/TimelineMessage.tsx` (lines 210-280): Hardcoded dark colors:
+  - Icon container: `bg-slate-800/80 border-slate-700/50`
+  - Connector line: `from-slate-700/50`
+  - Message bubble: `glass-card-dark` (always dark)
+  - Message text: `text-slate-200` (light text on potentially light background)
+  - Timestamp: `text-slate-500` (insufficient contrast)
+
+**FlowWizard Component:**
+- `src/components/ui/FlowWizard.tsx` (lines 191-193): Selection card used:
+  - `glass-card-dark` for background
+  - `text-white` for heading
+  - `text-slate-400` for body text
+
+**CHPNudge Component:**
+- `src/components/ui/CHPNudge.tsx` (lines 21-54): All text colors hardcoded for dark mode:
+  - Card: `glass-card-dark`
+  - Title: `text-cyan-300`
+  - Body: `text-slate-300`
+  - Dismiss button: `text-slate-500 hover:text-slate-300`
+
+**InlineFieldsCard Component:**
+- `src/components/ui/InlineFieldsCard.tsx` (lines 137-450): Extensive hardcoded dark styling:
+  - Card container: `glass-card-dark`
+  - Section headers: `text-cyan-300`
+  - All 8 input fields: `bg-slate-800/50 border-slate-700/50 text-slate-200`
+  - All labels: `text-slate-400`
+  - All icons: `text-slate-500`
+  - Placeholders: `text-slate-600`
+  - Disabled button: `bg-slate-800/50 text-slate-600`
+
+**Fixes Applied:**
+
+**1. TimelineMessage.tsx (`src/components/ui/TimelineMessage.tsx`)**
+- Line 20: Added `import { useTheme } from '@/context/ThemeContext'`
+- Lines 187-188: Added theme detection with `useTheme()` hook
+- Lines 210-214: Icon container now theme-aware:
+  - Dark: `bg-slate-800/80 border-slate-700/50`
+  - Light: `bg-white border-slate-200`
+- Lines 236-241: Connector line gradient:
+  - Dark: `from-slate-700/50`
+  - Light: `from-slate-300/50`
+- Lines 249-259: Message bubble:
+  - Dark: `glass-card-dark`
+  - Light: `bg-white border-slate-200`
+- Lines 262-264: Message text:
+  - Dark: `text-slate-200`
+  - Light: `text-slate-700`
+- Lines 277-279: Timestamp color maintained at `text-slate-500` (works in both themes)
+
+**2. FlowWizard.tsx (`src/components/ui/FlowWizard.tsx`)**
+- Lines 23-24: Added imports for `useTheme` and `cn` utility
+- Lines 86-87: Added theme detection
+- Lines 191-211: Selection card made theme-aware:
+  - Card: Dark `glass-card-dark`, Light `bg-white`
+  - Heading: Dark `text-white`, Light `text-slate-900`
+  - Body: Dark `text-slate-400`, Light `text-slate-600`
+
+**3. CHPNudge.tsx (`src/components/ui/CHPNudge.tsx`)**
+- Line 13: Added `import { useTheme } from '@/context/ThemeContext'`
+- Lines 21-22: Added theme detection
+- Lines 25-28: Card background:
+  - Dark: `glass-card-dark`
+  - Light: `bg-white`
+- Lines 38-43: Title text:
+  - Dark: `text-cyan-300`
+  - Light: `text-cyan-600` (darker for contrast)
+- Lines 47-54: Dismiss button:
+  - Dark: `text-slate-500 hover:text-slate-300 hover:bg-slate-700/50`
+  - Light: `text-slate-400 hover:text-slate-600 hover:bg-slate-100`
+- Lines 61-64: Body text:
+  - Dark: `text-slate-300`
+  - Light: `text-slate-700`
+- Lines 70-73: Helper text:
+  - Dark: `text-slate-400`
+  - Light: `text-slate-500`
+
+**4. InlineFieldsCard.tsx (`src/components/ui/InlineFieldsCard.tsx`)**
+- Line 17: Added `import { useTheme } from '@/context/ThemeContext'`
+- Lines 56-57: Added theme detection
+- Lines 141-144: Card container:
+  - Dark: `glass-card-dark`
+  - Light: `bg-white`
+- Lines 147-151, 282-286: Section headers (Page 1 & Page 2):
+  - Dark: `text-cyan-300`
+  - Light: `text-cyan-600`
+- All 8 input fields updated with theme-aware styling:
+  - Labels: Dark `text-slate-400`, Light `text-slate-600`
+  - Icons: Dark `text-slate-500`, Light `text-slate-400`
+  - Input backgrounds: Dark `bg-slate-800/50`, Light `bg-white`
+  - Borders: Dark `border-slate-700/50`, Light `border-slate-300`
+  - Text: Dark `text-slate-200`, Light `text-slate-900`
+  - Placeholders: Dark `text-slate-600`, Light `text-slate-400`
+- Lines 501-504: Disabled save button:
+  - Dark: `bg-slate-800/50 text-slate-600`
+  - Light: `bg-slate-100 text-slate-400`
+
+**Theme Pattern Applied:**
+
+All components now follow this consistent pattern:
+```typescript
+const { theme } = useTheme();
+const isDark = theme === 'dark';
+
+// Then use conditional classes:
+className={cn(
+  isDark ? 'text-white' : 'text-slate-900'
+)}
+```
+
+**Light Mode Color Palette:**
+- Backgrounds: `bg-white` with `border-slate-200/300`
+- Primary text: `text-slate-700/900`
+- Secondary text: `text-slate-500/600`
+- Accent colors: Darker variants (e.g., `text-cyan-600` instead of `text-cyan-300`)
+- Input borders: `border-slate-300`
+- Hover states: Light grays (`bg-slate-50/100/200`)
+
+**Files Changed (4):**
+
+| File | Lines Changed | Changes |
+|------|---------------|---------|
+| `src/components/ui/TimelineMessage.tsx` | 20, 187-188, 210-280 | Added theme detection, made all colors theme-aware |
+| `src/components/ui/FlowWizard.tsx` | 23-24, 86-87, 191-211 | Added theme detection, fixed selection card colors |
+| `src/components/ui/CHPNudge.tsx` | 13, 21-22, 25-75 | Added theme detection, made all text/button colors theme-aware |
+| `src/components/ui/InlineFieldsCard.tsx` | 17, 56-57, 141-536 | Added theme detection, fixed all 8 inputs + labels + section headers |
+
+**Testing:**
+- ✅ TypeScript: Type check passes (`npx tsc --noEmit`)
+- ✅ Dark Mode: All components render correctly with proper contrast
+- ✅ Light Mode: All components now readable with proper contrast ratios
+- ✅ Accessibility: WCAG AA contrast requirements met for all text elements
+
+**Version:** V2.2.2
+
+---
+
+## [2.2.1] - 2025-12-13
+
+### Fixed
+
+#### Sidebar Collapse/Expand Logic Issues
+
+**Problems Solved:**
+The V2.2.0 app shell sidebar had three UX issues that made the collapse/expand functionality clunky and confusing:
+
+1. **Duplicate collapse buttons**: When sidebar was collapsed, two buttons were visible (one in header, one in tiny 72px sidebar)
+2. **Non-functional search button**: In collapsed state, search icon was visible but had no click handler
+3. **Confusing UI state**: Users couldn't tell which button to use or how to search when collapsed
+
+**Root Causes:**
+
+**Issue 1: Button Duplication**
+- `AppShellSidebar.tsx` (lines 70-87): Collapse toggle was always visible on desktop with `hidden md:flex`
+- `AppShellHeader.tsx` (lines 54-69): Expand button showed when `isCollapsed === true`
+- Result: Both buttons rendered simultaneously when collapsed
+
+**Issue 2: Dead Search Button**
+- `SidebarJobList.tsx` (lines 66-71): Search icon button had no `onClick` handler
+- Button was purely decorative, frustrating users who tried to click it
+
+**Fixes Applied:**
+
+**1. AppShellSidebar.tsx (`src/components/shell/AppShellSidebar.tsx`)**
+- Lines 70-85: Wrapped collapse button in `{!isCollapsed && (...)}` conditional
+- Button now only shows when sidebar is expanded (320px)
+- Removed unused `PanelLeft` icon import (was no longer needed)
+- Result: Only ONE button visible at a time
+
+**2. SidebarJobList.tsx (`src/components/shell/SidebarJobList.tsx`)**
+- Line 18: Added `import { useSidebar } from '@/context/SidebarContext'`
+- Line 43: Added `const { toggleCollapse } = useSidebar()`
+- Lines 67-73: Connected search button to `onClick={toggleCollapse}`
+- Updated button title to "Expand to search" for clarity
+- Added proper `aria-label` and focus styles
+- Result: Clicking search icon expands sidebar and reveals search input
+
+**New Behavior:**
+
+| Sidebar State | Width | Header Button | Sidebar Button | Search Button Action |
+|---------------|-------|---------------|----------------|----------------------|
+| Expanded | 320px | Hidden | Collapse (visible) | Type to search |
+| Collapsed | 72px | Expand (visible) | Hidden | Click to expand |
+| Mobile | Drawer | Menu toggle | Hidden | Type to search |
+
+**User Flow:**
+1. **Expanded → Collapsed**: Click collapse button in sidebar header → Sidebar shrinks to 72px
+2. **Collapsed → Expanded**: Click expand button in main header OR click search icon → Sidebar expands to 320px
+3. **Search when collapsed**: Click search icon → Sidebar auto-expands → Search input gains focus
+
+**Files Changed (2):**
+
+| File | Changes |
+|------|---------|
+| `src/components/shell/AppShellSidebar.tsx` | Wrapped collapse button in `!isCollapsed` conditional, removed `PanelLeft` import |
+| `src/components/shell/SidebarJobList.tsx` | Added useSidebar hook, connected search button to toggleCollapse |
+
+**Testing:**
+- ✅ ESLint: No errors, no warnings
+- ✅ TypeScript: Type check passes
+- ✅ Build: Production build successful (all 9 routes compiled)
+- ✅ UX: Single button visible per state, search button now functional
+
+**Version:** V2.2.1
+
+---
+
 ## [2.2.0] - 2025-12-13
 
 ### Added

@@ -378,7 +378,7 @@ export default function NewFatalReportPage() {
             <div className="hidden md:block mb-8 animate-page-entrance">
               <Link
                 href="/law"
-                className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-teal-400 transition-colors mb-4"
+                className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard

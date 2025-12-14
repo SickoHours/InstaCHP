@@ -1,27 +1,38 @@
+'use client';
+
 /**
- * BackgroundOrbs - V2.0.0
+ * BackgroundOrbs - V2.1.0
  *
  * Animated floating background orbs used in the dark theme app shell.
- * Extracted from individual pages to be rendered once in the AppShell.
+ * Only renders in dark mode - returns null in light mode for clean background.
  *
  * Uses CSS animation defined in globals.css (orb-dark class).
  */
 
+import { useTheme } from '@/context/ThemeContext';
+
 export function BackgroundOrbs() {
+  const { theme } = useTheme();
+
+  // Don't render orbs in light mode - user preference for clean background
+  if (theme === 'light') {
+    return null;
+  }
+
   return (
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden z-0"
       aria-hidden="true"
     >
-      {/* Top-left teal orb */}
+      {/* Top-left amber orb */}
       <div
-        className="orb-dark w-[500px] h-[500px] bg-teal-600/25 top-[-10%] left-[-10%]"
+        className="orb-dark w-[500px] h-[500px] bg-amber-500/20 top-[-10%] left-[-10%]"
         style={{ animationDelay: '0s' }}
       />
 
-      {/* Right-side cyan orb */}
+      {/* Right-side navy orb */}
       <div
-        className="orb-dark w-[400px] h-[400px] bg-cyan-600/20 bottom-[20%] right-[-5%]"
+        className="orb-dark w-[400px] h-[400px] bg-blue-600/15 bottom-[20%] right-[-5%]"
         style={{ animationDelay: '5s' }}
       />
 

@@ -130,7 +130,7 @@ export function Toast({ toast, onDismiss, isExiting }: ToastProps) {
           'text-slate-400 hover:text-slate-200',
           'hover:bg-slate-700/50',
           'transition-colors duration-200',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50'
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50'
         )}
         aria-label="Dismiss notification"
       >

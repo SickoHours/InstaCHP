@@ -100,7 +100,7 @@ export default function Page2DataCard({
               'text-xs font-medium',
               hasData
                 ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                : 'bg-teal-600/20 text-teal-300 hover:bg-teal-600/30',
+                : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
@@ -173,7 +173,7 @@ export default function Page2DataCard({
                 'bg-slate-800/50 border border-slate-700/50',
                 'text-slate-200 text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -196,7 +196,7 @@ export default function Page2DataCard({
                 'bg-slate-800/50 border border-slate-700/50',
                 'text-slate-200 text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -219,7 +219,7 @@ export default function Page2DataCard({
                 'bg-slate-800/50 border border-slate-700/50',
                 'text-slate-200 text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -242,7 +242,7 @@ export default function Page2DataCard({
                 'bg-slate-800/50 border border-slate-700/50',
                 'text-slate-200 text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -265,7 +265,7 @@ export default function Page2DataCard({
                 'bg-slate-800/50 border border-slate-700/50',
                 'text-slate-200 text-sm',
                 'placeholder:text-slate-600',
-                'focus:outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+                'focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -279,7 +279,7 @@ export default function Page2DataCard({
               disabled={disabled}
               className={cn(
                 'flex-1 h-9 rounded-lg font-medium text-sm',
-                'bg-teal-600 text-white hover:bg-teal-500',
+                'bg-amber-500 text-white hover:bg-amber-400',
                 'flex items-center justify-center gap-1.5',
                 'transition-all duration-200',
                 'disabled:opacity-50 disabled:cursor-not-allowed'

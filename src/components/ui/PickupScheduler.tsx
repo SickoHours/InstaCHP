@@ -195,7 +195,7 @@ export default function PickupScheduler({
                 'flex flex-col items-center gap-1 p-3 rounded-lg',
                 'border transition-all duration-200',
                 selectedTime === slot.value
-                  ? 'bg-teal-500/20 border-teal-500/50 text-teal-300'
+                  ? 'bg-amber-400/20 border-amber-400/50 text-amber-300'
                   : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
               )}
             >
@@ -220,7 +220,7 @@ export default function PickupScheduler({
               'flex-1 flex items-center justify-center gap-2 p-3 rounded-lg',
               'border transition-all duration-200',
               selectedDate === today
-                ? 'bg-teal-500/20 border-teal-500/50 text-teal-300'
+                ? 'bg-amber-400/20 border-amber-400/50 text-amber-300'
                 : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
             )}
           >
@@ -234,7 +234,7 @@ export default function PickupScheduler({
               'flex-1 flex items-center justify-center gap-2 p-3 rounded-lg',
               'border transition-all duration-200',
               selectedDate === nextBusinessDay
-                ? 'bg-teal-500/20 border-teal-500/50 text-teal-300'
+                ? 'bg-amber-400/20 border-amber-400/50 text-amber-300'
                 : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:border-slate-600/50'
             )}
           >
@@ -259,7 +259,7 @@ export default function PickupScheduler({
               'mt-2 w-full p-3 rounded-lg',
               'bg-slate-800/50 border border-slate-700/50',
               'text-slate-200 text-sm',
-              'focus:outline-none focus:ring-2 focus:ring-teal-500/50'
+              'focus:outline-none focus:ring-2 focus:ring-amber-400/50'
             )}
           />
         )}
@@ -294,11 +294,11 @@ export default function PickupScheduler({
           disabled={disabled || isScheduling}
           className={cn(
             'w-full flex items-center justify-center gap-2 p-4 rounded-xl',
-            'bg-gradient-to-r from-teal-600 to-cyan-600',
+            'bg-gradient-to-r from-amber-500 to-cyan-600',
             'text-white font-medium',
             'transition-all duration-200',
-            'hover:from-teal-500 hover:to-cyan-500',
-            'hover:shadow-lg hover:shadow-teal-500/25',
+            'hover:from-amber-400 hover:to-cyan-500',
+            'hover:shadow-lg hover:shadow-amber-400/25',
             'active:scale-[0.98]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'min-h-[48px]'

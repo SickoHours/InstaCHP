@@ -81,7 +81,7 @@ export default function ManualCompletionSheet({
               name="uploadType"
               checked={uploadType === 'face'}
               onChange={() => setUploadType('face')}
-              className="w-5 h-5 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+              className="w-5 h-5 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
             />
             <span className="text-sm text-slate-300">Face Page</span>
           </label>
@@ -91,7 +91,7 @@ export default function ManualCompletionSheet({
               name="uploadType"
               checked={uploadType === 'full'}
               onChange={() => setUploadType('full')}
-              className="w-5 h-5 text-teal-500 bg-slate-800 border-slate-600 focus:ring-teal-500/20"
+              className="w-5 h-5 text-amber-400 bg-slate-800 border-slate-600 focus:ring-amber-400/20"
             />
             <span className="text-sm text-slate-300">Full Report</span>
           </label>
@@ -113,7 +113,7 @@ export default function ManualCompletionSheet({
             className={cn(
               'w-full h-12 rounded-lg border bg-slate-800/50 text-slate-200',
               'text-base px-4',
-              'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+              'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
               'placeholder:text-slate-500',
               'transition-all duration-200'
             )}
@@ -186,7 +186,7 @@ export default function ManualCompletionSheet({
           className={cn(
             'w-full h-20 rounded-lg border bg-slate-800/50 text-slate-200',
             'text-base p-3',
-            'border-slate-700/50 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20',
+            'border-slate-700/50 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20',
             'placeholder:text-slate-500',
             'resize-none'
           )}
@@ -199,8 +199,8 @@ export default function ManualCompletionSheet({
           onClick={handleMarkComplete}
           className={cn(
             'w-full h-12 rounded-xl font-medium',
-            'bg-gradient-to-r from-emerald-600 to-teal-600 text-white',
-            'hover:from-emerald-500 hover:to-teal-500',
+            'bg-gradient-to-r from-emerald-600 to-amber-500 text-white',
+            'hover:from-emerald-500 hover:to-amber-400',
             'transition-all duration-200',
             'flex items-center justify-center gap-2',
             'active:scale-[0.98]',
@@ -218,12 +218,12 @@ export default function ManualCompletionSheet({
           onClick={onClose}
           className={cn(
             'w-full h-12 rounded-xl font-medium',
-            'bg-gradient-to-r from-teal-600 to-cyan-600 text-white',
-            'hover:from-teal-500 hover:to-cyan-500',
+            'bg-gradient-to-r from-amber-500 to-cyan-600 text-white',
+            'hover:from-amber-400 hover:to-cyan-500',
             'transition-all duration-200',
             'flex items-center justify-center gap-2',
             'active:scale-[0.98]',
-            'shadow-lg shadow-teal-500/20'
+            'shadow-lg shadow-amber-400/20'
           )}
         >
           <CheckCircle2 className="w-4 h-4" />

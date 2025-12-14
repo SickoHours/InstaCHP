@@ -77,7 +77,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               !isDark && [
                 'bg-white',
                 'border-slate-200 text-slate-900',
-                isFocused && !error && 'border-teal-500 ring-4 ring-teal-500/10',
+                isFocused && !error && 'border-amber-500 ring-4 ring-amber-500/10',
                 isValid && showValidation && !error && !isFocused && 'border-emerald-500',
                 error && 'border-red-500 ring-4 ring-red-500/10',
                 !isFocused && !error && 'hover:border-slate-300',
@@ -87,7 +87,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               isDark && [
                 'bg-slate-900/50',
                 'border-slate-700/50 text-white',
-                isFocused && !error && 'border-teal-500/70 ring-4 ring-teal-500/20',
+                isFocused && !error && 'border-amber-500/70 ring-4 ring-amber-500/20',
                 isValid && showValidation && !error && !isFocused && 'border-emerald-500/70',
                 error && 'border-red-500/70 ring-4 ring-red-500/20',
                 !isFocused && !error && 'hover:border-slate-600',
@@ -115,7 +115,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               !isDark && isFloating && [
                 'top-2 md:top-1.5',
                 'text-xs',
-                isFocused ? 'text-teal-600' : 'text-slate-500',
+                isFocused ? 'text-amber-600' : 'text-slate-500',
               ],
               // Error state - Light mode
               !isDark && error && isFloating && 'text-red-500',
@@ -132,7 +132,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               isDark && isFloating && [
                 'top-2 md:top-1.5',
                 'text-xs',
-                isFocused ? 'text-teal-400' : 'text-slate-500',
+                isFocused ? 'text-amber-400' : 'text-slate-500',
               ],
               // Error state - Dark mode
               isDark && error && isFloating && 'text-red-400',

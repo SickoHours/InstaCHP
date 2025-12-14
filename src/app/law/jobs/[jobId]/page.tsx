@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMockData } from '@/context/MockDataContext';
+import { useTheme } from '@/context/ThemeContext';
 import {
   getPublicStatus,
   getStatusColor,
@@ -48,15 +49,17 @@ import {
 import { notificationManager } from '@/lib/notificationManager';
 
 /**
- * Dark Mode Status Badge with glow effect
+ * Status Badge with glow effect - Theme-aware
  */
-function DarkStatusBadge({
+function StatusBadge({
   internalStatus,
 }: {
   internalStatus: InternalStatus;
 }) {
   const publicStatus = getPublicStatus(internalStatus);
   const color = getStatusColor(internalStatus);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const glowColors: Record<string, string> = {
     gray: 'shadow-slate-500/20',
@@ -67,7 +70,7 @@ function DarkStatusBadge({
     red: 'shadow-red-500/30',
   };
 
-  const bgColors: Record<string, string> = {
+  const bgColorsDark: Record<string, string> = {
     gray: 'bg-slate-500/20 text-slate-200 border-slate-500/30',
     blue: 'bg-blue-500/20 text-blue-200 border-blue-500/30',
     yellow: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30',
@@ -76,6 +79,16 @@ function DarkStatusBadge({
     red: 'bg-red-500/20 text-red-200 border-red-500/30',
   };
 
+  const bgColorsLight: Record<string, string> = {
+    gray: 'bg-slate-100 text-slate-700 border-slate-300',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200',
+    red: 'bg-red-50 text-red-700 border-red-200',
+  };
+
+  const bgColors = isDark ? bgColorsDark : bgColorsLight;
   const isActive = ['blue', 'yellow'].includes(color);
 
   return (
@@ -85,8 +98,8 @@ function DarkStatusBadge({
         'text-sm font-medium border',
         'transition-all duration-300',
         bgColors[color],
-        glowColors[color],
-        isActive && 'animate-glow-pulse'
+        isDark && glowColors[color],
+        isDark && isActive && 'animate-glow-pulse'
       )}
     >
       {isActive && (
@@ -101,7 +114,7 @@ function DarkStatusBadge({
 }
 
 /**
- * Download Button with glow hover effect
+ * Download Button with glow hover effect - Theme-aware
  */
 function DownloadButton({
   label,
@@ -116,6 +129,9 @@ function DownloadButton({
   onClick: () => void;
   variant?: 'primary' | 'secondary';
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <button
       onClick={onClick}
@@ -124,16 +140,17 @@ function DownloadButton({
         'transition-all duration-300 ease-out',
         'hover:scale-[1.02] active:scale-[0.98]',
         variant === 'primary' && [
-          'bg-gradient-to-r from-teal-600/90 to-cyan-600/90',
-          'border border-teal-500/30',
-          'hover:from-teal-500/90 hover:to-cyan-500/90',
-          'shadow-lg shadow-teal-500/20',
-          'hover:shadow-xl hover:shadow-teal-500/30',
+          'bg-gradient-to-r from-amber-500/90 to-amber-600/90',
+          'border border-amber-400/30',
+          'hover:from-amber-400/90 hover:to-amber-500/90',
+          'shadow-lg shadow-amber-400/20',
+          'hover:shadow-xl hover:shadow-amber-400/30',
         ],
         variant === 'secondary' && [
           'glass-subtle',
-          'border border-slate-600/30',
-          'hover:border-teal-500/30',
+          isDark ? 'border-slate-600/30' : 'border-slate-300',
+          'border',
+          'hover:border-amber-400/30',
         ]
       )}
     >
@@ -143,13 +160,13 @@ function DownloadButton({
           'flex items-center justify-center w-12 h-12 rounded-lg',
           variant === 'primary'
             ? 'bg-white/10'
-            : 'bg-teal-500/10'
+            : 'bg-amber-400/10'
         )}
       >
         <Icon
           className={cn(
             'w-6 h-6',
-            variant === 'primary' ? 'text-white' : 'text-teal-400'
+            variant === 'primary' ? 'text-white' : 'text-amber-500'
           )}
         />
       </div>
@@ -159,7 +176,9 @@ function DownloadButton({
         <p
           className={cn(
             'font-semibold',
-            variant === 'primary' ? 'text-white' : 'text-slate-200'
+            variant === 'primary'
+              ? 'text-white'
+              : isDark ? 'text-slate-200' : 'text-slate-800'
           )}
         >
           {label}
@@ -168,7 +187,9 @@ function DownloadButton({
           <p
             className={cn(
               'text-sm',
-              variant === 'primary' ? 'text-teal-100' : 'text-slate-400'
+              variant === 'primary'
+                ? 'text-amber-100'
+                : isDark ? 'text-slate-400' : 'text-slate-600'
             )}
           >
             {subLabel}
@@ -181,7 +202,9 @@ function DownloadButton({
         className={cn(
           'w-5 h-5 transition-transform duration-300',
           'group-hover:translate-y-0.5',
-          variant === 'primary' ? 'text-white/70' : 'text-slate-500'
+          variant === 'primary'
+            ? 'text-white/70'
+            : isDark ? 'text-slate-500' : 'text-slate-400'
         )}
       />
 
@@ -191,8 +214,8 @@ function DownloadButton({
           'absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300',
           'group-hover:opacity-100',
           variant === 'primary'
-            ? 'shadow-[0_0_40px_rgba(20,184,166,0.3)]'
-            : 'shadow-[0_0_30px_rgba(20,184,166,0.15)]'
+            ? 'shadow-[0_0_40px_rgba(251,191,36,0.3)]'
+            : 'shadow-[0_0_30px_rgba(251,191,36,0.15)]'
         )}
       />
     </button>
@@ -203,6 +226,8 @@ export default function JobDetailPage() {
   const params = useParams();
   const jobId = params.jobId as string;
   const timelineRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Context data operations
   const {
@@ -1059,7 +1084,10 @@ export default function JobDetailPage() {
         <div className="glass-elevated p-6 md:p-8 mb-6 md:mb-8">
           {/* Client Name */}
           <h1
-            className="text-3xl md:text-4xl font-bold text-white font-serif mb-3 animate-text-reveal"
+            className={cn(
+              'text-3xl md:text-4xl font-bold font-serif mb-3 animate-text-reveal',
+              isDark ? 'text-white' : 'text-slate-900'
+            )}
             style={{ animationDelay: '100ms' }}
           >
             {job.clientName}
@@ -1067,7 +1095,10 @@ export default function JobDetailPage() {
 
           {/* Report Number */}
           <p
-            className="text-slate-400 font-mono text-sm md:text-base mb-4 animate-text-reveal"
+            className={cn(
+              'font-mono text-sm md:text-base mb-4 animate-text-reveal',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}
             style={{ animationDelay: '200ms' }}
           >
             {job.reportNumber}
@@ -1078,10 +1109,10 @@ export default function JobDetailPage() {
             className="flex items-center gap-4 animate-text-reveal"
             style={{ animationDelay: '300ms' }}
           >
-            <DarkStatusBadge internalStatus={job.internalStatus} />
+            <StatusBadge internalStatus={job.internalStatus} />
 
             {job.caseReference && (
-              <span className="text-sm text-slate-500">
+              <span className={cn('text-sm', isDark ? 'text-slate-500' : 'text-slate-500')}>
                 Case: {job.caseReference}
               </span>
             )}
@@ -1095,14 +1126,20 @@ export default function JobDetailPage() {
             style={{ animationDelay: '400ms' }}
           >
             <div className="flex items-start gap-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-500/10">
-                <Sparkles className="w-5 h-5 text-teal-400" />
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-400/10">
+                <Sparkles className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <h2 className={cn(
+                  'text-sm font-semibold uppercase tracking-wider mb-1',
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                )}>
                   Current Status
                 </h2>
-                <p className="text-slate-200 leading-relaxed">{statusMessage}</p>
+                <p className={cn(
+                  'leading-relaxed',
+                  isDark ? 'text-slate-200' : 'text-slate-700'
+                )}>{statusMessage}</p>
               </div>
             </div>
           </div>
@@ -1120,8 +1157,8 @@ export default function JobDetailPage() {
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Your Reports Are Ready</h2>
-                  <p className="text-sm text-slate-400">Download your CHP crash report documents below.</p>
+                  <h2 className={cn('text-lg font-semibold', isDark ? 'text-white' : 'text-slate-900')}>Your Reports Are Ready</h2>
+                  <p className={cn('text-sm', isDark ? 'text-slate-400' : 'text-slate-600')}>Download your CHP crash report documents below.</p>
                 </div>
               </div>
 
@@ -1162,8 +1199,8 @@ export default function JobDetailPage() {
                   <XCircle className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Request Cancelled</h2>
-                  <p className="text-sm text-slate-400">
+                  <h2 className={cn('text-lg font-semibold', isDark ? 'text-white' : 'text-slate-900')}>Request Cancelled</h2>
+                  <p className={cn('text-sm', isDark ? 'text-slate-400' : 'text-slate-600')}>
                     This report request has been cancelled. If you believe this was in error, please contact us.
                   </p>
                 </div>
@@ -1268,7 +1305,10 @@ export default function JobDetailPage() {
             <>
               <button
                 onClick={() => setTimelineExpanded(!timelineExpanded)}
-                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors mb-4 animate-text-reveal"
+                className={cn(
+                  'flex items-center gap-2 text-sm transition-colors mb-4 animate-text-reveal',
+                  isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-600 hover:text-slate-700'
+                )}
                 style={{ animationDelay: '500ms' }}
               >
                 {timelineExpanded ? (
@@ -1284,7 +1324,7 @@ export default function JobDetailPage() {
               {timelineExpanded && (
                 <div
                   ref={timelineRef}
-                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent animate-text-reveal"
+                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pl-6 pr-2 pt-4 pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent animate-text-reveal"
                 >
                   {events.length === 0 ? (
                     <div className="text-center py-12">
@@ -1311,7 +1351,10 @@ export default function JobDetailPage() {
             // Active job: Show full timeline - V2.0: Glass container with connector
             <>
               <h2
-                className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 animate-text-reveal"
+                className={cn(
+                  'text-sm font-semibold uppercase tracking-wider mb-4 animate-text-reveal',
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                )}
                 style={{ animationDelay: '500ms' }}
               >
                 Activity Timeline
@@ -1320,11 +1363,11 @@ export default function JobDetailPage() {
               <div className="glass-surface rounded-xl p-4">
                 <div
                   ref={timelineRef}
-                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+                  className="relative max-h-[400px] md:max-h-[500px] overflow-y-auto pl-6 pr-2 pt-4 pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
                 >
                   {/* Timeline connector line */}
                   {events.length > 1 && (
-                    <div className="absolute left-[19px] top-4 bottom-4 w-px bg-gradient-to-b from-teal-500/40 via-slate-600/30 to-transparent pointer-events-none" />
+                    <div className="absolute left-[44px] top-4 bottom-4 w-px bg-gradient-to-b from-amber-400/40 via-slate-600/30 to-transparent pointer-events-none" />
                   )}
 
                   {events.length === 0 ? (
@@ -1421,24 +1464,27 @@ export default function JobDetailPage() {
             className="mb-8 animate-text-reveal"
             style={{ animationDelay: `${600 + events.length * 150 + 100}ms` }}
           >
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
+            <h2 className={cn(
+              'text-sm font-semibold uppercase tracking-wider mb-4',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Check for Full Report
             </h2>
 
-            <div className="glass-surface rounded-xl p-5 border border-teal-500/20">
+            <div className="glass-surface rounded-xl p-5 border border-amber-400/20">
               {/* Main Check Button */}
               <button
                 onClick={handleAutoCheck}
                 disabled={isAutoChecking}
                 className={cn(
                   'w-full flex items-center justify-center gap-3 p-4 rounded-xl',
-                  'bg-gradient-to-r from-teal-600/90 to-cyan-600/90',
-                  'border border-teal-500/30',
+                  'bg-gradient-to-r from-amber-500/90 to-cyan-600/90',
+                  'border border-amber-400/30',
                   'text-white font-medium',
                   'transition-all duration-300',
-                  'hover:from-teal-500/90 hover:to-cyan-500/90',
+                  'hover:from-amber-400/90 hover:to-cyan-500/90',
                   'hover:scale-[1.02]',
-                  'hover:shadow-lg hover:shadow-teal-500/20',
+                  'hover:shadow-lg hover:shadow-amber-400/20',
                   'active:scale-[0.98]',
                   'disabled:opacity-70 disabled:cursor-wait',
                   'h-14 md:h-12'
@@ -1482,7 +1528,10 @@ export default function JobDetailPage() {
 
               {/* Last Check Info */}
               {autoCheckSettings.lastManualCheck && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <div className={cn(
+                  "mt-3 flex items-center gap-2 text-xs",
+                  isDark ? 'text-slate-500' : 'text-slate-600'
+                )}>
                   <Clock className="w-3 h-3" />
                   <span>
                     Last checked: {new Date(autoCheckSettings.lastManualCheck).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1491,9 +1540,15 @@ export default function JobDetailPage() {
               )}
 
               {/* Auto-Check Settings (Always Visible) */}
-              <div className="mt-4 pt-4 border-t border-slate-700/50">
-                <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-teal-400" />
+              <div className={cn(
+                "mt-4 pt-4 border-t",
+                isDark ? 'border-slate-700/50' : 'border-slate-200'
+              )}>
+                <h4 className={cn(
+                  "text-sm font-semibold mb-3 flex items-center gap-2",
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                )}>
+                  <Settings className="w-4 h-4 text-amber-400" />
                   Auto-Check Settings
                 </h4>
 
@@ -1509,14 +1564,14 @@ export default function JobDetailPage() {
                       'border transition-all duration-200',
                       'hover:scale-[1.01] active:scale-[0.99]',
                       autoCheckSettings.frequency === 'daily'
-                        ? 'bg-teal-500/15 border-teal-500/40'
+                        ? 'bg-amber-400/15 border-amber-400/40'
                         : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
                     )}
                   >
                     <div className={cn(
                       'w-4 h-4 rounded-full border-2 flex items-center justify-center',
                       autoCheckSettings.frequency === 'daily'
-                        ? 'border-teal-400 bg-teal-400'
+                        ? 'border-amber-400 bg-amber-400'
                         : 'border-slate-500'
                     )}>
                       {autoCheckSettings.frequency === 'daily' && (
@@ -1525,14 +1580,14 @@ export default function JobDetailPage() {
                     </div>
                     <span className={cn(
                       'text-sm font-medium',
-                      autoCheckSettings.frequency === 'daily' ? 'text-teal-300' : 'text-slate-400'
+                      autoCheckSettings.frequency === 'daily' ? 'text-amber-300' : 'text-slate-400'
                     )}>
                       Daily
                     </span>
                     <span className={cn(
                       'text-xs px-2 py-1 rounded',
                       autoCheckSettings.frequency === 'daily'
-                        ? 'bg-teal-500/20 text-teal-300'
+                        ? 'bg-amber-400/20 text-amber-300'
                         : 'bg-slate-700/50 text-slate-500'
                     )}>
                       4:30 PM PT
@@ -1549,14 +1604,14 @@ export default function JobDetailPage() {
                       'border transition-all duration-200',
                       'hover:scale-[1.01] active:scale-[0.99]',
                       autoCheckSettings.frequency === 'twice_daily'
-                        ? 'bg-teal-500/15 border-teal-500/40'
+                        ? 'bg-amber-400/15 border-amber-400/40'
                         : 'bg-slate-800/30 border-slate-700/30 hover:border-slate-600/50'
                     )}
                   >
                     <div className={cn(
                       'w-4 h-4 rounded-full border-2 flex items-center justify-center',
                       autoCheckSettings.frequency === 'twice_daily'
-                        ? 'border-teal-400 bg-teal-400'
+                        ? 'border-amber-400 bg-amber-400'
                         : 'border-slate-500'
                     )}>
                       {autoCheckSettings.frequency === 'twice_daily' && (
@@ -1565,7 +1620,7 @@ export default function JobDetailPage() {
                     </div>
                     <span className={cn(
                       'text-sm font-medium',
-                      autoCheckSettings.frequency === 'twice_daily' ? 'text-teal-300' : 'text-slate-400'
+                      autoCheckSettings.frequency === 'twice_daily' ? 'text-amber-300' : 'text-slate-400'
                     )}>
                       Twice Daily
                     </span>
@@ -1573,7 +1628,7 @@ export default function JobDetailPage() {
                       <span className={cn(
                         'text-xs px-2 py-0.5 rounded',
                         autoCheckSettings.frequency === 'twice_daily'
-                          ? 'bg-teal-500/20 text-teal-300'
+                          ? 'bg-amber-400/20 text-amber-300'
                           : 'bg-slate-700/50 text-slate-500'
                       )}>
                         9:00 AM PT
@@ -1581,7 +1636,7 @@ export default function JobDetailPage() {
                       <span className={cn(
                         'text-xs px-2 py-0.5 rounded',
                         autoCheckSettings.frequency === 'twice_daily'
-                          ? 'bg-teal-500/20 text-teal-300'
+                          ? 'bg-amber-400/20 text-amber-300'
                           : 'bg-slate-700/50 text-slate-500'
                       )}>
                         4:30 PM PT
@@ -1608,7 +1663,10 @@ export default function JobDetailPage() {
             className="space-y-3 animate-text-reveal"
             style={{ animationDelay: `${600 + events.length * 150 + 200}ms` }}
           >
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
+            <h2 className={cn(
+              'text-sm font-semibold uppercase tracking-wider mb-4',
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            )}>
               Available Documents
             </h2>
 

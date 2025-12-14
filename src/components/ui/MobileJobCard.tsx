@@ -48,7 +48,7 @@ const MobileJobCard = forwardRef<HTMLAnchorElement, MobileJobCardProps>(
           'active:scale-[0.99]',
 
           // Focus styles
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
 
           // Left border accent (status color)
           'border-l-4',

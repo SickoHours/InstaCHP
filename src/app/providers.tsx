@@ -2,6 +2,7 @@
 
 import { ToastProvider } from '@/context/ToastContext';
 import { MockDataProvider } from '@/context/MockDataContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastContainer } from '@/components/ui/Toast';
 
 interface ProvidersProps {
@@ -10,11 +11,13 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <MockDataProvider>
-      <ToastProvider>
-        {children}
-        <ToastContainer />
-      </ToastProvider>
-    </MockDataProvider>
+    <ThemeProvider>
+      <MockDataProvider>
+        <ToastProvider>
+          {children}
+          <ToastContainer />
+        </ToastProvider>
+      </MockDataProvider>
+    </ThemeProvider>
   );
 }

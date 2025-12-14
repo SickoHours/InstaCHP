@@ -12,9 +12,11 @@
 
 import { forwardRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { Job } from '@/lib/types';
 import { getStatusColor } from '@/lib/statusMapping';
+import { useTheme } from '@/context/ThemeContext';
 
 interface SidebarJobCardProps extends React.HTMLAttributes<HTMLAnchorElement> {
   /** Job data to display */
@@ -55,15 +57,30 @@ const SidebarJobCard = forwardRef<HTMLAnchorElement, SidebarJobCardProps>(
     },
     ref
   ) => {
+    const router = useRouter();
     const statusColor = getStatusColor(job.internalStatus);
     const dotColorClass = STATUS_DOT_COLORS[statusColor] || 'bg-slate-400';
     const basePath = userType === 'law_firm' ? '/law' : '/staff';
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
+    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+      // If job is already selected, navigate to base path to close the job view
+      if (isSelected) {
+        e.preventDefault();
+        router.push(basePath);
+        onSelect?.();
+        return;
+      }
+      // Otherwise, let the Link handle navigation normally
+      onSelect?.();
+    };
 
     return (
       <Link
         ref={ref}
         href={`${basePath}/jobs/${job._id}`}
-        onClick={onSelect}
+        onClick={handleClick}
         className={cn(
           // Base styles
           'block px-3 py-3 rounded-lg',
@@ -74,18 +91,18 @@ const SidebarJobCard = forwardRef<HTMLAnchorElement, SidebarJobCardProps>(
           !isSelected && [
             'border-l-transparent',
             'bg-transparent',
-            'hover:bg-white/5',
+            isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100',
           ],
 
           // Selected state
           isSelected && [
-            'border-l-teal-500',
-            'bg-teal-500/10',
-            'shadow-[0_0_20px_rgba(20,184,166,0.1)]',
+            'border-l-amber-400',
+            'bg-amber-400/10',
+            'shadow-[0_0_20px_rgba(251,191,36,0.1)]',
           ],
 
           // Focus styles
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-inset',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset',
 
           // Animation
           animationDelay > 0 && 'opacity-0 animate-card-entrance',
@@ -104,7 +121,8 @@ const SidebarJobCard = forwardRef<HTMLAnchorElement, SidebarJobCardProps>(
             className={cn(
               'w-2 h-2 rounded-full flex-shrink-0 mt-1.5',
               dotColorClass,
-              isSelected && 'ring-2 ring-offset-1 ring-offset-slate-900',
+              isSelected && 'ring-2 ring-offset-1',
+              isSelected && (isDark ? 'ring-offset-slate-900' : 'ring-offset-white'),
               statusColor === 'blue' && isSelected && 'ring-blue-400/50',
               statusColor === 'green' && isSelected && 'ring-emerald-400/50',
               statusColor === 'yellow' && isSelected && 'ring-yellow-400/50',
@@ -119,7 +137,9 @@ const SidebarJobCard = forwardRef<HTMLAnchorElement, SidebarJobCardProps>(
             <h4
               className={cn(
                 'text-sm font-medium truncate',
-                isSelected ? 'text-white' : 'text-slate-200'
+                isSelected
+                  ? (isDark ? 'text-white' : 'text-slate-900')
+                  : (isDark ? 'text-slate-200' : 'text-slate-700')
               )}
             >
               {job.clientName}
@@ -129,14 +149,19 @@ const SidebarJobCard = forwardRef<HTMLAnchorElement, SidebarJobCardProps>(
             <p
               className={cn(
                 'text-xs truncate mt-0.5',
-                isSelected ? 'text-slate-300' : 'text-slate-500'
+                isSelected
+                  ? (isDark ? 'text-slate-300' : 'text-slate-600')
+                  : (isDark ? 'text-slate-500' : 'text-slate-500')
               )}
             >
               {job.reportNumber}
             </p>
 
             {/* Relative time */}
-            <p className="text-[10px] text-slate-600 mt-1">
+            <p className={cn(
+              'text-[10px] mt-1',
+              isDark ? 'text-slate-600' : 'text-slate-400'
+            )}>
               {formatRelativeTime(job.createdAt)}
             </p>
           </div>

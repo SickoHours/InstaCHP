@@ -25,7 +25,7 @@ export default function Logo({
       {showWordmark && (
         <>
           <span className={cn(
-            variant === 'light' ? 'text-teal-400' : 'text-teal-600'
+            variant === 'light' ? 'text-amber-400' : 'text-amber-500'
           )}>
             Insta
           </span>

@@ -1,55 +1,24 @@
 @import "tailwindcss";
 
+/* ============================================
+   BRAND COLORS - Theme Independent
+   ============================================ */
 :root {
-  /* Color Tokens */
-  --primary-navy: #0f2c59;
-  --primary-gold: #c5a572;
-  --accent-teal: #1a7f7a;
-  --accent-amber: #d97706;
+  /* Brand Navy Palette */
+  --brand-navy: #1a3c5b;
+  --brand-navy-dark: #11283c;
+  --brand-navy-darker: #122c45;
+  --brand-navy-medium: #152f45;
 
-  --slate-50: #f8fafc;
-  --slate-100: #f1f5f9;
-  --slate-300: #cbd5e1;
-  --slate-600: #475569;
-  --slate-900: #0f172a;
+  /* Accent Colors */
+  --accent-primary: #fbbf24;      /* amber-400 */
+  --accent-primary-hover: #f59e0b; /* amber-500 */
+  --accent-primary-light: #fcd34d; /* amber-300 */
 
-  /* Semantic Colors */
+  /* Semantic Colors - Consistent across themes */
   --success: #059669;
   --warning: #d97706;
   --error: #dc2626;
-
-  /* Background & Foreground */
-  --background: var(--slate-900);
-  --foreground: var(--slate-50);
-
-  /* ============================================
-     LIQUID GLASS DESIGN TOKENS (V2.0)
-     iOS 26 / Liquid Glass inspired
-     ============================================ */
-
-  /* Glass Surface Tokens */
-  --glass-blur: 20px;
-  --glass-blur-elevated: 24px;
-  --glass-saturate: 180%;
-  --glass-saturate-elevated: 200%;
-
-  /* Glass Background Opacities */
-  --glass-bg-light: rgba(255, 255, 255, 0.08);
-  --glass-bg-dark: rgba(15, 23, 42, 0.6);
-  --glass-bg-elevated: rgba(15, 23, 42, 0.75);
-  --glass-bg-subtle: rgba(255, 255, 255, 0.03);
-
-  /* Glass Border Opacities */
-  --glass-border: rgba(148, 163, 184, 0.15);
-  --glass-border-light: rgba(255, 255, 255, 0.1);
-  --glass-border-subtle: rgba(255, 255, 255, 0.05);
-  --glass-border-hover: rgba(148, 163, 184, 0.25);
-
-  /* Elevation System (layered depth via shadows) */
-  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.2);
-  --elevation-3: 0 8px 32px rgba(0, 0, 0, 0.25);
-  --elevation-4: 0 16px 48px rgba(0, 0, 0, 0.3);
 
   /* Spacing Scale (consistent rhythm) */
   --space-card: 1.25rem;     /* 20px - standard card padding */
@@ -62,41 +31,489 @@
   --radius-md: 0.75rem;      /* 12px - buttons, small cards */
   --radius-lg: 1rem;         /* 16px - main cards */
   --radius-xl: 1.25rem;      /* 20px - modals, sheets */
-
-  /* Inset Highlight (top edge shine) */
-  --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-@theme inline {
-  --color-primary-navy: var(--primary-navy);
-  --color-primary-gold: var(--primary-gold);
-  --color-accent-teal: var(--accent-teal);
-  --color-accent-amber: var(--accent-amber);
+/* ============================================
+   LIGHT MODE THEME
+   ============================================ */
+[data-theme="light"] {
+  /* Backgrounds - Solid for main surfaces */
+  --background: #ffffff;
+  --background-secondary: #f0f4f8;
+  --background-elevated: #ffffff;
+  --background-body: #ffffff;
 
+  /* Text */
+  --text-primary: #11283c;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --text-disabled: #9ca3af;
+  --text-inverse: #ffffff;
+  --foreground: #11283c;
+
+  /* Borders */
+  --border-default: #e5e7eb;
+  --border-strong: #122c45;
+  --border-subtle: #f3f4f6;
+  --border-hover: #d1d5db;
+
+  /* Interactive States */
+  --hover-bg: rgba(251, 191, 36, 0.1);
+  --active-bg: #f0f4f8;
+  --focus-ring: rgba(251, 191, 36, 0.5);
+
+  /* Glass Effects - Only for elevated elements in light mode */
+  --glass-blur: 16px;
+  --glass-blur-elevated: 20px;
+  --glass-saturate: 150%;
+  --glass-saturate-elevated: 160%;
+  --glass-bg: #ffffff;
+  --glass-bg-elevated: rgba(255, 255, 255, 0.95);
+  --glass-bg-subtle: rgba(240, 244, 248, 0.8);
+  --glass-border: rgba(18, 44, 69, 0.1);
+  --glass-border-light: rgba(18, 44, 69, 0.05);
+  --glass-border-subtle: rgba(18, 44, 69, 0.08);
+  --glass-border-hover: rgba(18, 44, 69, 0.15);
+  --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* Elevations - Navy-tinted shadows */
+  --elevation-1: 0 2px 8px rgba(18, 44, 69, 0.08);
+  --elevation-2: 0 4px 16px rgba(18, 44, 69, 0.12);
+  --elevation-3: 0 8px 32px rgba(18, 44, 69, 0.15);
+  --elevation-4: 0 16px 48px rgba(18, 44, 69, 0.18);
+
+  /* Status Badge Colors - Light Mode */
+  --status-blue-bg: #dbeafe;
+  --status-blue-text: #1e40af;
+  --status-blue-border: #93c5fd;
+  --status-amber-bg: #fef3c7;
+  --status-amber-text: #92400e;
+  --status-amber-border: #fcd34d;
+  --status-green-bg: #d1fae5;
+  --status-green-text: #065f46;
+  --status-green-border: #6ee7b7;
+  --status-red-bg: #fee2e2;
+  --status-red-text: #991b1b;
+  --status-red-border: #fca5a5;
+  --status-yellow-bg: #fef9c3;
+  --status-yellow-text: #854d0e;
+  --status-yellow-border: #fde047;
+}
+
+/* ============================================
+   DARK MODE THEME
+   ============================================ */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --background: #0f172a;
+  --background-secondary: #1e293b;
+  --background-elevated: #1e293b;
+  --background-body: #0a0f1a;
+
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-disabled: #64748b;
+  --text-inverse: #11283c;
+  --foreground: #f8fafc;
+
+  /* Borders */
+  --border-default: rgba(148, 163, 184, 0.2);
+  --border-strong: rgba(148, 163, 184, 0.3);
+  --border-subtle: rgba(148, 163, 184, 0.1);
+  --border-hover: rgba(148, 163, 184, 0.25);
+
+  /* Interactive States */
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --active-bg: rgba(255, 255, 255, 0.1);
+  --focus-ring: rgba(251, 191, 36, 0.5);
+
+  /* Glass Effects - Full glass morphism in dark mode */
+  --glass-blur: 20px;
+  --glass-blur-elevated: 24px;
+  --glass-saturate: 180%;
+  --glass-saturate-elevated: 200%;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-bg-elevated: rgba(15, 23, 42, 0.85);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(148, 163, 184, 0.2);
+  --glass-border-light: rgba(255, 255, 255, 0.1);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-border-hover: rgba(148, 163, 184, 0.25);
+  --glass-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Elevations */
+  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --elevation-3: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --elevation-4: 0 16px 48px rgba(0, 0, 0, 0.3);
+
+  /* Status Badge Colors - Dark Mode (translucent) */
+  --status-blue-bg: rgba(59, 130, 246, 0.2);
+  --status-blue-text: #93c5fd;
+  --status-blue-border: rgba(59, 130, 246, 0.3);
+  --status-amber-bg: rgba(245, 158, 11, 0.2);
+  --status-amber-text: #fcd34d;
+  --status-amber-border: rgba(245, 158, 11, 0.3);
+  --status-green-bg: rgba(16, 185, 129, 0.2);
+  --status-green-text: #6ee7b7;
+  --status-green-border: rgba(16, 185, 129, 0.3);
+  --status-red-bg: rgba(239, 68, 68, 0.2);
+  --status-red-text: #fca5a5;
+  --status-red-border: rgba(239, 68, 68, 0.3);
+  --status-yellow-bg: rgba(234, 179, 8, 0.2);
+  --status-yellow-text: #fde047;
+  --status-yellow-border: rgba(234, 179, 8, 0.3);
+}
+
+/* ============================================
+   TAILWIND THEME EXTENSION
+   ============================================ */
+@theme inline {
+  --color-brand-navy: var(--brand-navy);
+  --color-accent-primary: var(--accent-primary);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
   --font-sans: var(--font-work-sans);
   --font-serif: var(--font-source-serif);
 }
 
-/* Glass Effect Utility */
+/* ============================================
+   BASE STYLES
+   ============================================ */
+body {
+  background-color: var(--background-body);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode body - layered backgrounds */
+[data-theme="dark"] body {
+  background-image:
+    /* Subtle noise texture */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+    /* Center glow (subtle depth) */
+    radial-gradient(
+      ellipse 1200px 800px at 50% 20%,
+      rgba(15, 23, 42, 0.4) 0%,
+      transparent 60%
+    ),
+    /* Corner glows (amber + blue ambient light) */
+    radial-gradient(
+      circle 600px at 0% 0%,
+      rgba(251, 191, 36, 0.06) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle 700px at 100% 100%,
+      rgba(59, 130, 246, 0.06) 0%,
+      transparent 50%
+    );
+  background-attachment: fixed;
+}
+
+/* Heading Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 700;
+}
+
+/* ============================================
+   GLASS UTILITY CLASSES
+   ============================================ */
+
+/* Base glass surface - for main containers, cards, panels */
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--elevation-2),
+    var(--glass-inset-highlight);
+}
+
+/* Light mode: solid surface, no blur */
+[data-theme="light"] .glass-surface {
+  background: var(--background);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-2);
+}
+
+/* Elevated glass - for modals, sheets, overlays, download panels */
+.glass-elevated {
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
+  -webkit-backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    var(--elevation-4),
+    var(--glass-inset-highlight);
+}
+
+/* Light mode elevated - keeps subtle glass */
+[data-theme="light"] .glass-elevated {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-default);
+  box-shadow:
+    var(--elevation-4),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Glass header - for sticky page headers */
+.glass-header {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--border-default);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+[data-theme="light"] .glass-header {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .glass-header {
+  background: rgba(10, 15, 26, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Subtle glass - for cards within glass containers */
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .glass-subtle {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Legacy glass card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border-light);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* Fallback for browsers that don't support backdrop-filter */
+[data-theme="light"] .glass-card {
+  background: var(--background);
+  backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-2);
+}
+
+/* Glass card dark variant */
+.glass-card-dark {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.3),
+    var(--glass-inset-highlight);
+}
+
+[data-theme="light"] .glass-card-dark {
+  background: var(--background);
+  backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-2);
+}
+
+/* ============================================
+   FALLBACKS FOR NO BACKDROP-FILTER SUPPORT
+   ============================================ */
 @supports not (backdrop-filter: blur(12px)) {
-  .glass-card {
-    background: rgba(255, 255, 255, 0.1);
+  .glass-card,
+  .glass-surface,
+  .glass-elevated,
+  .glass-card-dark {
+    background: var(--background);
+  }
+  .glass-subtle {
+    background: var(--background-secondary);
   }
 }
 
-/* Animated Orbs */
+/* ============================================
+   HOVER EFFECTS
+   ============================================ */
+@media (hover: hover) {
+  .glass-subtle:hover {
+    background: var(--hover-bg);
+    border-color: var(--glass-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--elevation-2);
+  }
+
+  [data-theme="light"] .glass-subtle:hover {
+    background: var(--background-secondary);
+    border-color: var(--border-hover);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      var(--elevation-3),
+      0 0 40px rgba(251, 191, 36, 0.15);
+  }
+
+  .hover-lift-subtle:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elevation-1);
+  }
+}
+
+/* ============================================
+   DARK MODE SPECIFIC UTILITY CLASSES
+   ============================================ */
+
+/* Dark stat card with glass effect and hover glow */
+.stat-card-dark {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    var(--glass-inset-highlight);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .stat-card-dark {
+  background: var(--background);
+  backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-2);
+}
+
+.stat-card-dark:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    var(--glass-inset-highlight);
+  border-color: var(--glass-border-hover);
+}
+
+/* Dark search input styling */
+.search-input-dark {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .search-input-dark {
+  background: var(--background);
+  backdrop-filter: none;
+}
+
+.search-input-dark::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-input-dark:focus {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1);
+  background: var(--background);
+}
+
+/* Form card dark variant */
+.form-card-dark {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.3),
+    var(--glass-inset-highlight);
+}
+
+[data-theme="light"] .form-card-dark {
+  background: var(--background);
+  backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-3);
+}
+
+/* Mobile footer dark */
+.mobile-footer-dark {
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-default);
+}
+
+[data-theme="light"] .mobile-footer-dark {
+  background: var(--background);
+}
+
+/* Job card dark variant */
+.job-card-dark {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .job-card-dark {
+  background: var(--background);
+  backdrop-filter: none;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-1);
+}
+
+.job-card-dark:hover {
+  background: var(--hover-bg);
+  border-color: var(--glass-border-hover);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .job-card-dark:hover {
+  background: var(--background-secondary);
+  box-shadow: var(--elevation-2);
+}
+
+/* Empty state icon container */
+.empty-state-icon-dark {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-default);
+}
+
+/* Header blur on scroll */
+.header-blur {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: var(--glass-bg-elevated);
+}
+
+[data-theme="light"] .header-blur {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================
+   ANIMATED ORBS (Dark mode only)
+   ============================================ */
 @keyframes float {
   0%, 100% {
     transform: translate(0, 0) scale(1);
@@ -124,7 +541,7 @@
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: var(--accent-teal);
+  background: var(--accent-primary);
   top: 10%;
   left: 20%;
   animation-delay: 0s;
@@ -133,7 +550,7 @@
 .orb-2 {
   width: 500px;
   height: 500px;
-  background: var(--primary-gold);
+  background: var(--brand-navy);
   top: 50%;
   right: 10%;
   animation-delay: 8s;
@@ -142,11 +559,39 @@
 .orb-3 {
   width: 700px;
   height: 700px;
-  background: var(--primary-navy);
+  background: #3b82f6;
   bottom: 5%;
   left: 30%;
   animation-delay: 16s;
 }
+
+/* Floating gradient background orbs for dark mode */
+@keyframes floatDark {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.15;
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+    opacity: 0.2;
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.95);
+    opacity: 0.1;
+  }
+}
+
+.orb-dark {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: floatDark 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 
 /* Fade-in Animation */
 @keyframes fade-in {
@@ -177,76 +622,40 @@
   }
 }
 
-/* Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Page entrance - fade up with blur reduction */
+@keyframes pageEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(10px);
   }
-
-  .orb {
-    animation: none !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 
-/* Base Styles */
-body {
-  background: var(--background); /* Fallback */
-
-  /* Layered depth: noise + radial gradients for glass visibility */
-  background-image:
-    /* Subtle noise texture */
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
-
-    /* Center glow (subtle depth) */
-    radial-gradient(
-      ellipse 1200px 800px at 50% 20%,
-      rgba(15, 23, 42, 0.4) 0%,
-      transparent 60%
-    ),
-
-    /* Corner glows (teal + blue ambient light) */
-    radial-gradient(
-      circle 600px at 0% 0%,
-      rgba(20, 184, 166, 0.08) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle 700px at 100% 100%,
-      rgba(59, 130, 246, 0.06) 0%,
-      transparent 50%
-    );
-
-  background-color: #0a0f1a; /* Darker than slate-950 for more contrast */
-  background-attachment: fixed; /* Parallax effect on scroll */
-
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.animate-page-entrance {
+  animation: pageEntrance 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Heading Styles */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif), Georgia, serif;
-  font-weight: 700;
+/* Staggered card entrance animation */
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* Utility class for scale transforms */
-.hover\:scale-102:hover {
-  transform: scale(1.02);
+.animate-card-entrance {
+  animation: cardEntrance 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
 }
-
-.active\:scale-98:active {
-  transform: scale(0.98);
-}
-
-/* ============================================
-   FORM ANIMATIONS
-   ============================================ */
 
 /* Form field entrance - staggered slide up */
 @keyframes slideUp {
@@ -262,6 +671,42 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-slide-up {
   animation: slideUp 500ms ease-out forwards;
+  opacity: 0;
+}
+
+/* Timeline message cascade */
+@keyframes messageCascade {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-message-cascade {
+  animation: messageCascade 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+/* Smooth text reveal */
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-text-reveal {
+  animation: textReveal 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 
@@ -338,60 +783,21 @@ h1, h2, h3, h4, h5, h6 {
   animation: errorSlide 200ms ease-out forwards;
 }
 
-/* Input focus glow */
+/* Input focus glow - Updated to amber */
 @keyframes focusGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.15);
   }
   100% {
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
   }
 }
 
 .animate-focus-glow {
   animation: focusGlow 300ms ease-out forwards;
-}
-
-/* ============================================
-   DARK MODE / JOB DETAIL PAGE ANIMATIONS
-   ============================================ */
-
-/* Page entrance - fade up with blur reduction */
-@keyframes pageEntrance {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-    filter: blur(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-.animate-page-entrance {
-  animation: pageEntrance 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Timeline message cascade */
-@keyframes messageCascade {
-  from {
-    opacity: 0;
-    transform: translateX(-20px) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) translateY(0);
-  }
-}
-
-.animate-message-cascade {
-  animation: messageCascade 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  opacity: 0;
 }
 
 /* Glowing pulse for status badges */
@@ -410,13 +816,13 @@ h1, h2, h3, h4, h5, h6 {
   animation: glowPulse 3s ease-in-out infinite;
 }
 
-/* Subtle glow for interactive elements */
+/* Subtle glow for interactive elements - Updated to amber */
 @keyframes subtleGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(20, 184, 166, 0.1);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
   }
   50% {
-    box-shadow: 0 0 30px rgba(20, 184, 166, 0.2), 0 0 40px rgba(20, 184, 166, 0.1);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.2), 0 0 40px rgba(251, 191, 36, 0.1);
   }
 }
 
@@ -424,7 +830,7 @@ h1, h2, h3, h4, h5, h6 {
   animation: subtleGlow 4s ease-in-out infinite;
 }
 
-/* Timeline connector glow */
+/* Timeline connector glow - Updated to amber */
 @keyframes lineGlow {
   0% {
     background-position: 0% 0%;
@@ -437,21 +843,21 @@ h1, h2, h3, h4, h5, h6 {
 .animate-line-glow {
   background: linear-gradient(
     180deg,
-    rgba(20, 184, 166, 0.1) 0%,
-    rgba(20, 184, 166, 0.5) 50%,
-    rgba(20, 184, 166, 0.1) 100%
+    rgba(251, 191, 36, 0.1) 0%,
+    rgba(251, 191, 36, 0.5) 50%,
+    rgba(251, 191, 36, 0.1) 100%
   );
   background-size: 100% 200%;
   animation: lineGlow 3s ease-in-out infinite;
 }
 
-/* Download button hover glow */
+/* Download button hover glow - Updated to amber */
 @keyframes buttonGlow {
   from {
-    box-shadow: 0 0 0 rgba(20, 184, 166, 0);
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
   }
   to {
-    box-shadow: 0 0 30px rgba(20, 184, 166, 0.4), 0 0 60px rgba(20, 184, 166, 0.2);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.4), 0 0 60px rgba(251, 191, 36, 0.2);
   }
 }
 
@@ -473,67 +879,6 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-dot-pulse {
   animation: dotPulse 2s ease-in-out infinite;
-}
-
-/* Floating gradient background orbs for dark mode */
-@keyframes floatDark {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.15;
-  }
-  33% {
-    transform: translate(30px, -20px) scale(1.05);
-    opacity: 0.2;
-  }
-  66% {
-    transform: translate(-20px, 30px) scale(0.95);
-    opacity: 0.1;
-  }
-}
-
-.orb-dark {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  animation: floatDark 20s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* Glass card dark variant */
-.glass-card-dark {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow:
-    0 4px 30px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-/* Header blur on scroll */
-.header-blur {
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  background: rgba(15, 23, 42, 0.8);
-}
-
-/* Smooth text reveal */
-@keyframes textReveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-.animate-text-reveal {
-  animation: textReveal 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
 }
 
 /* Icon spin for loading states */
@@ -568,114 +913,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================
-   DARK MODE UTILITY CLASSES
-   ============================================ */
-
-/* Dark stat card with glass effect and hover glow */
-.stat-card-dark {
-  position: relative;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.stat-card-dark:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border-color: rgba(148, 163, 184, 0.2);
-}
-
-/* Dark search input styling */
-.search-input-dark {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  color: white;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.search-input-dark::placeholder {
-  color: rgba(148, 163, 184, 0.6);
-}
-
-.search-input-dark:focus {
-  border-color: rgba(20, 184, 166, 0.5);
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
-  background: rgba(15, 23, 42, 0.8);
-}
-
-/* Form card dark variant */
-.form-card-dark {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-/* Mobile footer dark */
-.mobile-footer-dark {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-/* Job card dark variant */
-.job-card-dark {
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.job-card-dark:hover {
-  background: rgba(30, 41, 59, 0.6);
-  border-color: rgba(148, 163, 184, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
-}
-
-/* Staggered card entrance animation */
-@keyframes cardEntrance {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-card-entrance {
-  animation: cardEntrance 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-}
-
-/* Empty state icon container */
-.empty-state-icon-dark {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-/* ============================================
    TOAST NOTIFICATION ANIMATIONS
    ============================================ */
 
-/* Toast entrance - slide up with fade */
 @keyframes toastEnter {
   from {
     opacity: 0;
@@ -691,7 +931,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: toastEnter 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Toast exit - slide out with fade */
 @keyframes toastExit {
   from {
     opacity: 1;
@@ -707,7 +946,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: toastExit 200ms ease-in forwards;
 }
 
-/* Toast progress bar - shrinks from right to left */
 @keyframes toastProgress {
   from {
     width: 100%;
@@ -721,7 +959,6 @@ h1, h2, h3, h4, h5, h6 {
    SKELETON LOADING ANIMATIONS
    ============================================ */
 
-/* Gentle skeleton pulse - softer than shimmer */
 @keyframes skeletonPulse {
   0%, 100% {
     opacity: 0.4;
@@ -735,7 +972,6 @@ h1, h2, h3, h4, h5, h6 {
   animation: skeletonPulse 1.5s ease-in-out infinite;
 }
 
-/* Skeleton shimmer - gradient sweep */
 @keyframes skeletonShimmer {
   0% {
     background-position: -200% 0;
@@ -748,9 +984,9 @@ h1, h2, h3, h4, h5, h6 {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(148, 163, 184, 0.1) 0%,
-    rgba(148, 163, 184, 0.2) 50%,
-    rgba(148, 163, 184, 0.1) 100%
+    var(--border-default) 0%,
+    var(--border-hover) 50%,
+    var(--border-default) 100%
   );
   background-size: 200% 100%;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
@@ -776,96 +1012,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================
-   LIQUID GLASS UTILITY CLASSES (V2.0)
-   New utilities - existing classes unchanged
+   UTILITY CLASSES
    ============================================ */
 
-/* Base glass surface - for main containers, cards, panels
-   Use this as the primary glass treatment */
-.glass-surface {
-  background: rgba(15, 23, 42, 0.7); /* Increased from 0.6 - more opaque */
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid rgba(148, 163, 184, 0.2); /* Increased from 0.15 - brighter border */
-  border-radius: var(--radius-lg);
-  box-shadow:
-    var(--elevation-2),
-    var(--glass-inset-highlight),
-    0 0 60px rgba(0, 0, 0, 0.15); /* NEW: outer glow for depth */
+/* Utility class for scale transforms */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
 }
 
-/* Elevated glass - for modals, sheets, overlays, download panels
-   Higher blur, stronger shadow for visual hierarchy */
-.glass-elevated {
-  background: rgba(15, 23, 42, 0.85); /* Increased from 0.75 - much more opaque */
-  backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
-  -webkit-backdrop-filter: blur(var(--glass-blur-elevated)) saturate(var(--glass-saturate-elevated));
-  border: 1px solid rgba(148, 163, 184, 0.3); /* Increased from 0.1 - MUCH brighter */
-  border-radius: var(--radius-xl);
-  box-shadow:
-    var(--elevation-4), /* Increased from elevation-3 for stronger shadow */
-    var(--glass-inset-highlight),
-    0 0 80px rgba(20, 184, 166, 0.1), /* NEW: teal outer glow */
-    inset 0 2px 4px rgba(255, 255, 255, 0.08); /* Stronger inset highlight */
+.active\:scale-98:active {
+  transform: scale(0.98);
 }
 
-/* Glass header - for sticky page headers with scroll blur
-   Matches new body background color for seamless integration */
-.glass-header {
-  background: rgba(10, 15, 26, 0.8); /* Matches body bg-color #0a0f1a */
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-/* Subtle glass - for cards within glass containers
-   Very light, doesn't compete with parent */
-.glass-subtle {
-  background: var(--glass-bg-subtle);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-md);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Hover lift effect - only applies on devices that support hover
-   Prevents weird touch behavior on mobile */
-@media (hover: hover) {
-  .glass-subtle:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--glass-border-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--elevation-2);
-  }
-
-  /* Lighter lift variant for cards */
-  .hover-lift:hover {
-    transform: translateY(-4px); /* Increased from -2px - more dramatic lift */
-    box-shadow:
-      var(--elevation-3), /* Increased from elevation-2 - stronger shadow */
-      0 0 40px rgba(20, 184, 166, 0.15); /* NEW: teal glow on hover */
-  }
-
-  /* Subtle lift - even gentler, for inline cards */
-  .hover-lift-subtle:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--elevation-1);
-  }
-}
-
-/* Section divider - subtle visual separator between card groups
-   Non-collapsible, just a label with lines */
+/* Section divider */
 .section-divider {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(148, 163, 184, 0.8); /* Increased from 0.6 - brighter text */
-  font-size: 0.7rem; /* Increased from 0.65rem - more readable */
-  font-weight: 600; /* Increased from 500 - bolder */
-  letter-spacing: 0.12em; /* Increased from 0.1em - more spacing */
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 1rem 0; /* Increased from 0.5rem - more breathing room */
+  padding: 1rem 0;
 }
 
 .section-divider::before,
@@ -876,13 +1045,12 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(148, 163, 184, 0.25), /* Increased from 0.15 - more visible */
+    var(--border-default),
     transparent
   );
 }
 
-/* Smooth scroll container - apply to specific scrollable areas only
-   NOT global, per your safety note */
+/* Smooth scroll container */
 .scroll-container-smooth {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
@@ -898,13 +1066,20 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--space-card);
 }
 
-/* Fallback for browsers without backdrop-filter */
-@supports not (backdrop-filter: blur(20px)) {
-  .glass-surface,
-  .glass-elevated {
-    background: rgba(15, 23, 42, 0.9);
+/* ============================================
+   REDUCED MOTION SUPPORT
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  .glass-subtle {
-    background: rgba(30, 41, 59, 0.6);
+
+  .orb,
+  .orb-dark {
+    animation: none !important;
   }
 }

@@ -44,7 +44,8 @@ import TimelineMessage from '@/components/ui/TimelineMessage';
 import TabBar from '@/components/ui/TabBar';
 import PickupScheduler from '@/components/ui/PickupScheduler';
 import { formatRelativeTime } from '@/lib/utils';
-import { getDelay } from '@/lib/devConfig';
+import { getDelay, DEV_MODE } from '@/lib/devConfig';
+import { runWrapper } from '@/lib/wrapperClient';
 import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
 import {
   isFatalJob,
@@ -821,47 +822,104 @@ export default function StaffJobDetailPage() {
     setWrapperProgress(0);
     setLastWrapperResult(null);
 
-    // Random duration between 8-13 seconds
-    const duration = 8000 + Math.random() * 5000;
     const startTime = Date.now();
-
-    // Progress animation
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min((elapsed / duration) * 100, 100);
-      setWrapperProgress(progress);
-    }, 100);
-
-    await new Promise((resolve) => setTimeout(resolve, duration));
-    clearInterval(interval);
-    setWrapperProgress(100);
-
-    // New result distribution:
-    // 30% → FULL (page1 passed, page2 passed)
-    // 35% → FACE_PAGE (page1 passed, face page available)
-    // 15% → PAGE1_NOT_FOUND (page1 failed)
-    // 15% → PAGE2_VERIFICATION_FAILED (page1 passed, page2 failed)
-    // 5% → PORTAL_ERROR (technical issue)
-    const rand = Math.random();
     let result: WrapperResult;
     let page1Passed = false;
+    let errorMessage: string | undefined;
+    let downloadToken: string | undefined;
 
-    if (rand < 0.30) {
-      result = 'FULL';
-      page1Passed = true;
-    } else if (rand < 0.65) {
-      result = 'FACE_PAGE';
-      page1Passed = true;
-    } else if (rand < 0.80) {
-      result = 'PAGE1_NOT_FOUND';
-      page1Passed = false;
-    } else if (rand < 0.95) {
-      result = 'PAGE2_VERIFICATION_FAILED';
-      page1Passed = true;
-    } else {
-      result = 'PORTAL_ERROR';
-      page1Passed = false;
+    // Progress animation (indeterminate for real API, timed for mock)
+    const progressInterval = setInterval(() => {
+      setWrapperProgress((prev) => {
+        // Slowly increment up to 90% while waiting
+        if (prev < 90) return prev + (90 - prev) * 0.05;
+        return prev;
+      });
+    }, 200);
+
+    try {
+      // Call the real wrapper API
+      const response = await runWrapper({
+        jobId: localJob._id,
+        reportNumber: localJob.reportNumber,
+        crashDate: page1Data.crashDate,
+        crashTime: page1Data.crashTime,
+        ncic: deriveNcic(localJob.reportNumber),
+        officerId: page1Data.officerId || undefined,
+        firstName: page2Data.firstName || undefined,
+        lastName: page2Data.lastName || undefined,
+        plate: page2Data.plate || undefined,
+        driverLicense: page2Data.driverLicense || undefined,
+        vin: page2Data.vin || undefined,
+      });
+
+      clearInterval(progressInterval);
+      setWrapperProgress(100);
+
+      if (response.success) {
+        // Use the mappedResultType from the proxy response
+        result = response.mappedResultType;
+        downloadToken = response.downloadToken;
+        page1Passed = result === 'FULL' || result === 'FACE_PAGE' || result === 'PAGE2_VERIFICATION_FAILED';
+      } else {
+        // Handle error response from wrapper
+        console.error('[handleRunWrapper] Wrapper error:', response.error);
+        
+        // Map error to a result type
+        if (response.mappedResultType) {
+          result = response.mappedResultType;
+        } else if (response.code === 'WRAPPER_AUTH_FAILED') {
+          // Auth failure - show debug info in console for troubleshooting
+          console.warn('[handleRunWrapper] Auth failed debug:', response.debug);
+          result = 'PORTAL_ERROR';
+          errorMessage = 'Wrapper authentication failed. Contact administrator.';
+        } else if (response.fieldErrors) {
+          // Validation error from wrapper
+          result = 'PORTAL_ERROR';
+          errorMessage = response.error || 'Validation failed';
+        } else {
+          result = 'PORTAL_ERROR';
+          errorMessage = response.error || 'Unknown error';
+        }
+      }
+    } catch (error) {
+      // Network/unexpected error - fall back to mock in DEV_MODE only
+      clearInterval(progressInterval);
+      console.error('[handleRunWrapper] Exception:', error);
+
+      if (DEV_MODE) {
+        // DEV FALLBACK: Use mock behavior when API unavailable
+        console.warn('[handleRunWrapper] DEV MODE: Falling back to mock wrapper');
+        await new Promise((resolve) => setTimeout(resolve, getDelay('wrapperRun')));
+        setWrapperProgress(100);
+
+        // Mock result distribution
+        const rand = Math.random();
+        if (rand < 0.30) {
+          result = 'FULL';
+          page1Passed = true;
+        } else if (rand < 0.65) {
+          result = 'FACE_PAGE';
+          page1Passed = true;
+        } else if (rand < 0.80) {
+          result = 'PAGE1_NOT_FOUND';
+          page1Passed = false;
+        } else if (rand < 0.95) {
+          result = 'PAGE2_VERIFICATION_FAILED';
+          page1Passed = true;
+        } else {
+          result = 'PORTAL_ERROR';
+          page1Passed = false;
+        }
+      } else {
+        // PROD: Show error to user
+        setWrapperProgress(0);
+        result = 'PORTAL_ERROR';
+        errorMessage = 'Failed to connect to wrapper service';
+      }
     }
+
+    const duration = Date.now() - startTime;
 
     // V1.6.0: Track which Page 2 fields were tried for auto-escalation
     const page2FieldsTried = {
@@ -895,7 +953,7 @@ export default function StaffJobDetailPage() {
       result,
       duration,
       page1Passed,
-      errorMessage: result === 'PORTAL_ERROR' ? 'Portal timeout after 45 seconds' : undefined,
+      errorMessage: errorMessage || (result === 'PORTAL_ERROR' ? 'Portal timeout or error' : undefined),
       page2FieldsTried,
       page2FieldResults,
     };
@@ -909,11 +967,11 @@ export default function StaffJobDetailPage() {
 
       if (result === 'FULL') {
         newStatus = 'COMPLETED_FULL_REPORT';
-        newFacePageToken = newFacePageToken || `fp_token_${generateId()}`;
-        newFullReportToken = `fr_token_${generateId()}`;
+        newFacePageToken = newFacePageToken || downloadToken || `fp_token_${generateId()}`;
+        newFullReportToken = downloadToken || `fr_token_${generateId()}`;
       } else if (result === 'FACE_PAGE') {
         newStatus = 'FACE_PAGE_ONLY';
-        newFacePageToken = `fp_token_${generateId()}`;
+        newFacePageToken = downloadToken || `fp_token_${generateId()}`;
       } else if (result === 'PAGE1_NOT_FOUND') {
         newStatus = 'NEEDS_MORE_INFO';
       } else if (result === 'PAGE2_VERIFICATION_FAILED') {
@@ -992,7 +1050,7 @@ export default function StaffJobDetailPage() {
     } else if (result === 'PAGE2_VERIFICATION_FAILED') {
       toast.warning('Page 2 verification failed. Need more identifiers.');
     } else if (result === 'PORTAL_ERROR') {
-      toast.error('Portal error. Please try again or escalate.');
+      toast.error(errorMessage || 'Portal error. Please try again or escalate.');
     }
   };
 

@@ -12,6 +12,7 @@ This folder contains dated notes documenting major documentation changes, migrat
 
 | Date | Title | Summary |
 |------|-------|---------|
+| 2025-12-15 | [Wrapper Integration](2025-12-15-wrapper-integration.md) | Wired InstaTCR to Fly.io CHP wrapper via secure proxy route |
 | 2025-12-11 | [Documentation Reorganization](2025-12-11-docs-reorg.md) | PRD split into 6 focused docs, AGENTS.md created, precedence rules established |
 
 ---

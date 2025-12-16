@@ -5,6 +5,166 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2025-12-15
+
+### Added
+
+#### CHP Wrapper UI Integration (V2 Backend Wiring Complete)
+
+**Purpose:**
+Wire the InstaTCR frontend to call the Fly.io CHP wrapper via the secure proxy route, replacing mock setTimeout behavior with real API calls while maintaining the existing state machine.
+
+**New Files Created:**
+
+- **`src/lib/wrapperClient.ts`** - Type-safe client library (~130 lines)
+  - `runWrapper(request)` - Calls `/api/wrapper/run` with typed request/response
+  - `isWrapperConfigured()` - Health check helper
+  - Handles success/error responses uniformly
+  - Returns `mappedResultType` for UI compatibility
+
+- **`docs/notes/2025-12-15-wrapper-integration.md`** - Integration documentation
+  - Environment variable checklist (local + Vercel)
+  - Test commands with expected responses
+  - Troubleshooting guide for common issues
+  - Files modified summary
+
+**Files Modified:**
+
+1. **`src/app/api/wrapper/run/route.ts`** - Proxy route improvements
+   - **Simplified pass-through**: Now passes request body directly to wrapper (no re-mapping)
+   - **401 debug info** (temporary): Returns safe debug object on auth failures
+     - `hasBaseUrl`, `baseUrlLength`, `hasKey`, `keyLength`, `sentAuthHeader`, `authHeaderLength`
+     - No actual values exposed (booleans and lengths only)
+   - **Better error handling**: Handles non-JSON responses, adds `WRAPPER_AUTH_FAILED` error code
+   - **Cleaner mapping**: `mapWrapperType()` now handles undefined type gracefully
+
+2. **`src/app/staff/jobs/[jobId]/page.tsx`** - Staff job detail page
+   - `handleRunWrapper()` now calls real API via `runWrapper()` client
+   - Falls back to mock behavior in DEV_MODE when API unavailable
+   - Progress bar shows smooth animation while waiting for real API
+   - Preserves all existing state machine logic (status updates, auto-escalation, notifications)
+   - Added import for `DEV_MODE` from devConfig and `runWrapper` from wrapperClient
+
+3. **`docs/notes/README.md`** - Updated notes index
+   - Added entry for wrapper integration documentation
+
+**Behavior:**
+
+| Environment | Wrapper Available | Behavior |
+|-------------|-------------------|----------|
+| Development | Yes | Calls real API, shows real results |
+| Development | No | Falls back to mock (random results, fast delays) |
+| Production | Yes | Calls real API, shows real results |
+| Production | No | Shows error message, no fallback |
+
+**Test Commands:**
+
+```bash
+# Health check
+curl -i http://localhost:3000/api/wrapper/run
+
+# Test wrapper call (minimal)
+curl -i -X POST http://localhost:3000/api/wrapper/run \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Expected Responses:**
+- **503** + `MISSING_CONFIG` → env vars not set
+- **401** + `WRAPPER_AUTH_FAILED` + debug → key incorrect
+- **400** from wrapper validation → auth works ✅
+
+**Environment Variable Checklist:**
+
+| Variable | Local (.env.local) | Vercel |
+|----------|-------------------|--------|
+| `CHP_WRAPPER_BASE_URL` | ✅ Required | ✅ Required |
+| `CHP_WRAPPER_API_KEY` | ✅ Required | ✅ Required |
+
+**TODO (After Verification):**
+Remove temporary debug fields from 401 response in `route.ts` once auth is confirmed working.
+
+**Files Created:** 2 files
+**Files Modified:** 3 files
+**Lines Added:** ~200 lines
+**Lines Changed:** ~180 lines
+
+**Version:** V2.5.1 (Wrapper UI Integration)
+
+---
+
+## [2.5.0] - 2025-12-15
+
+### Added
+
+#### CHP Wrapper Proxy Route (V2 Backend Integration Start)
+
+**Purpose:**
+Create a secure server-side proxy route that forwards requests to the CHP wrapper service on Fly.io, keeping API credentials secure and never exposing them to the browser.
+
+**New File Created:**
+
+- **`src/app/api/wrapper/run/route.ts`** - Server-side proxy route (~195 lines)
+
+**Key Features:**
+
+1. **Server-Side Credential Security**
+   - Reads `CHP_WRAPPER_BASE_URL` and `CHP_WRAPPER_API_KEY` from environment variables
+   - Credentials never sent to browser (App Router routes run server-side only)
+   - Returns 503 if env vars not configured
+
+2. **Input Validation**
+   - **Page 1 (all required):** `crashDate`, `crashTime`, `ncic`, `officerId`
+   - **Page 2 (at least one required):** `firstName`, `lastName`, `driverLicense`, `plate`, `vin`
+   - Optional pass-through fields: `jobId`, `reportNumber`
+
+3. **Typed Request/Response Interfaces**
+   - `WrapperRequest` - Input schema with Page 1/Page 2 fields
+   - `WrapperResponse` - Success response with `resultType`, `message`, `downloadToken`, etc.
+   - `ErrorResponse` - Structured errors with codes: `MISSING_CONFIG`, `VALIDATION_ERROR`, `WRAPPER_ERROR`, `NETWORK_ERROR`
+
+4. **GET Health Check**
+   - `GET /api/wrapper/run` returns `{ ok: true }`
+   - Allows route verification without posting data
+
+**API Endpoint:**
+
+```
+POST /api/wrapper/run
+Content-Type: application/json
+
+{
+  "crashDate": "2024-03-15",
+  "crashTime": "1430",
+  "ncic": "1234",
+  "officerId": "012345",
+  "firstName": "John"  // At least one Page 2 field required
+}
+```
+
+**Environment Variables Required:**
+
+```env
+CHP_WRAPPER_BASE_URL=https://chp-wrapper.fly.dev
+CHP_WRAPPER_API_KEY=your-secret-key
+```
+
+**Error Handling:**
+
+| Code | HTTP Status | Meaning |
+|------|-------------|---------|
+| `MISSING_CONFIG` | 503 | Server env vars not configured |
+| `VALIDATION_ERROR` | 400 | Missing required fields |
+| `WRAPPER_ERROR` | 4xx/502 | Wrapper service returned error |
+| `NETWORK_ERROR` | 502 | Failed to reach wrapper service |
+
+**Files Created:** 1 file
+**Lines Added:** ~195 lines
+
+**Version:** V2.5.0 (First V2 backend integration)
+
+---
+
 ## [2.5.0-docs] - 2025-12-15
 
 ### Added

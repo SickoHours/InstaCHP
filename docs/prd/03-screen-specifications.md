@@ -1,7 +1,7 @@
 ---
 title: "Part 3: Complete Screen Specifications"
-version: "2.1"
-last_updated: "2025-12-12"
+version: "2.5"
+last_updated: "2025-12-15"
 audience: "Product Managers, Designers, Developers"
 ---
 
@@ -14,6 +14,7 @@ audience: "Product Managers, Designers, Developers"
    - [Screen 2: Law Firm Dashboard](#screen-2-law-firm-dashboard)
    - [Screen 3: New Request Form](#screen-3-new-request-form)
    - [Screen 4: Job Detail / Chat View](#screen-4-job-detail--chat-view)
+   - [Screen 7: Fast Form (V2.5.0+)](#screen-7-fast-form-v250)
 2. [Staff Screens](#staff-screens)
    - [Screen 5: Staff Job Queue](#screen-5-staff-job-queue)
    - [Screen 6: Staff Job Detail](#screen-6-staff-job-detail)
@@ -98,8 +99,9 @@ const jobs = useQuery(api.chpJobs.getJobsByLawFirm, { lawFirmId });
 
 **Header:**
 - Page title: "My Requests"
-- Desktop: "New Request" button (top right)
-- Mobile: FloatingActionButton (bottom right)
+- Desktop: "New Request" button (top right) → routes to `/law/jobs/new-fast` **(V2.5.0+: Primary entry point)**
+- Desktop: "Create Fatal Request" button (secondary) → routes to `/law/jobs/new-fatal` **(V2.5.0+)**
+- Mobile: FloatingActionButton (bottom right) → routes to `/law/jobs/new-fast` **(V2.5.0+)**
 
 **Job Grid:**
 Each card shows:
@@ -345,6 +347,320 @@ const publicStatus = getPublicStatus(job.internalStatus);
 
 ---
 
+### Screen 7: Fast Form (V2.5.0+) (`/law/jobs/new-fast`)
+
+**File:** `src/app/law/jobs/new-fast/page.tsx`
+
+**Purpose:** Primary entry point for law firms to submit crash report requests with immediate CHP wrapper execution. Designed for 72-hour window use case where speed is critical.
+
+#### Design Philosophy
+
+Fast Form is optimized for the most common workflow:
+- **Primary Use Case:** Law firm receives a client immediately after a crash (within 72 hours)
+- **Key Value:** Instant verification of report availability via real-time CHP portal check
+- **Success Rate:** ~99% of submissions successfully run wrapper (Page 1 + at least one Page 2 field)
+- **Device Context:** Optimized for desktop (law firm primary workflow)
+
+#### Form Sections
+
+**Section 1: Page 1 Portal Information (5 required fields)**
+
+All fields required for CHP portal Page 1 submission:
+
+| Field | Type | Required | Validation | Placeholder | Notes |
+|-------|------|----------|------------|-------------|-------|
+| Report Number | text | Yes | `9XXX-YYYY-ZZZZZ` | "9465-2025-02802" | CHP report format |
+| Crash Date | date | Yes | MM/DD/YYYY, not future | "12/15/2025" | HTML date input |
+| Crash Time | text | Yes | HHMM (00:00-23:59) | "1430" | 24-hour format |
+| Officer ID | text | Yes | 6 digits, starts with 0 | "012345" | CHP officer badge |
+| NCIC | text | No (auto) | 4 digits, starts with 9 | "9465" | Auto-derived from report # (read-only) |
+
+**Section 2: Page 2 Verification Information (at least 1 required)**
+
+CHP portal requires at least one matching identifier for report verification:
+
+| Field | Type | Required | Validation | Placeholder | Notes |
+|-------|------|----------|------------|-------------|-------|
+| Client Full Name | text | Yes | Min 2 chars | "Dora Cruz-Arteaga" | Always required, auto-splits for wrapper |
+| License Plate | text | Optional | 2-8 alphanumeric | "8ABC123" | CA format preferred |
+| Driver License # | text | Optional | Alphanumeric | "D1234567" | Any state |
+| VIN | text | Optional | 17 alphanumeric | "1HGBH41JXMN109186" | Full 17-digit VIN |
+
+**Validation Rule:** Client name is always provided, ensuring Page 2 has at least one field.
+
+**Section 3: Legal & Collaboration**
+
+| Field | Type | Required | Default | Notes |
+|-------|------|----------|---------|-------|
+| Perjury Checkbox | checkbox | Yes | Unchecked | See text below |
+| Collaborators | multi-select | No | Empty | Select from org members or invite via email |
+
+**Perjury Checkbox Text:**
+```
+☐ I declare under penalty of perjury that I am a person having proper
+  interest or an authorized representative therein as outlined above
+  and as required by California law.
+```
+
+**Collaborators Field:**
+- Multi-select dropdown showing organization members (via Clerk)
+- Option to invite external collaborators via email
+- Displays selected users as chips
+- Collaborators receive notifications on status changes
+
+#### Layout
+
+**Desktop (≥ 1024px):**
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│ ← Back to Dashboard    Fast Form                              │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│ ┌────────────────────────┐  ┌────────────────────────┐       │
+│ │ Section 1: Page 1 Info │  │ Section 2: Verification│       │
+│ ├────────────────────────┤  ├────────────────────────┤       │
+│ │ Report Number *        │  │ Client Full Name *     │       │
+│ │ [__________________]   │  │ [__________________]   │       │
+│ │                        │  │                        │       │
+│ │ Crash Date *           │  │ License Plate          │       │
+│ │ [__________________]   │  │ [__________________]   │       │
+│ │                        │  │                        │       │
+│ │ Crash Time *           │  │ Driver License #       │       │
+│ │ [__________________]   │  │ [__________________]   │       │
+│ │                        │  │                        │       │
+│ │ Officer ID *           │  │ VIN                    │       │
+│ │ [__________________]   │  │ [__________________]   │       │
+│ │                        │  │                        │       │
+│ │ NCIC (auto)            │  │                        │       │
+│ │ [9465] (read-only)     │  │                        │       │
+│ └────────────────────────┘  └────────────────────────┘       │
+│                                                               │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │ Section 3: Legal & Collaboration                       │   │
+│ ├────────────────────────────────────────────────────────┤   │
+│ │ ☐ I declare under penalty of perjury that I am a      │   │
+│ │   person having proper interest or an authorized       │   │
+│ │   representative... (required)                         │   │
+│ │                                                        │   │
+│ │ Collaborators (optional)                               │   │
+│ │ [Select team members...              ▼]               │   │
+│ │ 🏷️ john@lawfirm.com  🏷️ sarah@lawfirm.com            │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                               │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │         [      Submit Fast Form       ]                │   │
+│ │                                                        │   │
+│ │         Use Standard Flow instead                      │   │
+│ └────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**Mobile (< 768px):**
+
+```
+┌─────────────────────────┐
+│ ← Back   Fast Form      │
+├─────────────────────────┤
+│ Page 1 Portal Info      │
+│                         │
+│ Report Number *         │
+│ [___________________]   │
+│                         │
+│ Crash Date *            │
+│ [___________________]   │
+│                         │
+│ Crash Time *            │
+│ [___________________]   │
+│                         │
+│ Officer ID *            │
+│ [___________________]   │
+│                         │
+│ NCIC (auto)             │
+│ [9465] (read-only)      │
+│                         │
+├─────────────────────────┤
+│ Page 2 Verification     │
+│                         │
+│ Client Full Name *      │
+│ [___________________]   │
+│                         │
+│ License Plate           │
+│ [___________________]   │
+│                         │
+│ Driver License #        │
+│ [___________________]   │
+│                         │
+│ VIN                     │
+│ [___________________]   │
+│                         │
+├─────────────────────────┤
+│ Legal & Collaboration   │
+│                         │
+│ ☐ I declare under       │
+│   penalty of perjury... │
+│   (required)            │
+│                         │
+│ Collaborators           │
+│ [Select...         ▼]   │
+│                         │
+├─────────────────────────┤
+│ [  Submit Fast Form  ]  │
+│                         │
+│ Use Standard Flow       │
+└─────────────────────────┘
+```
+
+#### Responsive Behavior
+
+| Breakpoint | Layout | Input Height | Font Size | Grid |
+|------------|--------|--------------|-----------|------|
+| Mobile (< 768px) | Stacked sections | 48px | 16px | 1 column |
+| Desktop (≥ 1024px) | 2-column for Sections 1+2 | 40px | 14px | 2 columns |
+
+#### Validation
+
+**Real-time Validation (on blur):**
+- Report Number format check
+- Crash Date not in future
+- Crash Time valid range (0000-2359)
+- Officer ID 6 digits starting with 0
+- NCIC auto-derived and displayed
+
+**Submit Validation:**
+- All Page 1 fields required
+- Client Full Name required (ensures ≥1 Page 2 field)
+- Perjury checkbox must be checked
+- Collaborators optional
+
+**Error Display:**
+- Inline errors below each field
+- Red border on invalid inputs
+- Scroll to first error on submit
+
+#### Submission Flow
+
+**Step 1: Form Submit**
+- Validate all fields
+- Check perjury checkbox
+- Disable submit button
+- Show loading state
+
+**Step 2: Wrapper Execution**
+```
+┌─────────────────────────────────────────┐
+│  Running CHP automation...              │
+│  ████████████░░░░░░░░░░░░░░░░░ 60%      │
+│  Checking report availability...        │
+└─────────────────────────────────────────┘
+```
+
+**Step 3a: Success (95% of cases)**
+- Wrapper returns FULL_REPORT or FACE_PAGE
+- Redirect to `/law/jobs/{newJobId}`
+- Show success toast: "Report request submitted! Checking CHP portal..."
+- Job status: `AUTOMATION_RUNNING` → result status
+
+**Step 3b: Failure (5% of cases)**
+- Wrapper returns PAGE2_BLOCKED (verification failed)
+- Show modal immediately:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  We Need Your Help                                      │
+├─────────────────────────────────────────────────────────┤
+│  The CHP portal couldn't verify the report with the     │
+│  information provided. We'll need your help to obtain   │
+│  this report manually.                                  │
+│                                                         │
+│  Please upload your signed "Authorization to Obtain     │
+│  Governmental Agency Records" form.                     │
+│                                                         │
+│  ┌────────────────────────────────────────────────┐    │
+│  │  [📄 Upload Authorization Document]            │    │
+│  └────────────────────────────────────────────────┘    │
+│                                                         │
+│  [ Skip for Now ]           [ Upload & Continue ]      │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Step 3b Continued: After Upload**
+- Job created with `escalationData.authorizationToken`
+- Job status: `NEEDS_IN_PERSON_PICKUP`
+- Staff can download authorization packet (auth PDF + auto-generated cover letter)
+- Redirect to `/law/jobs/{newJobId}`
+
+#### Actions
+
+**Primary Action:** "Submit Fast Form"
+- Full-width button
+- Desktop: Height 40px, gradient background
+- Mobile: Height 48px (touch target)
+- Disabled until perjury checkbox checked
+
+**Secondary Action:** "Use Standard Flow" (text link)
+- Routes to `/law/jobs/new` (legacy 2-field form)
+- For edge cases where law firm doesn't have all Page 1 data
+- Smaller text, underlined link style
+
+#### Visual Design
+
+**Form Container:**
+- Glass-morphism card with backdrop blur
+- Border: `border-slate-700/50`
+- Background: `bg-slate-800/50`
+- Padding: 32px desktop, 20px mobile
+
+**Section Dividers:**
+- Visual separation between sections
+- Desktop: Horizontal divider between Section 3 and actions
+- Mobile: Background color alternation for section separation
+
+**Input Fields:**
+- Focus state: Teal ring (`ring-teal-500`)
+- Valid state: Subtle green glow
+- Error state: Red border + error text below
+- Auto-filled NCIC: Lighter background to indicate read-only
+
+**Perjury Checkbox:**
+- Larger checkbox (20px × 20px)
+- Wrapping text (not truncated)
+- Error state if unchecked on submit
+
+**Collaborators Field:**
+- Dropdown with search
+- Selected users shown as chips with remove (×) button
+- "Add collaborator" button to invite via email
+
+#### Feature Flags (V2.5.0+)
+
+```typescript
+const ENABLE_FAST_FORM = process.env.NEXT_PUBLIC_ENABLE_FAST_FORM === 'true';
+const ENABLE_WRAPPER = process.env.NEXT_PUBLIC_ENABLE_WRAPPER === 'true';
+```
+
+If `ENABLE_FAST_FORM=false`:
+- Route `/law/jobs/new-fast` redirects to `/law/jobs/new`
+- "New Request" button on dashboard routes to `/law/jobs/new`
+
+If `ENABLE_WRAPPER=false`:
+- Fast Form still collects all fields
+- Submit creates job with `submittedVia: 'fast_form'`
+- No wrapper execution (staff runs manually)
+
+#### Accessibility
+
+- WCAG AAA touch targets (48px mobile)
+- Form labels with `for` attribute
+- ARIA labels on all inputs
+- Error announcements via `aria-live`
+- Keyboard navigation: Tab through all fields
+- Perjury checkbox reachable via keyboard (Space to toggle)
+- High contrast mode support
+- Focus visible indicators
+
+---
+
 ## Staff Screens
 
 ### Screen 5: Staff Job Queue (`/staff`)
@@ -363,14 +679,26 @@ const publicStatus = getPublicStatus(job.internalStatus);
 
 #### Content
 
+**Firm Filter Dropdown (V2.5.0+):**
+- Dropdown at top of page: "All Firms" / "Law Brothers" / "Johnson Law" / etc.
+- Shows organization names from Clerk
+- Updates all stats cards and job list based on selection
+- Default: "All Firms" (no filter)
+
 **Stats Cards Section (4 metrics):**
 
 | Card | Count | Color | Filter |
 |------|-------|-------|--------|
-| Total Jobs | All jobs | Default | All |
+| Total Jobs | All jobs (filtered by firm if selected) | Default | All |
 | Needs Action | Jobs requiring staff action | Amber | NEEDS_MORE_INFO, NEEDS_CALL, READY_FOR_AUTOMATION |
 | In Progress | Jobs being processed | Blue | CALL_IN_PROGRESS, AUTOMATION_RUNNING, WAITING_FOR_FULL_REPORT |
 | Completed | Finished jobs | Green | COMPLETED_FULL_REPORT, COMPLETED_MANUAL |
+
+**Escalated Requests by Firm Card (V2.5.2+):**
+- Shows breakdown of escalated requests per firm
+- Format: "Law Brothers: 5 escalated", "Johnson Law: 2 escalated"
+- Only shows firms with active escalations
+- Click firm name → filters queue to that firm
 
 **Filter Tabs:**
 - All
@@ -380,8 +708,8 @@ const publicStatus = getPublicStatus(job.internalStatus);
 - Cancelled
 
 **Job List:**
-- Mobile: MobileJobCard components (stacked)
-- Desktop: Full table with columns
+- Mobile: MobileJobCard components (stacked) **(V2.5.0+: Show firm name badge below job ID)**
+- Desktop: Full table with columns **(V2.5.0+: Add "Organization" column)**
 
 #### Layout - Mobile
 
@@ -442,7 +770,7 @@ const publicStatus = getPublicStatus(job.internalStatus);
 |--------|---------|
 | Client | Client name |
 | Report # | Report number |
-| Law Firm | Law firm name |
+| Organization | Organization name **(V2.5.0+: from Clerk)** |
 | Internal Status | Badge with internal status |
 | Public Status | Badge with public status |
 | Created | Relative time |
@@ -744,6 +1072,39 @@ Message: "Full CHP crash report downloaded successfully."
 ---
 
 ### Card 7: Manual Completion
+
+**Authorization Packet Download (V2.5.2+):**
+
+If job has escalation data with authorization uploaded:
+```
+┌─────────────────────────────────────────────────────────┐
+│ Authorization Packet Available                          │
+│                                                         │
+│ [📄 Download Authorization Packet]                     │
+│                                                         │
+│ Downloads 2-file bundle:                                │
+│ • Authorization PDF (uploaded by law firm)              │
+│ • Cover letter (auto-generated with staff name)         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Authorization Packet Contents:**
+- **File 1:** Original authorization PDF uploaded by law firm
+- **File 2:** Auto-generated cover letter with:
+  - Header: "Info: InstaTCR on behalf of {law firm name}"
+  - Section: "CRASH REPORT REQUEST RECEIVED"
+  - Client details: name, report number, crash date
+  - Authorization status: "Uploaded"
+  - Cover letter body (template)
+  - **Authorized person for pickup:** {Staff's real name from Clerk user}
+
+**Behavior:**
+- Button enabled only if `job.escalationData.authorizationToken` exists
+- On click: Generate cover letter PDF, merge with authorization PDF
+- Download single file: `{jobId}_authorization_packet.pdf`
+- Staff name auto-filled from Clerk user context (`user.firstName + ' ' + user.lastName`)
+
+---
 
 **File Type Selection:**
 - Radio buttons: "Face Page" or "Full Report"

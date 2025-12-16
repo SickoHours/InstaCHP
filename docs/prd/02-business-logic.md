@@ -1,8 +1,8 @@
 # Business Logic
 
 **Document:** InstaTCR Business Logic & User Flows
-**Version:** 2.1 (Updated for V1.2.0)
-**Last Updated:** 2025-12-12
+**Version:** 2.5 (Updated for V2.5.0 - Fast Form, Organizations, Collaborators)
+**Last Updated:** 2025-12-15
 **Audience:** All engineers, product designers, QA
 
 ---
@@ -11,6 +11,7 @@
 - [3. Complete User Flows](#3-complete-user-flows)
 - [4. Status System Architecture](#4-status-system-architecture)
 - [5. Data Model Reference](#5-data-model-reference)
+- [6. Organizations & Authentication](#6-organizations--authentication)
 
 ---
 
@@ -351,6 +352,207 @@ Timeline   ┌─────┴─────┬──────────
 
 ---
 
+### Flow 8: Fast Form (V2.5.0+) — PRIMARY ENTRY POINT
+
+**When:** Law firm has all crash details upfront (72-hour window use case).
+
+**Purpose:** Accelerated entry for time-sensitive cases where accident just occurred (same day or within 72 hours). **99% of the time, this will result in a face page**, which activates the auto-checker — the most critical feature of the application.
+
+**Actors:** Law Firm User, CHP Wrapper
+
+**Steps:**
+
+1. **Law firm accesses Fast Form**
+   - Navigates to `/law/jobs/new-fast`
+   - Form shows 3 sections: Page 1 Portal Information, Page 2 Verification, Legal & Collaboration
+
+2. **Law firm fills Page 1 (all required)**
+   - Report Number: "9465-2025-02802"
+   - Crash Date: "12/15/2025"
+   - Crash Time: "1430" (2:30 PM)
+   - Officer ID: "012345"
+   - NCIC: auto-derived "9465" (read-only)
+
+3. **Law firm fills Page 2 (at least one required)**
+   - Client Full Name: "John Doe" (always present)
+   - License Plate (optional): "8ABC123"
+   - Driver License (optional): "D1234567"
+   - VIN (optional): "1HGBH41JXMN109186"
+
+4. **Law firm fills Legal & Collaboration**
+   - **Perjury Checkbox (required):** ☑ "I declare under penalty of perjury..."
+   - **Collaborators (optional):** Selects colleague "Jane Smith" from organization
+
+5. **Law firm submits**
+   - Clicks "Submit Fast Form"
+   - Loading state: "Running wrapper... 8-13 seconds"
+   - Wrapper runs with all provided data
+
+6. **Result A: Success - Face Page (65% of cases)**
+   - Wrapper returns: `FACE_PAGE`
+   - Job created with status: `FACE_PAGE_ONLY`
+   - Face page downloaded and stored
+   - Law firm sees: "We've received a preliminary copy (face page)"
+   - Auto-checker unlocked and offered
+   - Redirected to job detail at `/law/jobs/{jobId}`
+
+7. **Result B: Success - Full Report (30% of cases)**
+   - Wrapper returns: `FULL_REPORT`
+   - Job created with status: `COMPLETED_FULL_REPORT`
+   - Full report downloaded and stored
+   - Law firm sees: "Your report is ready to download"
+   - Redirected to job detail with download button
+
+8. **Result C: Failure - Auto-escalation (5% of cases)**
+   - Wrapper returns: `PAGE2_BLOCKED`
+   - Law firm has NO Page 2 verification info (only client name)
+   - **Auto-escalation triggered immediately**
+   - Modal appears: "We need your help"
+   - Prompts: "Please upload your Authorization to Obtain Governmental Agency Records and Reports"
+   - See Flow 9 for auto-escalation details
+
+**Key Value:**
+- 99% success rate (face page or full report)
+- Immediate access to auto-checker for face pages
+- Real-time tracking once face page uploaded
+- Collaborators automatically notified of all updates
+
+**Timeline:** ~10-15 seconds total (wrapper execution time)
+
+---
+
+### Flow 9: Fast Form Failure + Auto-escalation (V2.5.0+)
+
+**When:** Fast Form wrapper cannot surpass Page 2 verification (law firm has no verification info).
+
+**Purpose:** Gracefully handle cases where client is a passenger OR driver but law firm has zero Page 2 data.
+
+**Actors:** Law Firm User, InstaTCR Staff
+
+**High Possibility of Failure If:**
+- Client is a **passenger** (passenger name won't match verification on driver's report)
+- Law firm only has client full name, nothing else
+
+**Steps:**
+
+1. **Wrapper fails Page 2**
+   - Wrapper successfully enters Page 1 (report found)
+   - Face page hint detected (alert on portal screen)
+   - Page 2 verification fails (name doesn't match, no other identifiers)
+   - Wrapper returns: `PAGE2_BLOCKED` with `reportTypeHint: 'FACE_PAGE'`
+
+2. **Auto-escalation triggered**
+   - Status set to: `NEEDS_IN_PERSON_PICKUP`
+   - Escalation reason: `auto_exhausted`
+   - Event: `escalation_auto_triggered`
+
+3. **Modal shown immediately**
+   - Title: "We need your help"
+   - Message: "To complete your request, please upload your Authorization to Obtain Governmental Agency Records and Reports."
+   - File upload field (PDF only)
+   - "Submit" button
+
+4. **Law firm uploads authorization**
+   - Selects authorization PDF
+   - Optionally updates client full name (for better UI + invoicing)
+   - Clicks "Submit"
+
+5. **Job created with escalation**
+   - Job created with all Fast Form data
+   - Authorization document uploaded: `authorizationDocumentToken` set
+   - Escalation status: `authorization_received`
+   - Event: `authorization_uploaded`
+   - Notification sent to staff: "Authorization Uploaded"
+
+6. **Staff picks up**
+   - Job appears in Staff Queue under "Escalated" tab
+   - Shows as **Ready to Claim** (Tier 1 - auth uploaded, unclaimed)
+   - Staff claims job → Downloads authorization packet (auto-generated cover letter + auth)
+   - Staff schedules CHP office pickup
+   - Staff manually uploads face page or full report
+
+**Result:**
+- Job in system with full context (Fast Form data + authorization)
+- Staff can proceed with manual pickup
+- Law firm receives notifications throughout process
+
+---
+
+### Flow 10: Report Checker via Face Page Upload (V2.5.0+)
+
+**When:** Law firm already has a face page (from another source) and wants to check if full report is ready.
+
+**Purpose:** Alternative entry method for law firms who obtained face page elsewhere.
+
+**Actors:** Law Firm User, CHP Wrapper (in check-only mode)
+
+**Steps:**
+
+1. **Law firm accesses Report Checker**
+   - Navigates to `/law/report-checker`
+   - Sees simple upload interface
+
+2. **Law firm uploads face page**
+   - Selects face page PDF they already have
+   - Clicks "Check if Report Ready"
+
+3. **System scans face page**
+   - OCR extracts report number and client name
+   - Validates extracted data
+   - Shows preview: "Report #9465-2025-02802 for John Doe"
+
+4. **Law firm confirms and checks**
+   - Clicks "Yes, check this report"
+   - Loading state: "Checking CHP portal..."
+
+5. **System runs wrapper in check-only mode**
+   - Wrapper uses extracted data
+   - Mode: `check_only` (doesn't download again, just checks status)
+
+6. **Result A: Full report ready + not in system**
+   - Wrapper returns: `FULL_REPORT` available
+   - System checks: Report number + client name NOT in jobs database
+   - **Job created automatically**
+   - Status: `COMPLETED_FULL_REPORT`
+   - Tagged: `submittedVia: 'report_checker'`
+   - Full report downloaded
+   - Law firm sees: "Good news! The full report is ready. We've created a job and downloaded it for you."
+   - Redirected to job detail with download button
+
+7. **Result B: Full report ready + already in system**
+   - Wrapper returns: `FULL_REPORT` available
+   - System checks: Job already exists for this report
+   - **Existing job updated** with full report
+   - Status updated to: `COMPLETED_FULL_REPORT`
+   - Law firm sees: "The full report is now ready for your existing request."
+   - Redirected to existing job detail
+
+8. **Result C: Still only face page**
+   - Wrapper returns: `FACE_PAGE` (not ready yet)
+   - Law firm sees: "The full report isn't ready yet. Check back later, or submit a full request to enable auto-checker."
+   - Option to create full job with auto-checker
+
+**Key Value:**
+- Law firms can quickly check reports they already have
+- Auto-creates jobs if full report ready
+- No duplicate jobs (checks existing first)
+- Seamless integration with existing flow
+
+---
+
+### Update to Flow 1: Standard Flow Button
+
+**NEW (V2.5.0+):** On the Fast Form page, there's a secondary link/button: **"Use Standard Flow"**
+
+This routes to `/law/jobs/new` (the original 2-field form) for law firms who:
+- Don't have all crash details upfront
+- Prefer the step-by-step wizard approach
+- Want to trigger driver/passenger selection flow
+
+All existing Flow 1 logic remains unchanged. Standard Flow is now the **legacy entry method**, while Fast Form is the **primary entry point**.
+
+---
+
 ## 4. Status System Architecture
 
 ### Status Design Philosophy
@@ -517,6 +719,19 @@ interface Job {
   // Voice AI caller integration
   officeAttemptIndex?: number;      // Current office index for hopping
   officeAttempts?: OfficeAttempt[]; // History of VAPI call attempts
+
+  // ========== V2.5 FAST FORM & ORGANIZATIONS ==========
+  // Multi-tenant + Fast Form + Collaborators
+  organizationId?: string;          // Clerk organization ID (V2.5.1+)
+  organizationName?: string;        // Organization display name (V2.5.1+)
+  collaboratorIds?: string[];       // Clerk user IDs of collaborators (V2.5.0+)
+  submittedVia?: 'fast_form' | 'standard_flow' | 'report_checker' | 'fatal_form'; // Entry method (V2.5.0+)
+  fastFormData?: FastFormData;      // Fast Form submission metadata (V2.5.0+)
+  perjuryCheckboxAcknowledged?: boolean; // Required checkbox checked (V2.5.0+)
+
+  // ========== V2.5 ESCALATION ENHANCEMENTS ==========
+  // Staff authorization packet generation
+  escalationData?: EscalationData;  // Escalation workflow tracking (V1.6.0+, enhanced V2.5.2+)
 }
 ```
 
@@ -753,6 +968,187 @@ Events with `isUserFacing: true` appear in the law firm chat timeline:
 | `wrapper_completed` with FULL | "Your report is ready to download" |
 | `status_change` to NEEDS_INFO | "We need a bit more information to continue" |
 | `completed` | "Your report is ready to download" |
+
+---
+
+### Fast Form Data (V2.5.0+)
+
+```typescript
+interface FastFormData {
+  page1Complete: boolean;           // All Page 1 fields filled
+  page2FieldsProvided: string[];    // Which Page 2 fields were provided: ['name', 'plate', 'driverLicense', 'vin']
+  submittedAt: number;              // Timestamp of submission
+}
+```
+
+---
+
+### Escalation Data (V1.6.0+, Enhanced V2.5.2+)
+
+```typescript
+interface EscalationData {
+  // V1.6.0+ Core escalation tracking
+  status: EscalationStatus;         // 'pending_authorization' | 'authorization_received' | 'claimed' | 'pickup_scheduled' | 'completed'
+  escalatedAt: number;              // When escalated
+  escalationReason: EscalationReason; // 'manual' | 'auto_exhausted' | 'fatal_report'
+
+  // Authorization tracking
+  authorizationRequested?: boolean;
+  authorizationRequestedAt?: number;
+  authorizationDocumentToken?: string; // Convex storage ID
+  authorizationUploadedAt?: number;
+
+  // Staff claiming
+  claimedBy?: string;               // Staff member name
+  claimedAt?: number;
+
+  // Pickup scheduling
+  scheduledPickupTime?: PickupTimeSlot; // '9am' | 'afternoon' | '4pm'
+  scheduledPickupDate?: string;     // 'YYYY-MM-DD' format
+  pickupNotes?: string;
+
+  // Completion
+  completedAt?: number;
+  completedBy?: string;
+
+  // Resume flow (V1.6.1+)
+  guaranteedName?: string;          // Name from face page (unlocks auto-checker)
+
+  // V2.5.2+ Authorization packet generation
+  authPacketGeneratedBy?: string;   // Staff member's full name
+  authPacketGeneratedAt?: number;   // When cover letter was generated
+  authDocumentAcknowledged?: boolean; // Staff downloaded and acknowledged
+  authDocumentAcknowledgedAt?: number;
+}
+
+type EscalationStatus = 'pending_authorization' | 'authorization_received' | 'claimed' | 'pickup_scheduled' | 'completed';
+type EscalationReason = 'manual' | 'auto_exhausted' | 'fatal_report';
+type PickupTimeSlot = '9am' | 'afternoon' | '4pm';
+```
+
+---
+
+## 6. Organizations & Authentication
+
+### Organization Model (V2.5.1+)
+
+Multi-tenant organization structure using Clerk.
+
+```typescript
+interface Organization {
+  id: string;                       // Clerk org ID
+  name: string;                     // Display name: "Law Brothers"
+  emailDomain: string;              // Domain: "lawbrothers.com"
+  createdAt: number;                // Unix timestamp
+  memberCount: number;              // Total users in org
+
+  // Admin-configured staff assignments (V2.5.2+)
+  staffAssignments?: {
+    firmId: string;                 // Organization ID
+    assignedStaffIds: string[];     // Staff user IDs
+    jobTypes: ('escalated' | 'standard')[];
+  }[];
+}
+```
+
+**Organization Auto-creation:**
+- User signs up with email `john@lawbrothers.com`
+- System extracts domain: `lawbrothers.com`
+- If org doesn't exist for domain → Create "Law Brothers" org
+- If org exists → Add user to existing org
+- Set `user.organizationId` and `user.organizationName`
+
+---
+
+### User Model (V2.5.1+)
+
+User/Staff model with Clerk authentication.
+
+```typescript
+interface User {
+  id: string;                       // Clerk user ID
+  email: string;                    // User email
+  firstName: string;                // First name
+  lastName: string;                 // Last name
+  organizationId: string;           // Clerk org ID
+  role: 'law_firm' | 'staff' | 'admin_staff';
+
+  // Staff-specific fields
+  assignedFirms?: string[];         // Org IDs staff manages (for staff/admin_staff)
+  assignedJobTypes?: ('escalated' | 'standard')[]; // Job types staff handles
+}
+```
+
+**Clerk Public Metadata:**
+```typescript
+interface ClerkPublicMetadata {
+  role: 'law_firm' | 'staff' | 'admin_staff';
+  assignedFirms?: string[];         // Staff only
+  assignedJobTypes?: string[];      // Staff only
+}
+```
+
+**Role Permissions:**
+
+| Role | Can Do |
+|------|--------|
+| **law_firm** | Submit requests, view own org's jobs, add collaborators, download reports |
+| **staff** | Claim jobs, schedule pickups, upload reports, assign jobs to other staff, message colleagues |
+| **admin_staff** | All staff permissions + assign staff to firms, assign job types, see all messages |
+
+---
+
+### Collaborator Settings (V2.5.0+)
+
+Notification preferences for collaborators on jobs.
+
+```typescript
+interface CollaboratorSettings {
+  userId: string;                   // Clerk user ID of collaborator
+  jobId: string;                    // Job ID
+  notifyOn: ('status_change' | 'report_ready' | 'escalation' | 'all')[];
+  addedBy: string;                  // User ID who added them
+  addedAt: number;                  // Timestamp
+}
+```
+
+**Default Behavior:**
+- Collaborators receive all major notifications (status changes, report ready, escalation)
+- Can be added during Fast Form or Standard Flow submission
+- Can invite new users via email (generates Clerk invite link)
+- Invited users auto-added as collaborator once they join org
+
+---
+
+### Wrapper Integration Updates (V2.5.0+)
+
+**Face Page Detection Signal:**
+
+When Playwright worker successfully enters Page 1 portal information, the CHP portal shows an **alert** if the report is a **face page**. No alert is shown if it's a **full report**.
+
+```typescript
+interface WrapperResponse {
+  outcome: 'FULL_REPORT' | 'FACE_PAGE' | 'PAGE1_FAILED' | 'PAGE2_BLOCKED' | 'PORTAL_ERROR';
+  reportTypeHint: 'FACE_PAGE' | 'FULL_REPORT' | 'UNKNOWN';  // ← NEW: From alert detection
+  artifacts?: {
+    facePageUrl?: string;
+    fullReportUrl?: string;
+  };
+  publicSafeMessageKey?: string;
+  debugDetails?: {
+    page1Success: boolean;
+    page2FieldsTried: ('name' | 'plate' | 'driverLicense' | 'vin')[];
+    page2Results: Record<string, 'success' | 'failed'>;
+    alertDetected: boolean;         // ← NEW: Whether face page alert was shown on portal
+  };
+}
+```
+
+**Signal Available Even on Page 2 Failure:**
+- If wrapper can't surpass Page 2 (no verification info)
+- Face page hint still captured from Page 1 success screen
+- Helpful for escalation context: "We know it's a face page, even though we couldn't download it"
+- Never shows raw alert text to law firms (UI mapping only)
 
 ---
 

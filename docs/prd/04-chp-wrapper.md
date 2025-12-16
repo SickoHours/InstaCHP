@@ -1,7 +1,7 @@
 ---
 title: CHP Wrapper Specification
-version: 2.0
-last_updated: 2025-12-11
+version: 2.5
+last_updated: 2025-12-15
 audience: Backend engineers, DevOps, automation specialists
 ---
 
@@ -10,14 +10,15 @@ audience: Backend engineers, DevOps, automation specialists
 ## Document Metadata
 
 - **Title:** CHP Wrapper Specification
-- **Version:** 2.0
-- **Last Updated:** 2025-12-11
+- **Version:** 2.5
+- **Last Updated:** 2025-12-15
 - **Target Audience:** Backend engineers, DevOps, automation specialists
 - **Part of:** InstaTCR Documentation Suite (Part 4)
 
 ## Table of Contents
 
 1. [CHP Wrapper Architecture](#8-chp-wrapper-architecture)
+   - [Face Page Detection (V2.5.0+)](#face-page-detection-v250)
 2. [CHP Wrapper Behavior Patterns](#9-chp-wrapper-behavior-patterns)
    - [Pattern 1: Successful Full Report Download](#pattern-1-successful-full-report-download)
    - [Pattern 2: Face Page Only](#pattern-2-face-page-only-most-common)
@@ -110,6 +111,10 @@ interface WrapperInput {
 
   // Metadata
   jobId: string;               // For callback/tracking
+
+  // V2.5.0+ - Fast Form support
+  submittedVia?: 'fast_form' | 'standard_flow' | 'report_checker';
+  mode?: 'full_run' | 'check_only';  // check_only for auto-checker
 }
 ```
 
@@ -122,6 +127,15 @@ interface WrapperOutput {
   downloadToken?: string;      // If PDF available
   journeyLog: JourneyStep[];   // Step-by-step log
   duration: number;            // Execution time in ms
+
+  // V2.5.0+ - Face page detection signal
+  reportTypeHint?: 'FACE_PAGE' | 'FULL_REPORT' | 'UNKNOWN';
+  debugDetails?: {
+    page1Success: boolean;
+    page2FieldsTried: ('name' | 'plate' | 'driverLicense' | 'vin')[];
+    page2Results: Record<string, 'success' | 'failed'>;
+    alertDetected: boolean;    // Whether face page alert was shown on portal
+  };
 }
 ```
 
@@ -157,6 +171,101 @@ POST https://chp-wrapper.fly.dev/api/run-chp
   "resultType": "FULL",
   "message": "Full CHP crash report downloaded successfully.",
   "downloadToken": "storage_xyz789",
+  "journeyLog": [...],
+  "duration": 11234,
+  "reportTypeHint": "FULL_REPORT",
+  "debugDetails": {
+    "page1Success": true,
+    "page2FieldsTried": ["name"],
+    "page2Results": { "name": "success" },
+    "alertDetected": false
+  }
+}
+```
+
+---
+
+### Face Page Detection (V2.5.0+)
+
+**Overview:**
+
+The CHP portal displays a visual alert when Page 1 succeeds but the result is a face page (not a full report). This alert appears before Page 2 verification and provides important context for the wrapper.
+
+**Alert Detection Logic:**
+
+When the Playwright worker completes Page 1 successfully, it checks for the presence of an alert element on the success screen:
+
+```typescript
+// After Page 1 submission succeeds
+const alertElement = await page.locator('[role="alert"]').first();
+const alertText = await alertElement.textContent();
+
+if (alertText && alertText.includes('face page')) {
+  // Alert detected: This is a face page
+  reportTypeHint = 'FACE_PAGE';
+  debugDetails.alertDetected = true;
+} else {
+  // No alert: This is likely a full report
+  reportTypeHint = 'FULL_REPORT';
+  debugDetails.alertDetected = false;
+}
+```
+
+**Signal Availability:**
+
+- The `reportTypeHint` is available **even if Page 2 fails**
+- This helps provide context during auto-escalation flows
+- Frontend can show: "Portal indicated this is a face page"
+
+**Use Cases:**
+
+1. **Fast Form Success Flow:**
+   - Page 1 succeeds → Check alert
+   - Alert present → `reportTypeHint: 'FACE_PAGE'`
+   - Page 2 succeeds → Download face page
+   - Frontend shows: "Face page received, full report may take 24-72 hours"
+
+2. **Fast Form Failure Flow (Auto-escalation):**
+   - Page 1 succeeds → Check alert → `reportTypeHint: 'FACE_PAGE'`
+   - Page 2 blocked (no verification info matches)
+   - Result: `PAGE2_BLOCKED` + `reportTypeHint: 'FACE_PAGE'`
+   - Frontend shows: "Unable to verify. Portal indicates face page available."
+   - Law firm uploads authorization for manual pickup
+
+3. **Auto-Checker Context:**
+   - Job has `reportTypeHint: 'FACE_PAGE'` from initial wrapper run
+   - Auto-checker knows to look for full report upgrade
+   - Can prioritize checking jobs that started as face pages
+
+**Alert Text Examples:**
+
+The CHP portal may use various wordings:
+- "This is a face page"
+- "Face page only"
+- "Preliminary report available"
+- "Full report pending"
+
+**Implementation Notes:**
+
+- Use flexible text matching (case-insensitive, partial match)
+- If alert element not found, default to `'UNKNOWN'`
+- Never block wrapper execution on alert detection failure
+- Always attempt Page 2 verification regardless of alert
+
+**Response Example with Alert Detection:**
+
+```json
+{
+  "resultType": "FACE_PAGE",
+  "message": "CHP report found (Face Page only). Full report not yet available.",
+  "downloadToken": "storage_abc123",
+  "reportTypeHint": "FACE_PAGE",
+  "debugDetails": {
+    "page1Success": true,
+    "page2FieldsTried": ["name", "plate"],
+    "page2Results": { "name": "success", "plate": "not_tried" },
+    "alertDetected": true
+  },
   "journeyLog": [...],
   "duration": 11234
 }

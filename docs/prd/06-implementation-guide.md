@@ -1,7 +1,7 @@
 ---
 title: "InstaTCR Implementation Guide"
-version: "2.2"
-last_updated: "2025-12-13"
+version: "2.5"
+last_updated: "2025-12-15"
 audience: "All engineers, QA, DevOps"
 document_type: "Technical Reference & Implementation Strategy"
 ---
@@ -12,8 +12,8 @@ document_type: "Technical Reference & Implementation Strategy"
 
 This comprehensive guide consolidates Parts 6-9 of the InstaTCR Master PRD, providing implementation strategy, future integrations, technical reference, and appendices for all team members.
 
-**Document Status:** Complete technical reference for V1-V4+ development
-**Last Updated:** December 11, 2025
+**Document Status:** Updated with V2.5 Fast Form + Organizations integration
+**Last Updated:** December 15, 2025
 **Audience:** All engineers, QA, DevOps, and technical stakeholders
 
 ---
@@ -71,6 +71,17 @@ This comprehensive guide consolidates Parts 6-9 of the InstaTCR Master PRD, prov
   - NCIC
   - Officer ID
   - Page 2 Fields
+  - Fast Form Validation (V2.5.0+)
+- [20a. Clerk Integration Guide (V2.5.0+)](#clerk-integration-guide-v250)
+  - Clerk Setup
+  - Middleware Configuration
+  - Organization Auto-creation
+  - Public Metadata Schema
+  - Google Auth Configuration
+- [20b. Staff Authorization Packet Generation (V2.5.2+)](#staff-authorization-packet-generation-v252)
+  - PDF Generation
+  - Cover Letter Template
+  - PDF Merging
 - [21. Responsive Design Guidelines](#responsive-design-guidelines)
   - Mobile-First Philosophy
   - Breakpoints
@@ -1399,6 +1410,524 @@ function validateOfficerId(officerId: string): ValidationResult {
 | vin | At least one P2 field | 17 characters | Vehicle identification number |
 
 **Note:** At least ONE Page 2 field must be filled for CHP wrapper to run.
+
+---
+
+### Fast Form Validation (V2.5.0+)
+
+The Fast Form collects all Page 1 + Page 2 fields in a single form with additional legal requirements.
+
+| Field | Format | Required | Example | Error Message |
+|-------|--------|----------|---------|---------------|
+| **Page 1 Fields** |
+| Report Number | `9XXX-YYYY-ZZZZZ` | Yes | "9465-2025-02802" | "Format: 9XXX-YYYY-ZZZZZ" |
+| Crash Date | `MM/DD/YYYY` | Yes | "12/15/2025" | "Valid date required" |
+| Crash Time | `HHMM` (00:00-23:59) | Yes | "1430" | "24-hour format: HHMM" |
+| Officer ID | 6 digits, starts with 0 | Yes | "012345" | "6 digits starting with 0" |
+| NCIC | 4 digits, starts with 9 (auto) | No (auto-derived) | "9465" | N/A (read-only) |
+| **Page 2 Fields** |
+| Client Name | Min 2 chars | Yes | "John Doe" | "Name required" |
+| Plate | 2-8 alphanumeric | No | "8ABC123" | None (optional) |
+| Driver License | Alphanumeric | No | "D1234567" | None (optional) |
+| VIN | 17 alphanumeric | No | "1HGBH41JXMN109186" | None (optional) |
+| **Legal & Collaboration** |
+| Perjury Checkbox | Checked | Yes | ✓ | "You must acknowledge" |
+| Collaborators | Array of user IDs | No | `["user_123"]` | None (optional) |
+
+**Validation Logic:**
+
+```typescript
+function validateFastForm(form: FastFormState): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  // Page 1 validation
+  if (!form.reportNumber || !/^9\d{3}-\d{4}-\d{5}$/.test(form.reportNumber)) {
+    errors.reportNumber = "Format: 9XXX-YYYY-ZZZZZ";
+  }
+
+  if (!form.crashDate || new Date(form.crashDate) > new Date()) {
+    errors.crashDate = "Valid date required, not in future";
+  }
+
+  if (!form.crashTime || !/^\d{4}$/.test(form.crashTime)) {
+    errors.crashTime = "24-hour format: HHMM";
+  } else {
+    const hours = parseInt(form.crashTime.slice(0, 2));
+    const minutes = parseInt(form.crashTime.slice(2, 4));
+    if (hours > 23 || minutes > 59) {
+      errors.crashTime = "Invalid time range";
+    }
+  }
+
+  if (!form.officerId || !/^0\d{5}$/.test(form.officerId)) {
+    errors.officerId = "6 digits starting with 0";
+  }
+
+  // Page 2 validation (client name always required)
+  if (!form.clientFullName || form.clientFullName.length < 2) {
+    errors.clientFullName = "Name required (min 2 characters)";
+  }
+
+  // Perjury checkbox required
+  if (!form.perjuryChecked) {
+    errors.perjury = "You must acknowledge this statement";
+  }
+
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors
+  };
+}
+```
+
+**Auto-derivation:**
+
+```typescript
+// NCIC from Report Number
+const ncic = reportNumber.slice(0, 4); // "9465-2025-02802" → "9465"
+
+// Name splitting for wrapper
+const [firstName, ...lastNameParts] = clientFullName.split(' ');
+const lastName = lastNameParts.join(' '); // "John David Smith" → firstName: "John", lastName: "David Smith"
+```
+
+---
+
+## 20a. Clerk Integration Guide (V2.5.0+)
+
+### Overview
+
+InstaTCR uses [Clerk](https://clerk.com) for authentication and organization management. Clerk provides:
+- Google OAuth authentication
+- Organization management (multi-tenancy by email domain)
+- User roles and permissions
+- Sign-in/sign-up pages with customizable branding
+
+### Clerk Setup
+
+**1. Install Clerk SDK:**
+
+```bash
+npm install @clerk/nextjs
+```
+
+**2. Configure Environment Variables:**
+
+```bash
+# .env.local
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# URLs
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/law
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/law
+```
+
+**3. Wrap App with ClerkProvider:**
+
+```typescript
+// src/app/layout.tsx
+import { ClerkProvider } from '@clerk/nextjs';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
+  );
+}
+```
+
+### Middleware Configuration
+
+Protect routes based on user roles:
+
+```typescript
+// src/middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+
+const isLawFirmRoute = createRouteMatcher(['/law(.*)']);
+const isStaffRoute = createRouteMatcher(['/staff(.*)']);
+
+export default clerkMiddleware(async (auth, req) => {
+  const { userId, sessionClaims } = await auth();
+
+  // Require authentication for protected routes
+  if (isLawFirmRoute(req) || isStaffRoute(req)) {
+    if (!userId) {
+      return NextResponse.redirect(new URL('/sign-in', req.url));
+    }
+
+    const role = sessionClaims?.metadata?.role as string;
+
+    // Law firm routes: require 'law_firm' role
+    if (isLawFirmRoute(req) && role !== 'law_firm') {
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+
+    // Staff routes: require 'staff' or 'admin_staff' role
+    if (isStaffRoute(req) && !['staff', 'admin_staff'].includes(role)) {
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+  }
+
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+};
+```
+
+### Organization Auto-creation
+
+When a user signs up, automatically create or join an organization based on their email domain:
+
+```typescript
+// src/app/api/webhooks/clerk/route.ts
+import { Webhook } from 'svix';
+import { headers } from 'next/headers';
+
+export async function POST(req: Request) {
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
+  const headerPayload = headers();
+  const svix_id = headerPayload.get('svix-id');
+  const svix_timestamp = headerPayload.get('svix-timestamp');
+  const svix_signature = headerPayload.get('svix-signature');
+
+  const body = await req.text();
+  const wh = new Webhook(WEBHOOK_SECRET);
+
+  let evt;
+  try {
+    evt = wh.verify(body, {
+      'svix-id': svix_id!,
+      'svix-timestamp': svix_timestamp!,
+      'svix-signature': svix_signature!,
+    });
+  } catch (err) {
+    return new Response('Webhook verification failed', { status: 400 });
+  }
+
+  if (evt.type === 'user.created') {
+    const { id, email_addresses, first_name, last_name } = evt.data;
+    const email = email_addresses[0].email_address;
+    const domain = email.split('@')[1]; // "john@lawfirm.com" → "lawfirm.com"
+
+    // Check if organization exists for this domain
+    const existingOrg = await clerkClient.organizations.getOrganizationList({
+      query: domain,
+    });
+
+    let organizationId;
+    if (existingOrg.data.length > 0) {
+      // Join existing org
+      organizationId = existingOrg.data[0].id;
+      await clerkClient.organizations.createOrganizationMembership({
+        organizationId,
+        userId: id,
+        role: 'basic_member',
+      });
+    } else {
+      // Create new org
+      const newOrg = await clerkClient.organizations.createOrganization({
+        name: domain.split('.')[0], // "lawfirm.com" → "lawfirm"
+        createdBy: id,
+      });
+      organizationId = newOrg.id;
+    }
+
+    // Set user metadata
+    await clerkClient.users.updateUserMetadata(id, {
+      publicMetadata: {
+        role: 'law_firm', // Default role
+        organizationId,
+      },
+    });
+  }
+
+  return new Response('Webhook processed', { status: 200 });
+}
+```
+
+### Public Metadata Schema
+
+Store user roles and organization assignments in Clerk's public metadata:
+
+```typescript
+interface ClerkPublicMetadata {
+  role: 'law_firm' | 'staff' | 'admin_staff';
+  organizationId: string;           // Clerk organization ID
+
+  // Staff-specific fields
+  assignedFirms?: string[];         // Array of org IDs staff manages
+  assignedJobTypes?: ('escalated' | 'standard')[];
+}
+```
+
+**Accessing in Components:**
+
+```typescript
+import { useUser } from '@clerk/nextjs';
+
+export function MyComponent() {
+  const { user } = useUser();
+  const role = user?.publicMetadata.role as string;
+  const organizationId = user?.publicMetadata.organizationId as string;
+
+  return <div>Role: {role}, Org: {organizationId}</div>;
+}
+```
+
+### Google Auth Configuration
+
+**1. Enable Google OAuth in Clerk Dashboard:**
+- Go to Clerk Dashboard → User & Authentication → Social Connections
+- Enable Google
+- Add OAuth credentials (Client ID + Client Secret from Google Cloud Console)
+
+**2. Customize Sign-In/Sign-Up Pages:**
+
+```typescript
+// src/app/sign-in/[[...sign-in]]/page.tsx
+import { SignIn } from '@clerk/nextjs';
+
+export default function SignInPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <SignIn
+        appearance={{
+          elements: {
+            rootBox: 'mx-auto',
+            card: 'shadow-2xl border-slate-700/50',
+          },
+          layout: {
+            socialButtonsVariant: 'iconButton',
+            socialButtonsPlacement: 'top',
+          },
+        }}
+      />
+    </div>
+  );
+}
+```
+
+**3. Tailwind 4 Compatibility:**
+
+Add Clerk styles to a separate CSS layer to avoid conflicts:
+
+```css
+/* globals.css */
+@layer clerk {
+  @import '@clerk/nextjs/dist/styles.css';
+}
+```
+
+---
+
+## 20b. Staff Authorization Packet Generation (V2.5.2+)
+
+### Overview
+
+When a law firm uploads an authorization document for a manually escalated request, staff can download an authorization packet consisting of:
+1. **Authorization PDF** (uploaded by law firm)
+2. **Auto-generated cover letter** (with staff name)
+
+### PDF Generation Library
+
+**Option 1: jsPDF (Simple, client-side)**
+
+```bash
+npm install jspdf
+```
+
+**Option 2: react-pdf (React-friendly)**
+
+```bash
+npm install @react-pdf/renderer
+```
+
+**Option 3: pdf-lib (Full control)**
+
+```bash
+npm install pdf-lib
+```
+
+**Recommendation:** Use `pdf-lib` for full control over PDF generation and merging.
+
+### Cover Letter Template
+
+```typescript
+// src/lib/coverLetterTemplate.ts
+export interface CoverLetterData {
+  lawFirmName: string;
+  clientName: string;
+  reportNumber: string;
+  crashDate: string;
+  staffName: string;      // From Clerk user
+}
+
+export function generateCoverLetterText(data: CoverLetterData): string {
+  return `
+Info: InstaTCR on behalf of ${data.lawFirmName}
+
+CRASH REPORT REQUEST RECEIVED
+
+Client: ${data.clientName}
+Report #: ${data.reportNumber}
+Crash Date: ${data.crashDate}
+
+Authorization File: Uploaded
+
+Dear Sir/Madam:
+
+This letter will advise you that our office has been retained to represent the above referenced client in a matter which requires that we secure copies of all reports, documents, and photographs concerning the above referenced collision.
+
+We are requesting under the California Public Records Act and Vehicle Code Section 20012 that you provide us with the following:
+
+1. Complete Traffic Collision Report
+2. All supplemental reports
+3. All diagrams, sketches, and photographs
+4. All supporting documentation
+
+Please note that an Authorization to Obtain Governmental Agency Records has been uploaded and is attached to this request.
+
+We understand that there may be fees associated with obtaining these records and are prepared to pay reasonable costs for reproduction.
+
+Authorized persons for pick up:
+${data.staffName}
+
+Thank you for your prompt attention to this matter.
+
+Sincerely,
+InstaTCR on behalf of ${data.lawFirmName}
+  `.trim();
+}
+```
+
+### PDF Generation Function
+
+```typescript
+// src/lib/generateAuthorizationPacket.ts
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+
+export async function generateAuthorizationPacket(
+  job: Job,
+  authorizationPdfUrl: string,
+  staffUser: User
+): Promise<Blob> {
+  // 1. Generate cover letter PDF
+  const coverLetterPdf = await PDFDocument.create();
+  const page = coverLetterPdf.addPage([612, 792]); // Letter size
+  const font = await coverLetterPdf.embedFont(StandardFonts.Helvetica);
+  const boldFont = await coverLetterPdf.embedFont(StandardFonts.HelveticaBold);
+
+  const coverLetterText = generateCoverLetterText({
+    lawFirmName: job.organizationName || 'Unknown Firm',
+    clientName: job.clientName,
+    reportNumber: job.reportNumber,
+    crashDate: job.crashDate || 'Unknown',
+    staffName: `${staffUser.firstName} ${staffUser.lastName}`,
+  });
+
+  // Draw text on page
+  const lines = coverLetterText.split('\n');
+  let y = 750;
+  for (const line of lines) {
+    const isBold = line.startsWith('CRASH REPORT') || line.startsWith('Info:');
+    page.drawText(line, {
+      x: 50,
+      y,
+      size: isBold ? 12 : 10,
+      font: isBold ? boldFont : font,
+      color: rgb(0, 0, 0),
+    });
+    y -= 15;
+  }
+
+  // 2. Fetch authorization PDF
+  const authResponse = await fetch(authorizationPdfUrl);
+  const authPdfBytes = await authResponse.arrayBuffer();
+  const authorizationPdf = await PDFDocument.load(authPdfBytes);
+
+  // 3. Merge PDFs (cover letter first, then authorization)
+  const mergedPdf = await PDFDocument.create();
+
+  // Copy cover letter pages
+  const coverPages = await mergedPdf.copyPages(coverLetterPdf, coverLetterPdf.getPageIndices());
+  coverPages.forEach((page) => mergedPdf.addPage(page));
+
+  // Copy authorization pages
+  const authPages = await mergedPdf.copyPages(authorizationPdf, authorizationPdf.getPageIndices());
+  authPages.forEach((page) => mergedPdf.addPage(page));
+
+  // 4. Save as blob
+  const mergedPdfBytes = await mergedPdf.save();
+  return new Blob([mergedPdfBytes], { type: 'application/pdf' });
+}
+```
+
+### Component Usage
+
+```typescript
+// src/components/staff/AuthorizationPacketDownload.tsx
+import { useUser } from '@clerk/nextjs';
+import { generateAuthorizationPacket } from '@/lib/generateAuthorizationPacket';
+
+export function AuthorizationPacketDownload({ job }: { job: Job }) {
+  const { user } = useUser();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!job.escalationData?.authorizationToken || !user) return;
+
+    setDownloading(true);
+    try {
+      const authorizationPdfUrl = await getConvexStorageUrl(job.escalationData.authorizationToken);
+      const blob = await generateAuthorizationPacket(job, authorizationPdfUrl, user);
+
+      // Trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${job.id}_authorization_packet.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to generate packet:', error);
+      alert('Failed to generate authorization packet');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!job.escalationData?.authorizationToken) {
+    return null; // No authorization uploaded yet
+  }
+
+  return (
+    <div className="border border-slate-700 rounded-lg p-4">
+      <h3 className="font-medium mb-2">Authorization Packet Available</h3>
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        className="btn-primary"
+      >
+        {downloading ? 'Generating...' : '📄 Download Authorization Packet'}
+      </button>
+      <p className="text-sm text-slate-400 mt-2">
+        Downloads 2-file bundle: Authorization PDF + Cover letter
+      </p>
+    </div>
+  );
+}
+```
 
 ---
 

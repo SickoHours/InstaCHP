@@ -1,8 +1,8 @@
 # Product Foundation
 
 **Document:** InstaTCR Product Foundation
-**Version:** 2.1 (Updated for V1.9.0)
-**Last Updated:** 2025-12-13
+**Version:** 2.5 (Updated for V2.5.0 - Fast Form & Organizations)
+**Last Updated:** 2025-12-15
 **Audience:** Product managers, stakeholders, designers, all team members
 
 ---
@@ -19,6 +19,10 @@
 ### What is InstaTCR?
 
 InstaTCR is a web application for managing California Highway Patrol (CHP) crash report requests. It streamlines the process of requesting, tracking, and obtaining CHP crash reports through automation and manual retrieval.
+
+**The Primary Use Case:** When a law firm receives a new case where the accident occurred within the past **72 hours** (possibly the same day or day before), they urgently need to see the crash report. **99% of the time at this stage, it will be a face page** — the full report isn't ready yet.
+
+Law firms input crash details via **Fast Form** (all Page 1 + at least one Page 2 field), trigger the wrapper successfully, and receive their face page. Once they get the face page, they access the **auto-checker** — **the most critical feature of the entire application**. The auto-checker monitors daily or twice-daily when the full report becomes available, providing **real-time tracking** for time-sensitive cases.
 
 The application serves as the bridge between personal injury law firms who need crash reports and the CHP system where those reports are stored. InstaTCR automates the tedious process of logging into CHP portals, searching for reports, and downloading documents.
 
@@ -117,6 +121,57 @@ InstaTCR follows a phased development approach with clear version boundaries. Th
 | 5: Mobile Components | 2 days | All 8 mobile-specific components |
 | 6: Polish & Refinement | 3 days | Testing, animations, edge cases, accessibility |
 
+### V2.5: Fast Form + Organizations (2-3 Weeks) — V2.5.0+
+
+**Goal:** Add Fast Form as primary entry point, Clerk authentication with organizations, collaborators system, and staff workspace enhancements.
+
+**Why V2.5 Before V2:** Fast Form is the core value proposition for the 72-hour window use case. It makes sense to complete the primary user experience before backend integration.
+
+**Deliverables:**
+
+**V2.5.0: Fast Form & Wrapper Integration (Week 1)**
+- Fast Form page with Page 1 + Page 2 fields
+- Perjury checkbox component (required)
+- Collaborators field (multi-select from org + invite via email)
+- Wrapper API route (real Playwright integration)
+- Face page detection signal handling (alert on portal screen)
+- Auto-escalation on Page 2 failure
+- Authorization upload prompt modal
+- Report Checker via Face Page Upload
+
+**V2.5.1: Clerk Authentication + Organizations (Week 2)**
+- ClerkProvider setup in root layout
+- Middleware for route protection (`/law/*`, `/staff/*`)
+- Sign-in/sign-up pages with Google Auth
+- Organization auto-creation by email domain
+- UserContext with Clerk integration
+- Replace hardcoded `DEFAULT_LAW_FIRM_ID` with `user.organizationId`
+- Public metadata for roles (`law_firm`, `staff`, `admin_staff`)
+
+**V2.5.2: Staff Workspace Enhancements (Week 3)**
+- Firm filter dropdown on staff dashboard
+- Escalated requests by firm stats card
+- Authorization packet auto-generation (cover letter with staff name + merge with auth PDF)
+- Admin role + staff assignment UI
+- Staff messaging system (basic threaded conversations)
+- Job assignment between staff members
+
+**Migration Notes:**
+- V1 mock mode preserved behind feature flag
+- Existing flows (standard, fatal) remain functional
+- Fast Form becomes default entry point in production
+- Standard Flow accessible via secondary button
+
+**Phase Breakdown:**
+
+| Phase | Duration | Deliverables |
+|-------|----------|--------------|
+| 1: Fast Form | 3 days | Complete form with 3 sections, validation, wrapper integration |
+| 2: Clerk Setup | 3 days | Auth, orgs, Google SSO, middleware, sign-in/sign-up pages |
+| 3: Collaborators | 2 days | Multi-select field, invite links, notification settings |
+| 4: Staff Workspace | 3 days | Firm filtering, auth packet generation, messaging |
+| 5: Testing & Polish | 2 days | Edge cases, mobile optimization, accessibility |
+
 ### V2: Backend Integration (6 Days)
 
 **Goal:** Connect frontend to real Convex database and CHP wrapper service.
@@ -167,16 +222,21 @@ InstaTCR follows a phased development approach with clear version boundaries. Th
 
 ### Version Feature Matrix
 
-| Feature | V1 (MVP) | V2 (Backend) | V3 (VAPI) | V4 (AI) |
-|---------|----------|--------------|-----------|---------|
-| Law Firm Screens | ✅ Mock | ✅ Real | ✅ | ✅ |
-| Staff Screens | ✅ Mock | ✅ Real | ✅ | ✅ |
-| CHP Wrapper | ✅ Mock (8-13s) | ✅ Real (Fly.io) | ✅ | ✅ |
-| File Upload/Download | ✅ Mock | ✅ Real (Convex) | ✅ | ✅ |
-| Real-time Updates | ❌ | ✅ Convex | ✅ | ✅ |
-| AI Caller Button | 🔲 UI Only | 🔲 UI Only | ✅ Full | ✅ |
-| AI Chat | ❌ | ❌ | ❌ | ✅ |
-| Document Parsing | ❌ | ❌ | ❌ | ✅ |
+| Feature | V1 (MVP) | V2.5 (Fast Form) | V2 (Backend) | V3 (VAPI) | V4 (AI) |
+|---------|----------|------------------|--------------|-----------|---------|
+| Law Firm Screens | ✅ Mock | ✅ Fast Form | ✅ Real | ✅ | ✅ |
+| Staff Screens | ✅ Mock | ✅ + Firm Filter | ✅ Real | ✅ | ✅ |
+| CHP Wrapper | ✅ Mock (8-13s) | ✅ Real (Fly.io) | ✅ | ✅ | ✅ |
+| File Upload/Download | ✅ Mock | ✅ Mock | ✅ Real (Convex) | ✅ | ✅ |
+| Real-time Updates | ❌ | ❌ | ✅ Convex | ✅ | ✅ |
+| Authentication | ❌ | ✅ Clerk | ✅ | ✅ | ✅ |
+| Organizations | ❌ | ✅ By Domain | ✅ | ✅ | ✅ |
+| Collaborators/CC | ❌ | ✅ With Invites | ✅ | ✅ | ✅ |
+| Staff Messaging | ❌ | ✅ Basic | ✅ | ✅ | ✅ |
+| Auth Packet Gen | ❌ | ✅ PDF Merge | ✅ | ✅ | ✅ |
+| AI Caller Button | 🔲 UI Only | 🔲 UI Only | 🔲 UI Only | ✅ Full | ✅ |
+| AI Chat | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Document Parsing | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 **Legend:** ✅ = Fully functional | 🔲 = UI placeholder | ❌ = Not included
 
@@ -320,6 +380,86 @@ sequenceDiagram
         end
 
         Frontend->>Staff: "All offices tried - Call manually"
+    end
+```
+
+### Diagram 4: Fast Form → Wrapper → Auto-escalation Flow (V2.5.0+)
+
+```mermaid
+sequenceDiagram
+    participant LawFirm as Law Firm User
+    participant Frontend as Next.js Frontend
+    participant Clerk as Clerk Auth
+    participant Wrapper as CHP Wrapper (Fly.io)
+    participant Portal as CHP Portal
+
+    LawFirm->>Frontend: Navigate to /law/jobs/new-fast
+    Frontend->>Clerk: Check authentication
+    Clerk-->>Frontend: User authenticated (org: Law Brothers)
+
+    LawFirm->>Frontend: Fill Page 1 (all required)
+    Note over LawFirm: Report #, Crash Date/Time, Officer ID
+    LawFirm->>Frontend: Fill Page 2 (client name + optional identifiers)
+    LawFirm->>Frontend: Check perjury checkbox ✓
+    LawFirm->>Frontend: Add collaborator (Jane Smith from org)
+
+    LawFirm->>Frontend: Click "Submit Fast Form"
+    Frontend->>Frontend: Validate all fields
+    Frontend->>Clerk: Resolve collaborator user ID
+    Frontend->>Frontend: Show loading (8-13 sec)
+
+    Frontend->>Wrapper: POST /api/run-chp (all Page 1 + Page 2 data)
+
+    Wrapper->>Portal: Login to CHP portal
+    Wrapper->>Portal: Navigate to Crash Search
+    Wrapper->>Portal: Fill Page 1 (report #, date, time, officer)
+    Wrapper->>Portal: Submit search
+
+    alt Success - Page 1 Found
+        Portal-->>Wrapper: Report found
+        Note over Portal: Alert shown if Face Page
+        Wrapper->>Wrapper: Detect alert → reportTypeHint: 'FACE_PAGE'
+
+        Wrapper->>Portal: Fill Page 2 verification (name)
+        Wrapper->>Portal: Submit verification
+
+        alt Face Page Success (65%)
+            Portal-->>Wrapper: Download face page
+            Wrapper-->>Frontend: outcome: FACE_PAGE, reportTypeHint: FACE_PAGE
+            Frontend->>Frontend: Create job with FACE_PAGE_ONLY status
+            Frontend->>LawFirm: Navigate to /law/jobs/{jobId}
+            Frontend->>LawFirm: Show "Face page received, auto-checker available"
+            Note over LawFirm: Auto-checker unlocked - can monitor for full report
+
+        else Full Report Success (30%)
+            Portal-->>Wrapper: Download full report
+            Wrapper-->>Frontend: outcome: FULL_REPORT
+            Frontend->>Frontend: Create job with COMPLETED_FULL_REPORT status
+            Frontend->>LawFirm: Navigate to /law/jobs/{jobId}
+            Frontend->>LawFirm: Show "Your report is ready to download"
+
+        else Page 2 Verification Failed (5%)
+            Portal-->>Wrapper: Verification failed (passenger or no identifiers)
+            Wrapper-->>Frontend: outcome: PAGE2_BLOCKED, reportTypeHint: FACE_PAGE
+            Note over Frontend: Auto-escalation triggered
+
+            Frontend->>Frontend: Show modal: "We need your help"
+            Frontend->>LawFirm: Prompt: Upload Authorization Document
+            LawFirm->>Frontend: Upload authorization PDF
+            LawFirm->>Frontend: Click "Submit"
+
+            Frontend->>Frontend: Create job with NEEDS_IN_PERSON_PICKUP
+            Frontend->>Frontend: Set escalation reason: auto_exhausted
+            Frontend->>Frontend: Store authorization token
+            Frontend->>LawFirm: Navigate to /law/jobs/{jobId}
+            Frontend->>LawFirm: Show "Waiting for staff assignment"
+            Note over Frontend: Staff notified via NotificationBell
+
+        end
+    else Page 1 Failed
+        Portal-->>Wrapper: Report not found with given details
+        Wrapper-->>Frontend: outcome: PAGE1_FAILED
+        Frontend->>LawFirm: Show error: "Report not found, check details"
     end
 ```
 

@@ -10,11 +10,13 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 |---------|-------|----------|--------|
 | **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.9.0 - Authorization Gate) |
 | **V2** | UI Polish & Shell | 1 day | ✅ Complete (V2.2.0 - App Shell) |
+| **V2.5** | Fast Form + Organizations | 2-3 weeks | ⚪ Not Started (Next Priority) |
 | **V3** | Backend Integration | 6 days | ⚪ Not Started |
 | **V4** | VAPI AI Caller | TBD | ⚪ Not Started |
 | **V5** | Open Router AI | TBD | ⚪ Not Started |
 
 **Current Version:** V2.2.0 (December 13, 2025)
+**Next Up:** V2.5.0 - Fast Form & Wrapper Integration
 
 ---
 
@@ -937,6 +939,289 @@ Transformed the authenticated pages into a modern ChatGPT-style dashboard with e
 - `src/components/ui/NotificationBell.tsx`
 
 **Deliverable:** ✅ ChatGPT-style app shell with persistent sidebar, instant job switching, and polished UI.
+
+---
+
+## V2.5: Fast Form + Organizations (2-3 Weeks) — ⚪ Not Started
+
+**Goal:** Add Fast Form as primary entry point, Clerk authentication with organizations, collaborators system, and staff workspace enhancements.
+
+**Why V2.5 Before V3:** Fast Form is the core value proposition for the 72-hour window use case. It makes sense to complete the primary user experience (including real wrapper integration) before full backend migration. This also allows us to validate the wrapper contract with real users.
+
+**Strategic Context:**
+- Primary use case: Law firm gets new case within 72 hours, needs crash report urgently
+- 99% of the time at this stage: Face page only (full report not ready yet)
+- Fast Form + wrapper → Face page → **Auto-checker (most critical feature)**
+- Real-time tracking once face page uploaded
+
+---
+
+### V2.5.0: Fast Form & Wrapper Integration (Week 1) ⚪ Not Started
+
+**Duration:** 5 days
+**Status:** ⚪ Not Started
+
+#### Tasks:
+
+**1. Fast Form Page (`/law/jobs/new-fast`)**
+- [ ] Create Fast Form component with 3 sections:
+  - [ ] Section 1: Page 1 Portal Information (5 fields, all required)
+    - Report Number, Crash Date, Crash Time, Officer ID, NCIC (auto-derived)
+  - [ ] Section 2: Page 2 Verification (4 fields, at least 1 required)
+    - Client Full Name, License Plate, Driver License, VIN
+  - [ ] Section 3: Legal & Collaboration
+    - Perjury checkbox, Collaborators field
+- [ ] Mobile: Full-width stacked sections (48px touch targets)
+- [ ] Desktop: 2-column grid for Page 1/Page 2, full-width Legal section
+- [ ] Real-time validation on blur, all-field validation on submit
+- [ ] Loading state: "Running wrapper... 8-13 seconds" with progress bar
+
+**2. Validation Rules**
+- [ ] All Page 1 fields required
+- [ ] At least one Page 2 field required (client name always present)
+- [ ] Perjury checkbox required
+- [ ] Collaborators optional
+- [ ] Report number: `9XXX-YYYY-ZZZZZ` format
+- [ ] Crash date: `MM/DD/YYYY`, not in future
+- [ ] Crash time: `HHMM`, 24-hour format (00:00-23:59)
+- [ ] Officer ID: 6 digits starting with 0
+
+**3. Wrapper API Integration**
+- [ ] Create `/api/wrapper/run` route
+- [ ] Integrate with real Playwright wrapper on Fly.io
+- [ ] Handle wrapper responses:
+  - `FULL_REPORT` → Job created with `COMPLETED_FULL_REPORT`
+  - `FACE_PAGE` → Job created with `FACE_PAGE_ONLY`, auto-checker offered
+  - `PAGE2_BLOCKED` → Auto-escalation triggered
+- [ ] Face page detection signal: Parse `reportTypeHint` from wrapper response
+- [ ] Store `alertDetected` flag in wrapper run history
+
+**4. Auto-escalation Flow**
+- [ ] Modal component: "We need your help"
+- [ ] Authorization upload field (PDF only)
+- [ ] On submit with file:
+  - Job created with `NEEDS_IN_PERSON_PICKUP`
+  - Escalation reason: `auto_exhausted`
+  - Authorization document token stored
+  - Notification sent to staff
+
+**5. Perjury Checkbox Component**
+- [ ] Create `PerjuryCheckbox.tsx`
+- [ ] Text: "I declare under penalty of perjury that I am a person having proper interest..."
+- [ ] Larger checkbox (20px), wrapping text, error state
+- [ ] Required validation
+
+**6. Collaborators Field (Mock)**
+- [ ] Create `CollaboratorsField.tsx` (V2.5.0 mock version)
+- [ ] Multi-select dropdown (static list for now)
+- [ ] Email invite input (mock, no actual send)
+- [ ] Chips for selected users
+- [ ] Store `collaboratorIds` array on job
+
+**7. Report Checker via Face Page Upload**
+- [ ] Create `/law/report-checker` page
+- [ ] Face page upload interface
+- [ ] OCR extraction (mock for V2.5.0, use simple text input)
+- [ ] Wrapper in `check_only` mode
+- [ ] Auto-create job if report ready + not in system
+
+**8. Update Law Firm Dashboard**
+- [ ] "New Request" button routes to Fast Form (default)
+- [ ] Add "Use Standard Flow" secondary link
+
+**Files to Create/Update:**
+- `src/app/law/jobs/new-fast/page.tsx` (new)
+- `src/app/law/report-checker/page.tsx` (new)
+- `src/components/ui/PerjuryCheckbox.tsx` (new)
+- `src/components/ui/CollaboratorsField.tsx` (new)
+- `src/app/api/wrapper/run/route.ts` (new)
+- `src/app/law/page.tsx` (update CTA routing)
+
+**Deliverable:** Fast Form fully functional with real wrapper integration, 99% success rate (face page or full report).
+
+---
+
+### V2.5.1: Clerk Authentication + Organizations (Week 2) ⚪ Not Started
+
+**Duration:** 5 days
+**Status:** ⚪ Not Started
+
+#### Tasks:
+
+**1. Clerk Setup**
+- [ ] Install `@clerk/nextjs` package
+- [ ] Configure `.env.local` with Clerk keys
+- [ ] Create ClerkProvider wrapper in `src/app/layout.tsx`
+- [ ] Configure appearance for Tailwind 4 compatibility (`cssLayerName: 'clerk'`)
+
+**2. Middleware & Route Protection**
+- [ ] Create `src/middleware.ts`
+- [ ] Protect `/law/*` routes → requires `role: 'law_firm'`
+- [ ] Protect `/staff/*` routes → requires `role: 'staff' || 'admin_staff'`
+- [ ] Redirect unauthenticated to `/sign-in`
+
+**3. Sign-in/Sign-up Pages**
+- [ ] Create `/sign-in/[[...sign-in]]/page.tsx`
+- [ ] Create `/sign-up/[[...sign-up]]/page.tsx`
+- [ ] Custom styling with Liquid Glass theme
+- [ ] Google Auth enabled in Clerk dashboard
+
+**4. Organization Auto-creation**
+- [ ] Webhook endpoint: `/api/clerk/webhooks`
+- [ ] On user sign-up: Extract email domain
+- [ ] Check if org exists for domain
+- [ ] Create org if doesn't exist (e.g., `@lawbrothers.com` → "Law Brothers")
+- [ ] Add user to org
+- [ ] Set `user.publicMetadata.organizationId`
+
+**5. UserContext**
+- [ ] Create `src/context/UserContext.tsx`
+- [ ] Hook: `useUser()` returns current user with org info
+- [ ] Interface: `{ id, email, firstName, lastName, organizationId, organizationName, role }`
+- [ ] For staff: Include `assignedFirms`, `assignedJobTypes`
+
+**6. Replace Hardcoded Law Firm**
+- [ ] Update all instances of `DEFAULT_LAW_FIRM_ID` with `user.organizationId`
+- [ ] Update AppShell sidebar filtering
+- [ ] Update job creation to use `user.organizationId`
+- [ ] Update MockDataManager to support multi-org
+
+**7. Public Metadata Schema**
+- [ ] Define in Clerk dashboard:
+  ```typescript
+  role: 'law_firm' | 'staff' | 'admin_staff'
+  assignedFirms?: string[]
+  assignedJobTypes?: string[]
+  ```
+
+**8. Collaborators (Real Implementation)**
+- [ ] Update `CollaboratorsField` to query Clerk org members
+- [ ] Search API: List users in same organization
+- [ ] Invite link generation for new users
+- [ ] Store `collaboratorIds` on job (Clerk user IDs)
+
+**Files to Create/Update:**
+- `src/middleware.ts` (new)
+- `src/app/sign-in/[[...sign-in]]/page.tsx` (new)
+- `src/app/sign-up/[[...sign-up]]/page.tsx` (new)
+- `src/context/UserContext.tsx` (new)
+- `src/app/api/clerk/webhooks/route.ts` (new)
+- `src/app/layout.tsx` (add ClerkProvider)
+- `src/lib/mockDataManager.ts` (update for multi-org)
+- `src/components/shell/AppShell.tsx` (use user.organizationId)
+- `src/components/ui/CollaboratorsField.tsx` (real Clerk integration)
+
+**Deliverable:** Full Clerk authentication with organization auto-creation, multi-tenant support, and collaborators system.
+
+---
+
+### V2.5.2: Staff Workspace Enhancements (Week 3) ⚪ Not Started
+
+**Duration:** 5 days
+**Status:** ⚪ Not Started
+
+#### Tasks:
+
+**1. Firm Filter Dropdown**
+- [ ] Create `FirmFilterDropdown.tsx`
+- [ ] Options: "All Firms" + list of orgs
+- [ ] Show escalated request count per firm
+- [ ] Filter staff dashboard jobs by selected firm
+- [ ] Update stats cards to show firm-specific counts
+
+**2. Staff Dashboard Updates**
+- [ ] Add firm filter to header
+- [ ] Update job cards to show firm name badge
+- [ ] Add "Escalated Requests by Firm" stats card
+- [ ] Container format: "Law Brothers: 5 escalated"
+
+**3. Authorization Packet Auto-generation**
+- [ ] Install PDF library: `jspdf` or `react-pdf`
+- [ ] Create `generateAuthorizationPacket()` function
+- [ ] Cover letter template:
+  ```
+  Info: InstaTCR on behalf of {law firm name}
+  CRASH REPORT REQUEST RECEIVED
+  {Request Details}
+  Authorization File: Uploaded
+  Dear Sir/Madam:
+  ...
+  Authorized persons for pick up: {Staff's real name from Clerk user}
+  ```
+- [ ] Merge cover letter with authorization PDF
+- [ ] Download as single file: `{jobId}_authorization_packet.pdf`
+- [ ] Track `authPacketGeneratedBy` and `authPacketGeneratedAt` on job
+
+**4. Update EscalationQuickActions**
+- [ ] "Download Auth" step generates cover letter automatically
+- [ ] Shows staff's real name from Clerk user context
+- [ ] One-click download of merged packet
+
+**5. Admin Role & Staff Assignment UI**
+- [ ] Create admin settings page (basic)
+- [ ] Assign staff to law firms UI
+- [ ] Assign job types to staff (escalated, standard)
+- [ ] Update Clerk public metadata when assigned
+
+**6. Staff Messaging System (Basic)**
+- [ ] Create `JobMessagesThread.tsx` component
+- [ ] Simple threaded conversation per job
+- [ ] Mentions: `@Valerie`, `@Erica`
+- [ ] Assignment action button: "Assign to Erica"
+- [ ] Store messages in mock data (V2.5.2), migrate to Convex in V3
+
+**7. Job Assignment Between Staff**
+- [ ] Add "Assign" dropdown on job cards
+- [ ] List staff members (from Clerk org)
+- [ ] Update `job.assignedTo` field
+- [ ] Send notification to assigned staff
+
+**Files to Create/Update:**
+- `src/components/ui/FirmFilterDropdown.tsx` (new)
+- `src/lib/authorizationPacketGenerator.ts` (new)
+- `src/components/ui/JobMessagesThread.tsx` (new)
+- `src/app/staff/settings/page.tsx` (new - admin only)
+- `src/app/staff/page.tsx` (add firm filter)
+- `src/components/ui/EscalationQuickActions.tsx` (update download auth)
+- `src/components/ui/StaffJobCard.tsx` (add firm badge + assign dropdown)
+
+**Deliverable:** Staff can filter by firm, auto-generate authorization packets, message colleagues, and assign jobs.
+
+---
+
+### V2.5 Testing & Edge Cases ⚪ Not Started
+
+**Duration:** 2 days (integrated into Week 3)
+
+- [ ] Test Fast Form with all field combinations
+- [ ] Test auto-escalation flow (modal, file upload, job creation)
+- [ ] Test Clerk org auto-creation with multiple email domains
+- [ ] Test collaborators invite flow
+- [ ] Test firm filtering on staff dashboard
+- [ ] Test authorization packet generation with different staff names
+- [ ] Test mobile experience for staff actions (claim, schedule, upload)
+- [ ] Test desktop experience for law firm Fast Form submission
+- [ ] Verify wrapper face page detection signal
+- [ ] Verify perjury checkbox validation
+
+---
+
+### V2.5 Migration Notes
+
+**Preserving V1 Mock Mode:**
+- Mock mode controlled by env variable: `NEXT_PUBLIC_MOCK_MODE=true`
+- Real wrapper gated by: `NEXT_PUBLIC_ENABLE_WRAPPER=true`
+- Clerk gated by: `NEXT_PUBLIC_CLERK_ENABLED=true`
+
+**Breaking Changes:**
+- Law firm users MUST sign in (no more hardcoded access)
+- Jobs now filtered by organization (multi-tenant)
+- Fast Form becomes default entry (Standard Flow accessible via link)
+
+**Data Migration (when moving to V3):**
+- Existing mock jobs get assigned to first organization
+- Collaborators migrated to Clerk user IDs
+- Authorization packets regenerated with real staff names
 
 ---
 

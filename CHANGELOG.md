@@ -5,6 +5,121 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0-docs] - 2025-12-15
+
+### Added
+
+#### V2.5 Fast Form + Organizations Documentation
+
+**Purpose:**
+Comprehensive documentation update for V2.5 features including Fast Form entry flow, Clerk authentication, organizations, staff enhancements, and authorization packet generation.
+
+**Documentation Files Updated (8 files):**
+
+1. **logic.md** (844 lines - Complete rewrite)
+   - Added Fast Form as primary entry method (99% success rate)
+   - Documented 72-hour window use case as primary product purpose
+   - Added Organizations & Authentication section (Clerk integration)
+   - Added Face Page Detection signal from CHP wrapper
+   - Added Collaborators/CC system behavior
+   - Added Device context guidelines (staff=mobile, law firm=desktop)
+   - Documented staff authorization packet auto-generation
+   - Added Required Perjury Checkbox compliance
+
+2. **docs/prd/02-business-logic.md**
+   - Added Flow 8: Fast Form (happy path with immediate wrapper execution)
+   - Added Flow 9: Fast Form Failure + Auto-escalation (5% cases)
+   - Added Flow 10: Report Checker via Face Page Upload
+   - Updated Job interface with V2.5 fields: `organizationId`, `organizationName`, `collaboratorIds`, `submittedVia`, `fastFormData`, `perjuryCheckboxAcknowledged`
+   - Added Organization model (Clerk-based multi-tenancy)
+   - Added User/Staff model with role-based permissions
+   - Added CollaboratorSettings model for notifications
+   - Updated EscalationData with `authPacketGeneratedBy` field
+   - Updated Wrapper response schema with `reportTypeHint` and `alertDetected`
+
+3. **docs/prd/01-product-foundation.md**
+   - Updated executive summary emphasizing 72-hour window and auto-checker as most critical feature
+   - Added V2.5 milestone (2-3 weeks, positioned before V3 backend integration)
+   - Updated feature matrix with Fast Form, Organizations, Clerk auth, Collaborators, Admin assignment
+   - Added Diagram 4: Fast Form → Wrapper → Auto-escalation Flow (Mermaid sequence diagram)
+
+4. **DEV-ROADMAP.md**
+   - Added complete V2.5 section with 3-week breakdown
+   - V2.5.0: Fast Form & Wrapper Integration (Week 1, 5 days)
+   - V2.5.1: Clerk Authentication + Organizations (Week 2, 5 days)
+   - V2.5.2: Staff Workspace Enhancements (Week 3, 5 days)
+   - Detailed task checklists for each phase
+   - Migration notes for V1 → V2.5 transition
+
+5. **docs/prd/03-screen-specifications.md**
+   - Added Screen 7: Fast Form (comprehensive specification)
+     - 3 sections: Page 1 Portal Info, Page 2 Verification, Legal & Collaboration
+     - Desktop 2-column layout, mobile stacked layout
+     - Perjury checkbox with full legal text
+     - Collaborators multi-select field
+     - Real-time validation and error handling
+     - Success/failure flows with authorization upload modal
+   - Updated Screen 2: Law Firm Dashboard (routing to Fast Form, fatal request button)
+   - Updated Screen 5: Staff Dashboard (firm filter dropdown, escalated requests by firm card)
+   - Updated Card 7: Manual Completion (authorization packet download with auto-generated cover letter)
+
+6. **docs/prd/04-chp-wrapper.md**
+   - Updated Wrapper Input Schema with V2.5 fields: `submittedVia`, `mode` (full_run/check_only)
+   - Updated Wrapper Output Schema with `reportTypeHint` and `debugDetails.alertDetected`
+   - Added Face Page Detection section:
+     - Alert detection logic (Playwright checks for alert element after Page 1)
+     - Signal availability even if Page 2 fails (helps auto-escalation context)
+     - Use cases: Fast Form success, Fast Form failure, Auto-checker context
+     - Alert text examples and implementation notes
+
+7. **docs/prd/05-component-library.md**
+   - Added 6 new components:
+     - **FastFormPage**: Primary entry point with 3-section form
+     - **CollaboratorsField**: Multi-select dropdown for org members
+     - **PerjuryCheckbox**: Larger checkbox (20px) with full legal text
+     - **AuthorizationPacketDownload**: PDF generation + merging (pdf-lib)
+     - **FirmFilterDropdown**: Staff dashboard filter with escalated counts
+     - **ReportCheckerUpload**: Face page upload → OCR → wrapper check
+   - Each component documented with props, state management, layout, behavior, and usage examples
+
+8. **docs/prd/06-implementation-guide.md**
+   - Added Fast Form Validation table (11 fields with formats, examples, error messages)
+   - Added Section 20a: Clerk Integration Guide
+     - Setup instructions (SDK installation, environment variables)
+     - Middleware configuration (route protection, role-based access)
+     - Organization auto-creation webhook (email domain → org)
+     - Public metadata schema (role, organizationId, assignedFirms)
+     - Google Auth configuration (OAuth setup, customization, Tailwind 4 compatibility)
+   - Added Section 20b: Staff Authorization Packet Generation
+     - PDF generation using pdf-lib
+     - Cover letter template (full text with staff name placeholder)
+     - PDF merging function (cover letter + authorization)
+     - Component usage example with Clerk user context
+
+**Key Features Documented:**
+
+- **Fast Form**: Primary entry with all Page 1 + Page 2 fields, 99% wrapper success rate
+- **72-hour Window**: Product positioned for immediate crash response (most common use case)
+- **Auto-checker**: Emphasized as "most critical feature" for monitoring report availability
+- **Organizations by Email Domain**: Multi-tenant Clerk integration with auto-creation
+- **Collaborators/CC System**: Team coordination with notification settings
+- **Face Page Detection**: Playwright alert detection signal for better UX and escalation context
+- **Staff Authorization Packets**: Auto-generated cover letters with staff name from Clerk
+- **Device Context**: Staff workflows optimized for mobile, law firm workflows for desktop
+- **Required Perjury Checkbox**: Legal compliance with California law
+- **Report Checker**: Upload existing face page → check if in system → create job
+
+**Cross-file Consistency:**
+
+- All 8 files updated with consistent terminology and version markers (V2.5.0+)
+- Cross-referenced between files for easy navigation
+- Maintained existing format and structure conventions
+- Updated version numbers and last updated dates to 2025-12-15
+
+**Version:** V2.5.0-docs (Documentation only - no code changes)
+
+---
+
 ## [2.2.7] - 2025-12-13
 
 ### Fixed

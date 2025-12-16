@@ -1,8 +1,8 @@
 # Component Library
 
-**Version:** 3.0 (Updated for V2.1.0 Liquid Glass)
-**Last Updated:** 2025-12-13
-**Status:** Complete
+**Version:** 3.5 (Updated for V2.5.0 Fast Form + Organizations)
+**Last Updated:** 2025-12-15
+**Status:** In Progress (V2.5 components being added)
 **Audience:** Frontend engineers, component library maintainers
 
 ---
@@ -75,6 +75,14 @@
     - [Hover Effects](#hover-effects)
     - [Background Depth](#background-depth)
     - [CSS Custom Properties](#css-custom-properties)
+
+11. [Fast Form & Organizations Components (V2.5.0+)](#fast-form--organizations-components-v250)
+    - [FastFormPage](#component-fastformpage)
+    - [CollaboratorsField](#component-collaboratorsfield)
+    - [PerjuryCheckbox](#component-perjurycheckbox)
+    - [AuthorizationPacketDownload](#component-authorizationpacketdownload)
+    - [FirmFilterDropdown](#component-firmfilterdropdown)
+    - [ReportCheckerUpload](#component-reportcheckerupload)
 
 ---
 
@@ -1912,6 +1920,428 @@ The glass system uses design tokens defined as CSS custom properties:
     </div>
   </div>
 </div>
+```
+
+---
+
+## Fast Form & Organizations Components (V2.5.0+)
+
+### Component: FastFormPage
+
+**File:** `src/app/law/jobs/new-fast/page.tsx`
+
+**Purpose:** Primary entry point for law firms to submit crash report requests with immediate CHP wrapper execution. Collects all Page 1 + Page 2 data, perjury acknowledgment, and collaborators in a single form.
+
+#### Props
+
+```typescript
+interface FastFormPageProps {
+  // No props - manages own state
+}
+```
+
+#### State Management
+
+```typescript
+interface FastFormState {
+  // Page 1 fields
+  reportNumber: string;
+  crashDate: string;
+  crashTime: string;
+  officerId: string;
+  ncic: string;  // Auto-derived from reportNumber
+
+  // Page 2 fields
+  clientFullName: string;
+  licensePlate: string;
+  driverLicense: string;
+  vin: string;
+
+  // Legal & Collaboration
+  perjuryChecked: boolean;
+  collaboratorIds: string[];
+
+  // Form state
+  errors: Record<string, string>;
+  isSubmitting: boolean;
+}
+```
+
+#### Layout
+
+- **Desktop (≥ 1024px):** 2-column grid for Page 1 + Page 2 sections
+- **Mobile (< 768px):** Stacked sections, full-width inputs
+
+#### Validation Rules
+
+| Field | Rule | Error Message |
+|-------|------|---------------|
+| Report Number | `9XXX-YYYY-ZZZZZ` format | "Format: 9XXX-YYYY-ZZZZZ" |
+| Crash Date | Not in future | "Date cannot be in future" |
+| Crash Time | HHMM (0000-2359) | "Use 24-hour format: HHMM" |
+| Officer ID | 6 digits, starts with 0 | "6 digits starting with 0" |
+| Client Name | Min 2 chars | "Name required" |
+| Perjury Checkbox | Must be checked | "You must acknowledge this statement" |
+
+#### Behavior
+
+1. **NCIC Auto-derivation:**
+   ```typescript
+   const ncic = reportNumber.slice(0, 4); // First 4 digits
+   ```
+
+2. **Submission Flow:**
+   - Validate all fields
+   - Check perjury checkbox
+   - Call wrapper API with all data
+   - Show loading state (8-13 seconds)
+   - Handle success/failure
+
+3. **Success (95%):**
+   - Redirect to job detail page
+   - Show success toast
+
+4. **Failure (5% - PAGE2_BLOCKED):**
+   - Show authorization upload modal immediately
+   - Law firm uploads authorization document
+   - Job created with escalation status
+
+#### Usage
+
+```tsx
+// Route: /law/jobs/new-fast
+<FastFormPage />
+```
+
+---
+
+### Component: CollaboratorsField
+
+**File:** `src/components/ui/CollaboratorsField.tsx`
+
+**Purpose:** Multi-select dropdown for adding organization members as collaborators on a job. Supports selecting from org members and inviting external users via email.
+
+#### Props
+
+```typescript
+interface CollaboratorsFieldProps {
+  organizationId: string;
+  value: string[];               // Array of Clerk user IDs
+  onChange: (ids: string[]) => void;
+  label?: string;
+  helperText?: string;
+  error?: string;
+}
+```
+
+#### Features
+
+- **Organization Members List:** Fetches users from Clerk organization
+- **Search/Filter:** Type to filter members by name or email
+- **Selected Chips:** Shows selected collaborators as removable chips
+- **Email Invite:** Option to invite external users (sends invite via Clerk)
+
+#### Layout
+
+```tsx
+┌─────────────────────────────────────────────────┐
+│ Collaborators (optional)                        │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ 🏷️ john@lawfirm.com ×  🏷️ sarah@lawfirm.com × │ │
+│ │ Select team members...                    ▼ │ │
+│ └─────────────────────────────────────────────┘ │
+│                                                 │
+│ Dropdown:                                       │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ ☑ John Doe (john@lawfirm.com)              │ │
+│ │ ☑ Sarah Smith (sarah@lawfirm.com)          │ │
+│ │ ☐ Mike Johnson (mike@lawfirm.com)         │ │
+│ │ ─────────────────────────────────────────── │ │
+│ │ 📧 Invite external user...                 │ │
+│ └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+#### Usage
+
+```tsx
+<CollaboratorsField
+  organizationId={user.organizationId}
+  value={collaboratorIds}
+  onChange={setCollaboratorIds}
+  label="Collaborators (optional)"
+  helperText="They'll receive updates on this request"
+/>
+```
+
+---
+
+### Component: PerjuryCheckbox
+
+**File:** `src/components/ui/PerjuryCheckbox.tsx`
+
+**Purpose:** Required checkbox for perjury acknowledgment on Fast Form. Larger checkbox with wrapping text for legal compliance.
+
+#### Props
+
+```typescript
+interface PerjuryCheckboxProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  required?: boolean;
+  error?: string;
+}
+```
+
+#### Features
+
+- **Larger Checkbox:** 20px × 20px (vs standard 16px)
+- **Wrapping Text:** Full legal statement displayed without truncation
+- **Required Indicator:** Red asterisk and error state
+- **Keyboard Accessible:** Space key to toggle
+
+#### Layout
+
+```tsx
+┌─────────────────────────────────────────────────┐
+│ ☐ I declare under penalty of perjury that I am │
+│   a person having proper interest or an         │
+│   authorized representative therein as outlined │
+│   above and as required by California law. *    │
+└─────────────────────────────────────────────────┘
+```
+
+#### Text Content
+
+```
+I declare under penalty of perjury that I am a person having proper interest or an authorized representative therein as outlined above and as required by California law.
+```
+
+#### Usage
+
+```tsx
+<PerjuryCheckbox
+  checked={perjuryChecked}
+  onChange={setPerjuryChecked}
+  required
+  error={errors.perjury}
+/>
+```
+
+---
+
+### Component: AuthorizationPacketDownload
+
+**File:** `src/components/staff/AuthorizationPacketDownload.tsx`
+
+**Purpose:** Staff component for downloading authorization packet (authorization PDF + auto-generated cover letter). Used in escalation workflow.
+
+#### Props
+
+```typescript
+interface AuthorizationPacketDownloadProps {
+  job: Job;
+  staffUser: User;  // From Clerk context
+}
+```
+
+#### Features
+
+1. **Cover Letter Generation:**
+   - Uses PDF library (jsPDF or react-pdf)
+   - Auto-fills staff name from Clerk user
+   - Template format specified in PRD
+
+2. **PDF Merging:**
+   - Combines cover letter + authorization PDF
+   - Uses pdf-lib for merging
+   - Single file download
+
+3. **Download Behavior:**
+   - Button enabled only if `job.escalationData.authorizationToken` exists
+   - On click: Generate → Merge → Download
+   - Filename: `{jobId}_authorization_packet.pdf`
+
+#### Cover Letter Template
+
+```
+Info: InstaTCR on behalf of {law firm name}
+
+CRASH REPORT REQUEST RECEIVED
+
+Client: {client name}
+Report #: {report number}
+Crash Date: {crash date}
+
+Authorization File: Uploaded
+
+Dear Sir/Madam:
+
+This letter will advise you that our office has been retained to represent the above referenced client...
+
+[Full letter body]
+
+Authorized persons for pick up:
+{Staff's real name from Clerk user}
+```
+
+#### Layout
+
+```tsx
+┌─────────────────────────────────────────────────┐
+│ Authorization Packet Available                  │
+│                                                 │
+│ [📄 Download Authorization Packet]             │
+│                                                 │
+│ Downloads 2-file bundle:                        │
+│ • Authorization PDF (uploaded by law firm)      │
+│ • Cover letter (auto-generated with staff name) │
+└─────────────────────────────────────────────────┘
+```
+
+#### Usage
+
+```tsx
+<AuthorizationPacketDownload
+  job={job}
+  staffUser={currentUser}
+/>
+```
+
+---
+
+### Component: FirmFilterDropdown
+
+**File:** `src/components/staff/FirmFilterDropdown.tsx`
+
+**Purpose:** Dropdown filter on staff dashboard to filter jobs by organization. Shows "All Firms" or individual firm names.
+
+#### Props
+
+```typescript
+interface FirmFilterDropdownProps {
+  firms: Organization[];          // Array of organizations
+  selectedFirmId: string | null;  // null = "All Firms"
+  onChange: (firmId: string | null) => void;
+  showEscalatedCounts?: boolean;  // Show "(5 escalated)" next to firm name
+}
+```
+
+#### Features
+
+- **All Firms Option:** Default selection, shows all jobs
+- **Firm List:** Shows organization names from Clerk
+- **Escalated Counts:** Optional display of escalated request count per firm
+- **Badge Style:** Selected firm highlighted with accent color
+
+#### Layout
+
+```tsx
+┌─────────────────────────────────────────────────┐
+│ Filter by Organization                          │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ All Firms                               ▼  │ │
+│ └─────────────────────────────────────────────┘ │
+│                                                 │
+│ Dropdown:                                       │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ ● All Firms                                 │ │
+│ │ ○ Law Brothers (5 escalated)               │ │
+│ │ ○ Johnson Law (2 escalated)                │ │
+│ │ ○ Smith & Associates                        │ │
+│ └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+#### Usage
+
+```tsx
+<FirmFilterDropdown
+  firms={organizations}
+  selectedFirmId={selectedFirmId}
+  onChange={setSelectedFirmId}
+  showEscalatedCounts
+/>
+```
+
+---
+
+### Component: ReportCheckerUpload
+
+**File:** `src/components/law/ReportCheckerUpload.tsx`
+
+**Purpose:** Law firm component for uploading a face page they already have to check if it's in the system. Alternative entry flow to Fast Form.
+
+#### Props
+
+```typescript
+interface ReportCheckerUploadProps {
+  onSuccess?: (job: Job) => void;
+}
+```
+
+#### State Management
+
+```typescript
+interface ReportCheckerState {
+  file: File | null;
+  uploading: boolean;
+  extracting: boolean;
+  running: boolean;
+  result: 'NOT_IN_SYSTEM' | 'ALREADY_EXISTS' | 'ERROR' | null;
+  extractedReportNumber: string | null;
+}
+```
+
+#### Workflow
+
+1. **Upload Face Page:**
+   - Law firm selects PDF file
+   - File uploaded to temporary storage
+
+2. **Extract Report Number:**
+   - OCR or PDF text extraction
+   - Parse report number (9XXX-YYYY-ZZZZZ)
+
+3. **Check System:**
+   - Query database for existing job with report number
+   - If exists: Show "Already tracked"
+   - If not: Run wrapper in check_only mode
+
+4. **Wrapper Check:**
+   - Wrapper verifies face page is valid
+   - If valid: Create job, mark as completed
+   - If invalid: Show error
+
+#### Layout
+
+```tsx
+┌─────────────────────────────────────────────────┐
+│ Report Checker                                  │
+│                                                 │
+│ Already have a face page? Upload it to check   │
+│ if we're already tracking this report.         │
+│                                                 │
+│ ┌─────────────────────────────────────────────┐ │
+│ │  📄 Drag face page PDF here or click       │ │
+│ │                                             │ │
+│ │      [Browse Files]                         │ │
+│ └─────────────────────────────────────────────┘ │
+│                                                 │
+│ Steps:                                          │
+│ 1. Upload face page PDF                         │
+│ 2. Extract report number                        │
+│ 3. Check if already tracked                     │
+│ 4. Create job if new                            │
+└─────────────────────────────────────────────────┘
+```
+
+#### Usage
+
+```tsx
+<ReportCheckerUpload
+  onSuccess={(job) => router.push(`/law/jobs/${job.id}`)}
+/>
 ```
 
 ---

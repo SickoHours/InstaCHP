@@ -78,3 +78,6 @@ export { default as NotificationItem } from './NotificationItem';
 
 // Sidebar components (V2.0.0+)
 export { SidebarJobCard } from './SidebarJobCard';
+
+// Wrapper safety components (V2.0.0+)
+export { WrapperSafetyBanner, WrapperSafetyStatus } from './WrapperSafetyBanner';

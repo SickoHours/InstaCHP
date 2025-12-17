@@ -308,3 +308,100 @@ export function isTrueWrapperError(response: WrapperResponse): boolean {
   return true;
 }
 
+// ============================================
+// SAFETY PREFLIGHT CHECK
+// ============================================
+
+/**
+ * Response from the safety preflight check
+ */
+export interface SafetyPreflightResponse {
+  /** Whether the preflight was successful */
+  success: boolean;
+  /** Whether it's safe to run the wrapper now */
+  canRun: boolean;
+  /** If blocked, the safety block code */
+  blockCode?: SafetyBlockCode;
+  /** If blocked, seconds until retry is allowed */
+  retryAfterSeconds?: number;
+  /** Human-readable message */
+  message: string;
+  /** Current state of all safety mechanisms */
+  safetyState?: {
+    rateLimitRemaining: number;
+    cooldownActive: boolean;
+    runLockActive: boolean;
+    circuitBreakerState: 'closed' | 'open' | 'half-open';
+  };
+}
+
+/**
+ * DEV-ONLY: Run a preflight safety check to verify wrapper state
+ * 
+ * Calls the wrapper's /api/safety-check endpoint with mode=simulate
+ * to check if it's safe to run without actually executing a run.
+ * 
+ * This is useful for:
+ * - Testing the UI safety banner without burning real runs
+ * - Verifying the wrapper is configured and reachable
+ * - Checking current rate limit status
+ * 
+ * @returns SafetyPreflightResponse with current safety state
+ */
+export async function runSafetyPreflight(): Promise<SafetyPreflightResponse> {
+  try {
+    const response = await fetch('/api/wrapper/safety-check', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mode: 'simulate' }),
+    });
+
+    const data = await response.json();
+
+    // Map response to SafetyPreflightResponse
+    if (data.success && data.canRun) {
+      return {
+        success: true,
+        canRun: true,
+        message: data.message || 'Wrapper is ready to run',
+        safetyState: data.safetyState,
+      };
+    }
+
+    // Check for safety block
+    if (data.blockCode || data.code) {
+      const blockCode = (data.blockCode || data.code) as SafetyBlockCode;
+      return {
+        success: true,
+        canRun: false,
+        blockCode,
+        retryAfterSeconds: data.retryAfterSeconds,
+        message: data.message || getSafetyBlockMessage({
+          success: false,
+          error: 'Safety block active',
+          code: blockCode,
+          retryAfterSeconds: data.retryAfterSeconds,
+        }),
+        safetyState: data.safetyState,
+      };
+    }
+
+    // Generic blocked response
+    return {
+      success: true,
+      canRun: false,
+      message: data.message || 'Wrapper is not ready',
+      safetyState: data.safetyState,
+    };
+  } catch (error) {
+    console.error('[wrapperClient] Preflight check error:', error);
+    return {
+      success: false,
+      canRun: false,
+      message: error instanceof Error ? error.message : 'Failed to reach wrapper service',
+    };
+  }
+}
+

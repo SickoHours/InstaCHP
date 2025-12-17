@@ -51,8 +51,10 @@ import {
   extractRetryAfterSeconds,
   getSafetyBlockMessage,
   isTrueWrapperError,
+  runSafetyPreflight,
 } from '@/lib/wrapperClient';
 import type { WrapperErrorResponse, SafetyBlockCode } from '@/lib/wrapperClient';
+import { WrapperSafetyBanner } from '@/components/ui/WrapperSafetyBanner';
 import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
 import {
   isFatalJob,
@@ -771,6 +773,9 @@ export default function StaffJobDetailPage() {
 
   // Journey log collapse state
   const [isJourneyLogOpen, setIsJourneyLogOpen] = useState(false);
+
+  // Preflight check state (DEV only)
+  const [isRunningPreflight, setIsRunningPreflight] = useState(false);
 
   // Derived state
   const isPage1Complete = useMemo(() => {
@@ -1949,23 +1954,13 @@ export default function StaffJobDetailPage() {
                 )}
               </button>
 
-              {/* Safety Block Banner */}
-              {safetyBlockActive && (
-                <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 animate-slide-up">
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className="w-4 h-4 text-amber-400" />
-                    <span className="text-sm font-medium text-amber-400">
-                      {safetyBlockCode === 'RATE_LIMIT_ACTIVE' && 'Rate Limit Active'}
-                      {safetyBlockCode === 'RUN_LOCK_ACTIVE' && 'Run in Progress'}
-                      {safetyBlockCode === 'COOLDOWN_ACTIVE' && 'Cooldown Active'}
-                      {safetyBlockCode === 'CIRCUIT_BREAKER_ACTIVE' && 'Circuit Breaker'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-amber-400/80">
-                    Retry available in {safetyBlockCountdown} seconds. This is not an error.
-                  </p>
-                </div>
-              )}
+              {/* Safety Block Banner - Shared Component */}
+              <WrapperSafetyBanner
+                isActive={safetyBlockActive}
+                safetyBlockCode={safetyBlockCode}
+                countdown={safetyBlockCountdown}
+                variant="inline"
+              />
 
               {/* Progress Bar */}
               {isWrapperRunning && (
@@ -2076,6 +2071,56 @@ export default function StaffJobDetailPage() {
                       Safety Block Testing
                     </span>
                   </div>
+
+                  {/* Preflight Check Button */}
+                  <div className="mb-4">
+                    <button
+                      onClick={async () => {
+                        setIsRunningPreflight(true);
+                        try {
+                          const result = await runSafetyPreflight();
+                          if (result.canRun) {
+                            toast.success(`Preflight passed: ${result.message}`);
+                          } else if (result.blockCode) {
+                            // Set safety block state from preflight
+                            setSafetyBlockActive(true);
+                            setSafetyBlockCode(result.blockCode);
+                            setSafetyBlockCountdown(result.retryAfterSeconds || 15);
+                            toast.warning(`Preflight blocked: ${result.message}`);
+                          } else {
+                            toast.info(result.message);
+                          }
+                        } catch (error) {
+                          toast.error('Preflight failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                        }
+                        setIsRunningPreflight(false);
+                      }}
+                      disabled={isRunningPreflight || safetyBlockActive}
+                      className={cn(
+                        'w-full h-10 rounded-lg text-sm font-medium transition-all',
+                        'flex items-center justify-center gap-2',
+                        isRunningPreflight || safetyBlockActive
+                          ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30'
+                      )}
+                    >
+                      {isRunningPreflight ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Checking...
+                        </>
+                      ) : (
+                        <>
+                          <Info className="w-4 h-4" />
+                          Run Preflight Check
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Calls /api/safety-check mode=simulate to verify wrapper state
+                    </p>
+                  </div>
+
                   <p className="text-xs text-slate-500 mb-3">
                     Test the UI behavior when the wrapper blocks for safety. These buttons simulate
                     different safety block scenarios without hitting the real wrapper.

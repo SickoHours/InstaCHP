@@ -8,6 +8,13 @@
  * - CHP_WRAPPER_BASE_URL: Base URL of the CHP wrapper service (e.g., https://chp-wrapper.fly.dev)
  * - CHP_WRAPPER_API_KEY: API key for authentication with the wrapper
  *
+ * Payload Notes:
+ * - crashDate: YYYY-MM-DD format recommended (e.g., "2024-12-15")
+ *   The wrapper accepts both YYYY-MM-DD and MM/DD/YYYY, but YYYY-MM-DD
+ *   is preferred for consistency and ISO compliance.
+ * - crashTime: HHMM 24-hour format (e.g., "1430" for 2:30 PM)
+ * - ncic: 4-digit code derived from first 4 digits of report number
+ *
  * @see docs/prd/04-chp-wrapper.md for wrapper specification
  */
 
@@ -99,10 +106,10 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ProxyResponse | ProxyErrorResponse>> {
   // 1. Verify server-side configuration exists
-  const baseUrl = process.env.CHP_WRAPPER_BASE_URL;
+  const rawBaseUrl = process.env.CHP_WRAPPER_BASE_URL;
   const apiKey = process.env.CHP_WRAPPER_API_KEY;
 
-  if (!baseUrl || !apiKey) {
+  if (!rawBaseUrl || !apiKey) {
     console.error('[wrapper/run] Missing environment configuration');
     return NextResponse.json(
       {
@@ -110,12 +117,23 @@ export async function POST(
         error: 'Wrapper service not configured. Contact administrator.',
         code: 'MISSING_CONFIG',
         missing: {
-          baseUrl: !baseUrl,
+          baseUrl: !rawBaseUrl,
           apiKey: !apiKey,
         },
       } satisfies ProxyErrorResponse,
       { status: 503 }
     );
+  }
+
+  // Normalize base URL: strip trailing slash and ensure we don't double /api
+  // CHP_WRAPPER_BASE_URL should be like "https://chp-wrapper.fly.dev" (no trailing /api)
+  let baseUrl = rawBaseUrl.trim().replace(/\/+$/, '');
+  
+  // Safety check: if someone accidentally includes /api or /api/run-chp, strip it
+  if (baseUrl.endsWith('/api/run-chp')) {
+    baseUrl = baseUrl.replace(/\/api\/run-chp$/, '');
+  } else if (baseUrl.endsWith('/api')) {
+    baseUrl = baseUrl.replace(/\/api$/, '');
   }
 
   // 2. Parse request body (minimal validation - let wrapper enforce field rules)

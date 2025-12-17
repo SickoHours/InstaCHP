@@ -73,3 +73,112 @@ export function getDelay(
       return 1000;
   }
 }
+
+// ============================================
+// DEV-ONLY: SAFETY BLOCK TESTING
+// ============================================
+
+import type { SafetyBlockCode } from './wrapperClient';
+
+/**
+ * Safety block simulation result for testing
+ * Used to verify the Staff UI handles safety blocks correctly
+ */
+export interface SafetyBlockTestResult {
+  success: boolean;
+  code: SafetyBlockCode;
+  message: string;
+  retryAfterSeconds: number;
+}
+
+/**
+ * DEV-ONLY: Simulate a safety block for testing the Staff UI
+ * 
+ * This triggers a mock safety block response without hitting the real wrapper.
+ * Used to verify:
+ * - Amber banner appears with correct code label
+ * - Countdown timer works properly
+ * - Button is disabled during countdown
+ * - Job status is NOT escalated (no failure language)
+ * 
+ * @param code - The safety block code to simulate
+ * @param retryAfterSeconds - Seconds until retry is allowed (default: 15)
+ * @returns SafetyBlockTestResult with the simulated response
+ */
+export function simulateSafetyBlock(
+  code: SafetyBlockCode = 'RATE_LIMIT_ACTIVE',
+  retryAfterSeconds: number = 15
+): SafetyBlockTestResult {
+  if (!DEV_MODE) {
+    console.warn('[simulateSafetyBlock] This function is only available in dev mode');
+    return {
+      success: false,
+      code: 'RATE_LIMIT_ACTIVE',
+      message: 'Dev-only function called in production',
+      retryAfterSeconds: 0,
+    };
+  }
+
+  const messages: Record<SafetyBlockCode, string> = {
+    RATE_LIMIT_ACTIVE: 'Rate limit active. Too many requests to CHP portal.',
+    RUN_LOCK_ACTIVE: 'Another wrapper run is in progress.',
+    COOLDOWN_ACTIVE: 'Wrapper is in cooldown period after recent run.',
+    CIRCUIT_BREAKER_ACTIVE: 'CHP portal temporarily unavailable.',
+  };
+
+  console.log(`[DEV] Simulating safety block: ${code} (retry in ${retryAfterSeconds}s)`);
+
+  return {
+    success: true,
+    code,
+    message: messages[code],
+    retryAfterSeconds,
+  };
+}
+
+/**
+ * DEV-ONLY: Trigger a real safety block by calling the proxy twice quickly
+ * 
+ * This sends two rapid requests to the proxy to trigger a RUN_LOCK_ACTIVE
+ * or COOLDOWN_ACTIVE response from the real wrapper.
+ * 
+ * Use this to test the full integration path including real network calls.
+ * 
+ * @param payload - The wrapper request payload to send
+ * @returns Promise that resolves when the second call returns (should be a safety block)
+ */
+export async function triggerRealSafetyBlock(
+  payload: Record<string, unknown>
+): Promise<{ firstResponse: Response; secondResponse: Response }> {
+  if (!DEV_MODE) {
+    throw new Error('[triggerRealSafetyBlock] Only available in dev mode');
+  }
+
+  console.log('[DEV] Triggering real safety block with rapid double-call...');
+
+  // Fire both requests simultaneously
+  const [firstResponse, secondResponse] = await Promise.all([
+    fetch('/api/wrapper/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    // Slight delay to ensure server processes first request first
+    new Promise<Response>((resolve) =>
+      setTimeout(
+        () =>
+          fetch('/api/wrapper/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then(resolve),
+        50
+      )
+    ),
+  ]);
+
+  console.log('[DEV] First response status:', firstResponse.status);
+  console.log('[DEV] Second response status:', secondResponse.status);
+
+  return { firstResponse, secondResponse };
+}

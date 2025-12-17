@@ -5,6 +5,131 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2025-12-16
+
+### Changed
+
+#### CrashDate Format Alignment & Debug Cleanup
+
+**Purpose:**
+Align InstaTCR payload format with the wrapper's CrashDate requirements (YYYY-MM-DD recommended) and remove temporary debug fields now that authentication is confirmed working.
+
+**Files Modified:**
+
+1. **`src/app/api/wrapper/run/route.ts`** - Proxy route documentation
+   - Added payload notes documenting crashDate format requirements
+   - YYYY-MM-DD is recommended for ISO compliance
+   - Wrapper accepts both YYYY-MM-DD and MM/DD/YYYY formats
+
+2. **`src/lib/wrapperClient.ts`** - Client library improvements (~40 lines added)
+   - Updated usage example to show YYYY-MM-DD format
+   - Updated `crashDate` comment in `WrapperRequest` interface
+   - Added `isLegacyDateFormat()` helper to detect MM/DD/YYYY patterns
+   - Added `normalizeDate()` helper to convert MM/DD/YYYY → YYYY-MM-DD
+   - Dev-only console.warn when legacy format conversion occurs
+   - Removed temporary `debug` field from `WrapperErrorResponse` (auth confirmed working)
+   - Updated `runWrapper()` to normalize crashDate before sending
+
+**Date Normalization:**
+
+```typescript
+// Automatic conversion in dev mode with warning
+normalizeDate("12/15/2024") // → "2024-12-15" (logs warning)
+normalizeDate("2024-12-15") // → "2024-12-15" (no change)
+```
+
+**Payload Example:**
+
+```json
+{
+  "reportNumber": "1234-2024-00001",
+  "crashDate": "2024-12-15",
+  "crashTime": "1430",
+  "ncic": "1234",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+
+**Curl Test Command:**
+
+```bash
+curl -X POST https://chp-wrapper.fly.dev/api/run-chp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $CHP_WRAPPER_API_KEY" \
+  -d '{"reportNumber":"1234-2024-00001","crashDate":"2024-12-15","crashTime":"1430","ncic":"1234","firstName":"John","lastName":"Doe"}'
+```
+
+**Files Modified:** 2 files
+**Lines Added:** ~40 lines
+**Lines Changed:** ~10 lines
+
+**Version:** V2.5.3 (CrashDate Format Alignment)
+
+---
+
+## [2.5.2] - 2025-12-16
+
+### Added
+
+#### Wrapper Key Sync & Testing Scripts
+
+**Purpose:**
+Eliminate API key mismatch issues between local `.env.local` and Fly.io deployment with automated sync and verification scripts.
+
+**New Files Created:**
+
+- **`scripts/sync-wrapper-key.sh`** - Syncs API key to Fly.io (~60 lines)
+  - Reads `CHP_WRAPPER_API_KEY` from `.env.local` (strips quotes + whitespace)
+  - Prints key fingerprint (length + sha256 first 8 chars) - never the raw key
+  - Sets Fly secret via `fly secrets set`
+  - Waits for health check (12 retries × 5s) before verification
+  - Verifies via SSH that remote key sha8 matches local
+  - Fails with `fly status` output if health check or sha8 mismatch
+
+- **`scripts/test-wrapper-direct.sh`** - Tests wrapper endpoint directly (~50 lines)
+  - Loads same cleaned key from `.env.local`
+  - Calls `https://chp-wrapper-tool-uxqp9q.fly.dev/api/run-chp` with Bearer auth
+  - Prints HTTP code + response body
+  - Exits 0 on 400 (auth passed), exits 1 on 401 (auth failed)
+
+- **`docs/wrapper-testing.md`** - Quick reference documentation
+  - Full workflow commands
+  - Troubleshooting guide
+  - Prerequisites (fly CLI, auth)
+
+**Usage:**
+
+```bash
+# Sync key to Fly.io (with health check + SHA verification)
+bash scripts/sync-wrapper-key.sh
+
+# Test wrapper directly (should return HTTP 400)
+bash scripts/test-wrapper-direct.sh
+```
+
+**Expected Output:**
+
+```
+📋 Local key: len=64 sha8=c2f97e16
+🔐 Setting Fly secret on chp-wrapper-tool-uxqp9q...
+⏳ Waiting for app to become healthy...
+   Attempt 1/12: https://chp-wrapper-tool-uxqp9q.fly.dev/api/health
+✅ App is healthy!
+🔍 Fly key: sha8=c2f97e16
+✅ Keys match! sha8=c2f97e16
+```
+
+**Security:**
+- Scripts never print the raw API key
+- Only length + sha256 first 8 chars (fingerprint) are displayed
+- Keys are passed directly to fly CLI (no temp files)
+
+**Files Created:** 3 files
+**Lines Added:** ~170 lines
+
+---
+
 ## [2.5.1] - 2025-12-15
 
 ### Added

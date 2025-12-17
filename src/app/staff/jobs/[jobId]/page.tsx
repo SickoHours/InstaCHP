@@ -44,8 +44,15 @@ import TimelineMessage from '@/components/ui/TimelineMessage';
 import TabBar from '@/components/ui/TabBar';
 import PickupScheduler from '@/components/ui/PickupScheduler';
 import { formatRelativeTime } from '@/lib/utils';
-import { getDelay, DEV_MODE } from '@/lib/devConfig';
-import { runWrapper } from '@/lib/wrapperClient';
+import { getDelay, DEV_MODE, simulateSafetyBlock } from '@/lib/devConfig';
+import {
+  runWrapper,
+  isRetryableSafetyBlock,
+  extractRetryAfterSeconds,
+  getSafetyBlockMessage,
+  isTrueWrapperError,
+} from '@/lib/wrapperClient';
+import type { WrapperErrorResponse, SafetyBlockCode } from '@/lib/wrapperClient';
 import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
 import {
   isFatalJob,
@@ -737,6 +744,12 @@ export default function StaffJobDetailPage() {
   const [wrapperProgress, setWrapperProgress] = useState(0);
   const [lastWrapperResult, setLastWrapperResult] = useState<WrapperResult | null>(null);
 
+  // Safety block state (rate limits, cooldowns, etc.)
+  const [safetyBlockActive, setSafetyBlockActive] = useState(false);
+  const [safetyBlockCode, setSafetyBlockCode] = useState<SafetyBlockCode | null>(null);
+  const [safetyBlockCountdown, setSafetyBlockCountdown] = useState(0);
+  const [lastRunId, setLastRunId] = useState<string | null>(null);
+
   // Auto-checker state
   const [isAutoChecking, setIsAutoChecking] = useState(false);
   const [autoCheckResult, setAutoCheckResult] = useState<'found' | 'not_found' | null>(null);
@@ -799,6 +812,28 @@ export default function StaffJobDetailPage() {
       }, 800);
     }
   }, [userFacingEvents.length]);
+
+  // Safety block countdown timer
+  useEffect(() => {
+    if (safetyBlockCountdown <= 0) {
+      setSafetyBlockActive(false);
+      setSafetyBlockCode(null);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setSafetyBlockCountdown((prev) => {
+        if (prev <= 1) {
+          setSafetyBlockActive(false);
+          setSafetyBlockCode(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [safetyBlockCountdown]);
 
   // ============================================
   // HANDLERS
@@ -864,13 +899,33 @@ export default function StaffJobDetailPage() {
       } else {
         // Handle error response from wrapper
         console.error('[handleRunWrapper] Wrapper error:', response.error);
+
+        // Check for safety blocks FIRST - these are NOT true errors
+        if (isRetryableSafetyBlock(response as WrapperErrorResponse)) {
+          const errorResp = response as WrapperErrorResponse;
+          const retryAfter = extractRetryAfterSeconds(errorResp) || 30;
+
+          // Set safety block state
+          setSafetyBlockActive(true);
+          setSafetyBlockCode(errorResp.code as SafetyBlockCode);
+          setSafetyBlockCountdown(retryAfter);
+
+          // Show friendly toast
+          toast.warning(getSafetyBlockMessage(errorResp));
+
+          // Early return - don't update job status or escalate
+          clearInterval(progressInterval);
+          setWrapperProgress(0);
+          setIsWrapperRunning(false);
+          return;
+        }
         
         // Map error to a result type
         if (response.mappedResultType) {
           result = response.mappedResultType;
         } else if (response.code === 'WRAPPER_AUTH_FAILED') {
           // Auth failure - show debug info in console for troubleshooting
-          console.warn('[handleRunWrapper] Auth failed debug:', response.debug);
+          console.warn('[handleRunWrapper] Auth failed debug:', (response as WrapperErrorResponse & { debug?: unknown }).debug);
           result = 'PORTAL_ERROR';
           errorMessage = 'Wrapper authentication failed. Contact administrator.';
         } else if (response.fieldErrors) {
@@ -947,8 +1002,9 @@ export default function StaffJobDetailPage() {
       });
     }
 
+    const runId = `run_${generateId()}`;
     const newRun: WrapperRun = {
-      runId: `run_${generateId()}`,
+      runId,
       timestamp: Date.now(),
       result,
       duration,
@@ -957,6 +1013,9 @@ export default function StaffJobDetailPage() {
       page2FieldsTried,
       page2FieldResults,
     };
+
+    // Track last run ID for status display
+    setLastRunId(runId);
 
     // Update local job state
     setLocalJob((prev) => {
@@ -1862,12 +1921,12 @@ export default function StaffJobDetailPage() {
               {/* Run Button */}
               <button
                 onClick={handleRunWrapper}
-                disabled={!canRunWrapper || isWrapperRunning}
+                disabled={!canRunWrapper || isWrapperRunning || safetyBlockActive}
                 className={cn(
                   'w-full h-12 md:h-10 rounded-lg font-medium',
                   'transition-all duration-200',
                   'flex items-center justify-center gap-2',
-                  canRunWrapper && !isWrapperRunning
+                  canRunWrapper && !isWrapperRunning && !safetyBlockActive
                     ? 'bg-gradient-to-r from-amber-500 to-cyan-600 text-white hover:from-amber-400 hover:to-cyan-500 active:scale-98'
                     : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                 )}
@@ -1877,6 +1936,11 @@ export default function StaffJobDetailPage() {
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Running... ({Math.round(wrapperProgress)}%)</span>
                   </>
+                ) : safetyBlockActive ? (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    <span>Retry in {safetyBlockCountdown}s</span>
+                  </>
                 ) : (
                   <>
                     <Play className="w-4 h-4" />
@@ -1885,6 +1949,24 @@ export default function StaffJobDetailPage() {
                 )}
               </button>
 
+              {/* Safety Block Banner */}
+              {safetyBlockActive && (
+                <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 animate-slide-up">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm font-medium text-amber-400">
+                      {safetyBlockCode === 'RATE_LIMIT_ACTIVE' && 'Rate Limit Active'}
+                      {safetyBlockCode === 'RUN_LOCK_ACTIVE' && 'Run in Progress'}
+                      {safetyBlockCode === 'COOLDOWN_ACTIVE' && 'Cooldown Active'}
+                      {safetyBlockCode === 'CIRCUIT_BREAKER_ACTIVE' && 'Circuit Breaker'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-400/80">
+                    Retry available in {safetyBlockCountdown} seconds. This is not an error.
+                  </p>
+                </div>
+              )}
+
               {/* Progress Bar */}
               {isWrapperRunning && (
                 <div className="mt-3 h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -1892,6 +1974,48 @@ export default function StaffJobDetailPage() {
                     className="h-full bg-gradient-to-r from-amber-400 to-cyan-500 transition-all duration-100"
                     style={{ width: `${wrapperProgress}%` }}
                   />
+                </div>
+              )}
+
+              {/* Wrapper Status Section */}
+              {(lastRunId || safetyBlockActive || lastWrapperResult) && !isWrapperRunning && (
+                <div className="mt-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Info className="w-3 h-3" />
+                    Wrapper Status
+                  </p>
+                  <div className="space-y-1.5 text-sm">
+                    {lastRunId && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Last Run ID</span>
+                        <code className="text-xs text-slate-400 bg-slate-900/50 px-2 py-0.5 rounded font-mono">
+                          {lastRunId}
+                        </code>
+                      </div>
+                    )}
+                    {lastWrapperResult && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Last Result</span>
+                        <WrapperResultBadge result={lastWrapperResult} />
+                      </div>
+                    )}
+                    {safetyBlockActive && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Block Type</span>
+                        <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                          {safetyBlockCode?.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    )}
+                    {safetyBlockActive && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Retry In</span>
+                        <span className="text-sm text-amber-400 font-mono">
+                          {safetyBlockCountdown}s
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1940,6 +2064,109 @@ export default function StaffJobDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* DEV-ONLY: Safety Block Testing Tools */}
+              {DEV_MODE && (
+                <div className="mt-4 border-t border-dashed border-slate-700/50 pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-mono text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">
+                      DEV ONLY
+                    </span>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider">
+                      Safety Block Testing
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Test the UI behavior when the wrapper blocks for safety. These buttons simulate
+                    different safety block scenarios without hitting the real wrapper.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        const result = simulateSafetyBlock('RATE_LIMIT_ACTIVE', 15);
+                        setSafetyBlockActive(true);
+                        setSafetyBlockCode('RATE_LIMIT_ACTIVE');
+                        setSafetyBlockCountdown(result.retryAfterSeconds);
+                        toast.warning(result.message);
+                      }}
+                      disabled={safetyBlockActive}
+                      className={cn(
+                        'h-10 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center justify-center gap-1',
+                        safetyBlockActive
+                          ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                      )}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      Rate Limit
+                    </button>
+                    <button
+                      onClick={() => {
+                        const result = simulateSafetyBlock('RUN_LOCK_ACTIVE', 10);
+                        setSafetyBlockActive(true);
+                        setSafetyBlockCode('RUN_LOCK_ACTIVE');
+                        setSafetyBlockCountdown(result.retryAfterSeconds);
+                        toast.warning(result.message);
+                      }}
+                      disabled={safetyBlockActive}
+                      className={cn(
+                        'h-10 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center justify-center gap-1',
+                        safetyBlockActive
+                          ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                      )}
+                    >
+                      <Lock className="w-3 h-3" />
+                      Run Lock
+                    </button>
+                    <button
+                      onClick={() => {
+                        const result = simulateSafetyBlock('COOLDOWN_ACTIVE', 8);
+                        setSafetyBlockActive(true);
+                        setSafetyBlockCode('COOLDOWN_ACTIVE');
+                        setSafetyBlockCountdown(result.retryAfterSeconds);
+                        toast.warning(result.message);
+                      }}
+                      disabled={safetyBlockActive}
+                      className={cn(
+                        'h-10 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center justify-center gap-1',
+                        safetyBlockActive
+                          ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                      )}
+                    >
+                      <Clock className="w-3 h-3" />
+                      Cooldown
+                    </button>
+                    <button
+                      onClick={() => {
+                        const result = simulateSafetyBlock('CIRCUIT_BREAKER_ACTIVE', 30);
+                        setSafetyBlockActive(true);
+                        setSafetyBlockCode('CIRCUIT_BREAKER_ACTIVE');
+                        setSafetyBlockCountdown(result.retryAfterSeconds);
+                        toast.warning(result.message);
+                      }}
+                      disabled={safetyBlockActive}
+                      className={cn(
+                        'h-10 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center justify-center gap-1',
+                        safetyBlockActive
+                          ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                      )}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      Circuit Breaker
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-2 italic">
+                    Expected: Amber banner + countdown + disabled button. No escalation or error language.
+                  </p>
+                </div>
+              )}
             </StaffControlCard>
 
             {/* Card 4: Wrapper History */}

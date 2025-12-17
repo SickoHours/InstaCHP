@@ -468,7 +468,7 @@ interface Job {
   crashDate?: string;           // "mm/dd/yyyy"
   crashTime?: string;           // "HHMM"
   ncic?: string;                // 4 digits, auto-derived
-  officerId?: string;           // 6 digits, starts with "0"
+  officerId?: string;           // 5 digits, left-padded with zeros
 
   // Page 2 data (verification)
   firstName?: string;           // Auto-split from clientName

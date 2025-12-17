@@ -10,13 +10,15 @@ A detailed development roadmap for InstaTCR, following a phased frontend-first a
 |---------|-------|----------|--------|
 | **V1** | MVP Frontend | 13 days + enhancements | ✅ Complete (V1.9.0 - Authorization Gate) |
 | **V2** | UI Polish & Shell | 1 day | ✅ Complete (V2.2.0 - App Shell) |
-| **V2.5** | Fast Form + Organizations | 2-3 weeks | ⚪ Not Started (Next Priority) |
-| **V3** | Backend Integration | 6 days | ⚪ Not Started |
+| **V2.5** | Wrapper Proxy Route | 1 day | ✅ Complete (V2.5.5 - Safety Banner Fallback) |
+| **V2.6** | Fast Form | 2 days | ✅ Complete (V2.6.1 - Timeout Handling) |
+| **V2.7** | Page 1 Attempt Guardrails | 1 day | ✅ Complete (V2.7.0 - Attempt-Aware UX) |
+| **V3** | Backend Integration | 6 days | ⚪ Not Started (Next Priority) |
 | **V4** | VAPI AI Caller | TBD | ⚪ Not Started |
 | **V5** | Open Router AI | TBD | ⚪ Not Started |
 
-**Current Version:** V2.2.0 (December 13, 2025)
-**Next Up:** V2.5.0 - Fast Form & Wrapper Integration
+**Current Version:** V2.7.0 (December 16, 2025)
+**Next Up:** V3.0.0 - Backend Integration (Convex)
 
 ---
 
@@ -942,24 +944,117 @@ Transformed the authenticated pages into a modern ChatGPT-style dashboard with e
 
 ---
 
-## V2.5: Fast Form + Organizations (2-3 Weeks) — ⚪ Not Started
+## V2.5-V2.7: Fast Form + Page 1 Guardrails — ✅ Complete
 
-**Goal:** Add Fast Form as primary entry point, Clerk authentication with organizations, collaborators system, and staff workspace enhancements.
+**Goal:** Add Fast Form as primary entry point, integrate with real CHP wrapper on Fly.io, and add Page 1 attempt guardrails to protect users from burning limited CHP attempts.
 
-**Why V2.5 Before V3:** Fast Form is the core value proposition for the 72-hour window use case. It makes sense to complete the primary user experience (including real wrapper integration) before full backend migration. This also allows us to validate the wrapper contract with real users.
+**Why V2.5-V2.7 Before V3:** Fast Form is the core value proposition for the 72-hour window use case. The real wrapper integration and Page 1 guardrails ensure users don't accidentally lock themselves out of CHP. This validates the wrapper contract with real users before full backend migration.
 
 **Strategic Context:**
 - Primary use case: Law firm gets new case within 72 hours, needs crash report urgently
 - 99% of the time at this stage: Face page only (full report not ready yet)
 - Fast Form + wrapper → Face page → **Auto-checker (most critical feature)**
 - Real-time tracking once face page uploaded
+- **CHP Portal Rule:** Page 1 has only ~1-2 attempts before lockout
 
 ---
 
-### V2.5.0: Fast Form & Wrapper Integration (Week 1) ⚪ Not Started
+### V2.5.0: Wrapper Proxy Route ✅ Complete
+
+**Duration:** 1 day
+**Status:** ✅ Complete (December 15, 2025)
+
+**Completed:**
+- [x] `/api/wrapper/run` proxy route with server-side credentials
+- [x] Input validation (Page 1 required, Page 2 at least one field)
+- [x] Error handling with typed codes (MISSING_CONFIG, VALIDATION_ERROR, etc.)
+- [x] GET health check endpoint
+
+---
+
+### V2.5.1-V2.5.5: Wrapper Integration & Safety ✅ Complete
+
+**Duration:** 2 days
+**Status:** ✅ Complete (December 16, 2025)
+
+**Completed:**
+- [x] `wrapperClient.ts` - Type-safe client library for wrapper calls
+- [x] UI integration with staff job detail page
+- [x] Dev mode fallback to mock behavior
+- [x] CrashDate format normalization (MM/DD/YYYY → YYYY-MM-DD)
+- [x] API key sync scripts (`sync-wrapper-key.sh`, `test-wrapper-direct.sh`)
+- [x] Universal safety banner system (`WrapperSafetyBanner`, `WrapperSafetyStatus`)
+- [x] Preflight check route (`/api/wrapper/safety-check`)
+- [x] Fallback config for unknown safety block codes
+
+---
+
+### V2.6.0-V2.6.1: Fast Form ✅ Complete
+
+**Duration:** 2 days
+**Status:** ✅ Complete (December 16-17, 2025)
+
+**Completed:**
+- [x] Fast Form page (`/law/jobs/new-fast`) with 2-column layout
+- [x] Page 1 fields: Report Number, Crash Date, Crash Time, Officer ID, NCIC (auto)
+- [x] Page 2 fields: Client Name, License Plate, Driver License, VIN
+- [x] Perjury checkbox with full legal text
+- [x] All wrapper result handling (FULL, FACE_PAGE, PAGE1_NOT_FOUND, etc.)
+- [x] Safety block handling with countdown
+- [x] Auto-escalation modal for true errors
+- [x] 90-second timeout handling with proper error messages
+- [x] Input.tsx date input label fix
+- [x] Law firm dashboard routing to Fast Form
+
+---
+
+### V2.7.0: Page 1 Attempt Guardrails ✅ Complete
+
+**Duration:** 1 day
+**Status:** ✅ Complete (December 16, 2025)
+
+**Completed:**
+- [x] `Page1AttemptGuard.tsx` - Three guardrail components
+  - [x] `Page1WarningBanner` - Amber warning before first run
+  - [x] `Page1ConfirmationModal` - Re-type date/time after 1 failure
+  - [x] `Page1LockedBanner` - Red banner after 2+ failures
+- [x] `Page1FailureCard.tsx` - Explicit failure messaging with checklist
+- [x] `page1FailureCount` and `lastPage1FailureAt` tracking in Job
+- [x] `isPage1Rejection()` and `consumedPage1Attempt()` helpers
+- [x] UI helpers: `getPage1FailureCount()`, `isPage1Locked()`, `needsPage1Confirmation()`
+- [x] `PAGE1_REJECTED_ATTEMPT_RISK` result type support
+- [x] Officer ID format fix: 5 digits (was incorrectly 6 digits)
+- [x] Staff job detail integration with conditional rendering
+- [x] Fast Form integration with warning banner
+- [x] Driver rescue form with Page 1 context warning
+
+**Key Files Created/Modified:**
+- `src/components/ui/Page1AttemptGuard.tsx` (new)
+- `src/components/ui/Page1FailureCard.tsx` (new)
+- `src/lib/types.ts` (extended)
+- `src/lib/wrapperClient.ts` (extended)
+- `src/lib/jobUIHelpers.ts` (extended)
+- `src/lib/utils.ts` (fixed officer ID)
+- `src/app/api/wrapper/run/route.ts` (updated)
+- `src/app/staff/jobs/[jobId]/page.tsx` (integrated)
+- `src/app/law/jobs/new-fast/page.tsx` (integrated)
+
+---
+
+### V2.5 Original Tasks (Partial - Remaining for V3+)
+
+**Deferred to V3:**
+- [ ] Clerk Authentication + Organizations
+- [ ] Collaborators Field (real implementation)
+- [ ] Report Checker via Face Page Upload
+- [ ] Staff Workspace Enhancements
+
+---
+
+### V2.5.0 Original: Fast Form & Wrapper Integration (Reference)
 
 **Duration:** 5 days
-**Status:** ⚪ Not Started
+**Status:** ✅ Mostly Complete (see above sections)
 
 #### Tasks:
 
@@ -984,7 +1079,7 @@ Transformed the authenticated pages into a modern ChatGPT-style dashboard with e
 - [ ] Report number: `9XXX-YYYY-ZZZZZ` format
 - [ ] Crash date: `MM/DD/YYYY`, not in future
 - [ ] Crash time: `HHMM`, 24-hour format (00:00-23:59)
-- [ ] Officer ID: 6 digits starting with 0
+- [x] Officer ID: 5 digits, left-padded with zeros
 
 **3. Wrapper API Integration**
 - [ ] Create `/api/wrapper/run` route

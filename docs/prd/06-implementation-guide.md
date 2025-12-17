@@ -1127,7 +1127,7 @@ Suggest corrections for invalid data:
 
 ```
 User enters: Officer ID "12345"
-AI suggests: "Officer IDs should be 6 digits starting with 0. Did you mean 012345?"
+AI suggests: "Officer IDs should be 5 digits, left-padded with zeros. Did you mean 01234?"
 ```
 
 ### Implementation Placeholder
@@ -1423,7 +1423,7 @@ The Fast Form collects all Page 1 + Page 2 fields in a single form with addition
 | Report Number | `9XXX-YYYY-ZZZZZ` | Yes | "9465-2025-02802" | "Format: 9XXX-YYYY-ZZZZZ" |
 | Crash Date | `MM/DD/YYYY` | Yes | "12/15/2025" | "Valid date required" |
 | Crash Time | `HHMM` (00:00-23:59) | Yes | "1430" | "24-hour format: HHMM" |
-| Officer ID | 6 digits, starts with 0 | Yes | "012345" | "6 digits starting with 0" |
+| Officer ID | 5 digits, left-padded | Yes | "01234" | "5 digits, left-padded with zeros" |
 | NCIC | 4 digits, starts with 9 (auto) | No (auto-derived) | "9465" | N/A (read-only) |
 | **Page 2 Fields** |
 | Client Name | Min 2 chars | Yes | "John Doe" | "Name required" |
@@ -1460,7 +1460,7 @@ function validateFastForm(form: FastFormState): ValidationResult {
   }
 
   if (!form.officerId || !/^0\d{5}$/.test(form.officerId)) {
-    errors.officerId = "6 digits starting with 0";
+    errors.officerId = "5 digits, left-padded with zeros";
   }
 
   // Page 2 validation (client name always required)

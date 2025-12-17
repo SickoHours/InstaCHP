@@ -15,11 +15,22 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Derive NCIC code from report number
- * NCIC is always the first 4 characters of the report number
+ * Extracts first 4 digits (digits-only), must start with 9
  * @example deriveNcic('9465-2025-02802') => '9465'
+ * @example deriveNcic('9XXX-2025-02802') => '9' (only valid digits)
  */
 export function deriveNcic(reportNumber: string): string {
-  return reportNumber.slice(0, 4);
+  // Extract only digits from the report number
+  const digitsOnly = reportNumber.replace(/\D/g, '');
+  // Take first 4 digits
+  return digitsOnly.slice(0, 4);
+}
+
+/**
+ * Validate NCIC format: 4 digits starting with 9
+ */
+export function isValidNcic(ncic: string): boolean {
+  return /^9\d{3}$/.test(ncic);
 }
 
 /**
@@ -81,12 +92,29 @@ export function convertDateForInput(apiDate: string): string {
 // ============================================
 
 /**
- * Validate crash time format: HHMM (4 digits, 24-hour)
+ * Normalize crash time to HHMM format
+ * Accepts HH:MM or HHMM input
+ * @example normalizeCrashTime('14:30') => '1430'
+ * @example normalizeCrashTime('1430') => '1430'
+ * @example normalizeCrashTime('8:45') => '0845'
+ */
+export function normalizeCrashTime(value: string): string {
+  if (!value) return '';
+  // Remove any colons and normalize
+  const cleaned = value.replace(/:/g, '');
+  // Pad to 4 digits if needed (e.g., '845' => '0845')
+  return cleaned.padStart(4, '0');
+}
+
+/**
+ * Validate crash time format: HHMM (4 digits, 24-hour) or HH:MM
  */
 export function isValidCrashTime(value: string): boolean {
-  if (!/^\d{4}$/.test(value)) return false;
-  const hours = parseInt(value.slice(0, 2), 10);
-  const minutes = parseInt(value.slice(2, 4), 10);
+  // Normalize first (accept HH:MM or HHMM)
+  const normalized = normalizeCrashTime(value);
+  if (!/^\d{4}$/.test(normalized)) return false;
+  const hours = parseInt(normalized.slice(0, 2), 10);
+  const minutes = parseInt(normalized.slice(2, 4), 10);
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
@@ -152,18 +180,34 @@ export function formatRelativeTime(timestamp: number): string {
 
 /**
  * Regular expression for officer ID validation
- * Format: 6 digits starting with 0
- * @example "012345" - valid
+ * Format: 5 digits, left-padded with zeros
+ * @example "01234" - valid
+ * @example "12345" - valid
  */
-export const OFFICER_ID_REGEX = /^0\d{5}$/;
+export const OFFICER_ID_REGEX = /^\d{5}$/;
+
+/**
+ * Normalize officer ID to 5 digits with leading zeros
+ * @example normalizeOfficerId('1234') => '01234'
+ * @example normalizeOfficerId('01234') => '01234'
+ * @example normalizeOfficerId('123') => '00123'
+ */
+export function normalizeOfficerId(value: string): string {
+  if (!value) return '';
+  // Extract only digits
+  const digitsOnly = value.replace(/\D/g, '');
+  // Pad to 5 digits with leading zeros
+  return digitsOnly.padStart(5, '0');
+}
 
 /**
  * Validate officer ID format
  * @param value - The officer ID to validate
- * @returns true if valid format (6 digits starting with 0), false otherwise
- * @example isValidOfficerId('012345') => true
- * @example isValidOfficerId('12345') => false (missing leading 0)
- * @example isValidOfficerId('0123456') => false (too long)
+ * @returns true if valid format (5 digits, left-padded), false otherwise
+ * @example isValidOfficerId('01234') => true
+ * @example isValidOfficerId('12345') => true
+ * @example isValidOfficerId('1234') => false (too short)
+ * @example isValidOfficerId('123456') => false (too long)
  */
 export function isValidOfficerId(value: string): boolean {
   return OFFICER_ID_REGEX.test(value);
@@ -177,8 +221,7 @@ export function isValidOfficerId(value: string): boolean {
  */
 export function formatOfficerIdError(value: string): string | undefined {
   if (!value) return undefined; // Empty is OK (field is optional)
-  if (value.length !== 6) return 'Must be exactly 6 digits';
-  if (!value.startsWith('0')) return 'Must start with 0';
+  if (value.length !== 5) return 'Must be exactly 5 digits';
   if (!/^\d+$/.test(value)) return 'Must contain only digits';
   return undefined; // Valid
 }
@@ -192,4 +235,87 @@ export function formatOfficerIdError(value: string): string | undefined {
  */
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
+}
+
+// ============================================
+// PAGE 1 HASH UTILITIES
+// ============================================
+
+/**
+ * Normalize Page 1 inputs for consistent hashing
+ * Applies all normalization rules before hashing
+ */
+export function normalizePage1Inputs(page1Data: {
+  reportNumber: string;
+  crashDate: string;
+  crashTime: string;
+  officerId: string;
+}): {
+  reportNumber: string;
+  ncic: string;
+  crashDate: string;
+  crashTime: string;
+  officerId: string;
+} {
+  return {
+    // Report number: uppercase, digits and hyphens only
+    reportNumber: page1Data.reportNumber.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
+    // NCIC: first 4 digits only
+    ncic: deriveNcic(page1Data.reportNumber),
+    // Crash date: YYYY-MM-DD format (as-is from HTML date input)
+    crashDate: page1Data.crashDate,
+    // Crash time: normalize HH:MM or HHMM to HHMM
+    crashTime: normalizeCrashTime(page1Data.crashTime),
+    // Officer ID: 5 digits with leading zeros
+    officerId: normalizeOfficerId(page1Data.officerId),
+  };
+}
+
+/**
+ * Generate SHA256 hash of Page 1 inputs for duplicate detection
+ * Uses normalized inputs to ensure consistent hashing
+ * @returns hex string of SHA256 hash
+ */
+export async function generatePage1Hash(page1Data: {
+  reportNumber: string;
+  crashDate: string;
+  crashTime: string;
+  officerId: string;
+}): Promise<string> {
+  const normalized = normalizePage1Inputs(page1Data);
+  const hashInput = JSON.stringify(normalized);
+  
+  // Use Web Crypto API (available in Node.js and browsers)
+  const encoder = new TextEncoder();
+  const data = encoder.encode(hashInput);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  
+  // Convert to hex string
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return hashHex;
+}
+
+/**
+ * Synchronous version of page1 hash for contexts where async isn't available
+ * Uses a simpler hash algorithm (djb2) - less secure but deterministic
+ */
+export function generatePage1HashSync(page1Data: {
+  reportNumber: string;
+  crashDate: string;
+  crashTime: string;
+  officerId: string;
+}): string {
+  const normalized = normalizePage1Inputs(page1Data);
+  const hashInput = JSON.stringify(normalized);
+  
+  // djb2 hash algorithm
+  let hash = 5381;
+  for (let i = 0; i < hashInput.length; i++) {
+    hash = (hash * 33) ^ hashInput.charCodeAt(i);
+  }
+  
+  // Convert to unsigned 32-bit integer and then to hex
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }

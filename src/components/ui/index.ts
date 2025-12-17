@@ -81,3 +81,7 @@ export { SidebarJobCard } from './SidebarJobCard';
 
 // Wrapper safety components (V2.0.0+)
 export { WrapperSafetyBanner, WrapperSafetyStatus } from './WrapperSafetyBanner';
+
+// Page 1 attempt guardrails (V2.7.0+)
+export { Page1WarningBanner, Page1ConfirmationModal, Page1LockedBanner } from './Page1AttemptGuard';
+export { default as Page1FailureCard } from './Page1FailureCard';

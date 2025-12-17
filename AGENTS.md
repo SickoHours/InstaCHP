@@ -158,11 +158,38 @@ When product behavior is unclear or documents disagree, follow this precedence:
 - `src/app/m/[token]/page.tsx` - Magic link route handler
 - `docs/NOTIFICATION-SYSTEM.md` - Complete notification documentation
 
-### V2 Backend Integration - ⚪ Not Started
+### V2 UI/Wrapper - ✅ COMPLETE (V2.7.0)
+- **V2.0-V2.2:** Liquid Glass UI refactor, ChatGPT-style app shell
+- **V2.5:** CHP Wrapper proxy route, safety banner system, API key sync scripts
+- **V2.6:** Fast Form (`/law/jobs/new-fast`) with real wrapper integration
+- **V2.7:** Page 1 Attempt Guardrails (warning banner, confirmation modal, lockout)
+
+**New Components (V2.5-V2.7):**
+- `WrapperSafetyBanner` / `WrapperSafetyStatus` - Safety block UI
+- `Page1WarningBanner` - Pre-run warning with checklist
+- `Page1ConfirmationModal` - Re-type confirmation after 1 failure
+- `Page1LockedBanner` - Lockout UI after 2+ failures
+- `Page1FailureCard` - Explicit failure messaging
+
+**New Helper Functions (V2.7):**
+- `isPage1Rejection(result)` - Check for Page 1 rejection types
+- `consumedPage1Attempt(result, clicked)` - Check if attempt was consumed
+- `getPage1FailureCount(job)` - Get failure count
+- `isPage1Locked(job)` - Check if locked (2+ failures)
+- `needsPage1Confirmation(job)` - Check if needs confirmation (1 failure)
+
+**Key Files (V2.5-V2.7):**
+- `src/lib/wrapperClient.ts` - Type-safe wrapper client
+- `src/app/api/wrapper/run/route.ts` - Proxy route to Fly.io
+- `src/app/api/wrapper/safety-check/route.ts` - Preflight check
+- `src/app/law/jobs/new-fast/page.tsx` - Fast Form
+- `src/components/ui/Page1AttemptGuard.tsx` - Guardrail components
+- `src/components/ui/Page1FailureCard.tsx` - Failure messaging
+
+### V3 Backend Integration - ⚪ Not Started (Next Priority)
 - Convex database
-- Real CHP wrapper on Fly.io
 - File storage
-- Authentication
+- Clerk Authentication
 - Real email notifications (stub ready)
 
 ### V3 VAPI AI Caller - ⚪ Not Started
@@ -214,6 +241,26 @@ When product behavior is unclear or documents disagree, follow this precedence:
 | Wrapper prerequisites | Page 1 complete + ≥1 Page 2 field |
 | Status conversion | `getPublicStatus()` in `src/lib/statusMapping.ts` |
 | Form fields (new request) | Only 2 fields: Client Name + Report Number |
+| Officer ID format | 5 digits, left-padded with zeros (e.g., "01234") |
+| **Page 1 attempts** | **~1-2 max before CHP lockout** (see guardrails below) |
+
+### Page 1 Attempt Guardrails (V2.7.0+)
+
+**Critical CHP Portal Rule:** Page 1 has only ~1-2 attempts before lockout.
+
+| Failure Count | UI Behavior |
+|---------------|-------------|
+| 0 | Show `Page1WarningBanner` with verification checklist |
+| 1 | Show `Page1ConfirmationModal` - requires re-typing date/time |
+| 2+ | Show `Page1LockedBanner` - Run button hidden, route to manual |
+
+**Key Helpers:**
+- `isPage1Rejection(result)` - Returns true for `PAGE1_NOT_FOUND` or `PAGE1_REJECTED_ATTEMPT_RISK`
+- `consumedPage1Attempt(result, page1SubmitClicked)` - Only true when submit clicked AND rejection
+- `isPage1Locked(job)` - Returns true if `page1FailureCount >= 2`
+- `needsPage1Confirmation(job)` - Returns true if `page1FailureCount === 1`
+
+**Components:** `src/components/ui/Page1AttemptGuard.tsx`, `src/components/ui/Page1FailureCard.tsx`
 
 ---
 

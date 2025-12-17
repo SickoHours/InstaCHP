@@ -100,6 +100,10 @@ const EVENT_ICONS: Record<EventType, React.ComponentType<{ className?: string }>
   // V1.6.0+ Fatal report events
   fatal_report_created: AlertCircle,
   death_certificate_uploaded: FileText,
+  // V2.5.0+ Fast Form events
+  fast_form_submitted: Send,
+  fast_form_success: CheckCircle2,
+  fast_form_failed: XCircle,
 };
 
 /**
@@ -166,6 +170,10 @@ const EVENT_COLORS: Record<EventType, string> = {
   // V1.6.0+ Fatal report events
   fatal_report_created: 'text-red-400',
   death_certificate_uploaded: 'text-emerald-400',
+  // V2.5.0+ Fast Form events
+  fast_form_submitted: 'text-blue-400',
+  fast_form_success: 'text-emerald-400',
+  fast_form_failed: 'text-red-400',
 };
 
 const TimelineMessage = forwardRef<HTMLDivElement, TimelineMessageProps>(

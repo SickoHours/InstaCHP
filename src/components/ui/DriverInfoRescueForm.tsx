@@ -7,11 +7,11 @@
  * Collects additional identifiers (plate, DL, VIN) and names to retry verification.
  * Uses the same repeatable names pattern as PassengerVerificationForm.
  *
- * @version V1.2.0
+ * @version V2.7.0 - Added Page 1 warning context
  */
 
 import { useState } from 'react';
-import { AlertCircle, Users, Car, CreditCard, Plus, Trash2, Search } from 'lucide-react';
+import { AlertCircle, Users, Car, CreditCard, Plus, Trash2, Search, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { RescueFormData } from '@/lib/types';
 
@@ -19,6 +19,8 @@ interface DriverInfoRescueFormProps {
   initialData?: Partial<RescueFormData>;
   onSubmit: (data: RescueFormData) => void | Promise<void>;
   disabled?: boolean;
+  /** Page 1 failure count for warning context (V2.7.0+) */
+  page1FailureCount?: number;
 }
 
 interface NamePair {
@@ -31,6 +33,7 @@ export default function DriverInfoRescueForm({
   initialData,
   onSubmit,
   disabled = false,
+  page1FailureCount = 0,
 }: DriverInfoRescueFormProps) {
   // Generate unique IDs for name rows
   const generateId = () => `name-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -114,6 +117,22 @@ export default function DriverInfoRescueForm({
           </p>
         </div>
       </div>
+
+      {/* Page 1 Attempt Warning (V2.7.0+) */}
+      {page1FailureCount > 0 && (
+        <div className="mb-5 rounded-lg bg-slate-800/50 border border-slate-700/50 p-3">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs text-slate-300 font-medium">Page 2 retries are safe</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                If you need to change Page 1 details (date/time/officer), be aware CHP limits those attempts.
+                {page1FailureCount >= 2 && ' Page 1 is now locked.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section: Vehicle/ID Information */}
       <div className="mb-6">

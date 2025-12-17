@@ -52,9 +52,19 @@ import {
   getSafetyBlockMessage,
   isTrueWrapperError,
   runSafetyPreflight,
+  generatePage1Hash,
+  isPage1AlreadyAttempted,
+  isPage1Rejection,
+  consumedPage1Attempt,
 } from '@/lib/wrapperClient';
 import type { WrapperErrorResponse, SafetyBlockCode } from '@/lib/wrapperClient';
 import { WrapperSafetyBanner } from '@/components/ui/WrapperSafetyBanner';
+import {
+  Page1WarningBanner,
+  Page1ConfirmationModal,
+  Page1LockedBanner,
+} from '@/components/ui/Page1AttemptGuard';
+import Page1FailureCard from '@/components/ui/Page1FailureCard';
 import type { PickupTimeSlot, EscalationStatus } from '@/lib/types';
 import {
   isFatalJob,
@@ -63,6 +73,9 @@ import {
   shouldShowManualCompletion,
   shouldShowAutoChecker,
   canResumeFromEscalated,
+  getPage1FailureCount,
+  isPage1Locked,
+  needsPage1Confirmation,
 } from '@/lib/jobUIHelpers';
 import { notificationManager } from '@/lib/notificationManager';
 
@@ -162,6 +175,7 @@ function WrapperResultBadge({ result }: { result: WrapperResult }) {
     FULL: { color: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30', label: 'Full Report' },
     FACE_PAGE: { color: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30', label: 'Face Page' },
     PAGE1_NOT_FOUND: { color: 'bg-slate-500/20 text-slate-200 border-slate-500/30', label: 'Page 1 Not Found' },
+    PAGE1_REJECTED_ATTEMPT_RISK: { color: 'bg-red-500/20 text-red-200 border-red-500/30', label: 'Attempt Risk' },
     PAGE2_VERIFICATION_FAILED: { color: 'bg-amber-500/20 text-amber-200 border-amber-500/30', label: 'Verification Failed' },
     PORTAL_ERROR: { color: 'bg-red-500/20 text-red-200 border-red-500/30', label: 'Portal Error' },
   };
@@ -777,6 +791,14 @@ export default function StaffJobDetailPage() {
   // Preflight check state (DEV only)
   const [isRunningPreflight, setIsRunningPreflight] = useState(false);
 
+  // Page 1 attempt guardrail state (V2.7.0+)
+  const [showPage1ConfirmModal, setShowPage1ConfirmModal] = useState(false);
+
+  // Computed Page 1 attempt state
+  const page1FailureCount = getPage1FailureCount(localJob);
+  const page1Locked = isPage1Locked(localJob);
+  const page1NeedsConfirmation = needsPage1Confirmation(localJob);
+
   // Derived state
   const isPage1Complete = useMemo(() => {
     return !!(page1Data.crashDate && page1Data.crashTime);
@@ -792,7 +814,8 @@ export default function StaffJobDetailPage() {
     );
   }, [page2Data]);
 
-  const canRunWrapper = isPage1Complete && hasPage2Field;
+  // Can run wrapper if Page 1 complete, has Page 2 field, and Page 1 not locked
+  const canRunWrapper = isPage1Complete && hasPage2Field && !page1Locked;
 
   const canRunAutoChecker = useMemo(() => {
     return !!(localJob.facePageToken && (page2Data.firstName || page2Data.lastName));
@@ -858,6 +881,40 @@ export default function StaffJobDetailPage() {
   const handleRunWrapper = async () => {
     if (!canRunWrapper || isWrapperRunning) return;
 
+    // Page 1 attempt guardrails (V2.7.0+)
+    // If Page 1 is locked (2+ failures), block the run
+    if (page1Locked) {
+      toast.error('Page 1 attempts exhausted. This job requires manual handling.');
+      return;
+    }
+
+    // If this is the second attempt (1 failure), require confirmation modal
+    if (page1NeedsConfirmation && !showPage1ConfirmModal) {
+      setShowPage1ConfirmModal(true);
+      return; // Wait for modal confirmation
+    }
+
+    // Close the modal if it was open (user confirmed)
+    if (showPage1ConfirmModal) {
+      setShowPage1ConfirmModal(false);
+    }
+
+    // Generate Page 1 hash for duplicate detection
+    const currentPage1Hash = generatePage1Hash({
+      crashDate: page1Data.crashDate,
+      crashTime: page1Data.crashTime,
+      ncic: deriveNcic(localJob.reportNumber),
+      officerId: page1Data.officerId || undefined,
+    });
+
+    // Check if this exact Page 1 input set was already tried
+    if (isPage1AlreadyAttempted(localJob.page1AttemptsHashes, currentPage1Hash)) {
+      toast.warning(
+        'These Page 1 inputs were already tried. Edit crash date, time, or officer ID to re-run.'
+      );
+      return;
+    }
+
     setIsWrapperRunning(true);
     setWrapperProgress(0);
     setLastWrapperResult(null);
@@ -867,6 +924,7 @@ export default function StaffJobDetailPage() {
     let page1Passed = false;
     let errorMessage: string | undefined;
     let downloadToken: string | undefined;
+    let page1SubmitClicked = false; // V2.7.0: Track if Page 1 submit was clicked
 
     // Progress animation (indeterminate for real API, timed for mock)
     const progressInterval = setInterval(() => {
@@ -896,11 +954,14 @@ export default function StaffJobDetailPage() {
       clearInterval(progressInterval);
       setWrapperProgress(100);
 
+      // Track if Page 1 submit was clicked (for attempt tracking)
+      page1SubmitClicked = response.page1SubmitClicked ?? false;
+
       if (response.success) {
         // Use the mappedResultType from the proxy response
         result = response.mappedResultType;
         downloadToken = response.downloadToken;
-        page1Passed = result === 'FULL' || result === 'FACE_PAGE' || result === 'PAGE2_VERIFICATION_FAILED';
+        page1Passed = result === 'FULL' || result === 'FACE_PAGE' || result === 'PAGE2_VERIFICATION_FAILED' || result === 'PAGE1_REJECTED_ATTEMPT_RISK';
       } else {
         // Handle error response from wrapper
         console.error('[handleRunWrapper] Wrapper error:', response.error);
@@ -1036,7 +1097,8 @@ export default function StaffJobDetailPage() {
       } else if (result === 'FACE_PAGE') {
         newStatus = 'FACE_PAGE_ONLY';
         newFacePageToken = downloadToken || `fp_token_${generateId()}`;
-      } else if (result === 'PAGE1_NOT_FOUND') {
+      } else if (result === 'PAGE1_NOT_FOUND' || result === 'PAGE1_REJECTED_ATTEMPT_RISK') {
+        // Both Page 1 rejection types are handled the same way
         newStatus = 'NEEDS_MORE_INFO';
       } else if (result === 'PAGE2_VERIFICATION_FAILED') {
         // V1.6.0: Check if all available fields have been exhausted for auto-escalation
@@ -1091,12 +1153,28 @@ export default function StaffJobDetailPage() {
         newStatus = 'AUTOMATION_ERROR';
       }
 
+      // Track this Page 1 input set as attempted
+      const updatedPage1Hashes = [
+        ...(prev.page1AttemptsHashes || []),
+        currentPage1Hash,
+      ];
+
+      // V2.7.0: Track consumed Page 1 attempts for gating
+      // Only increment if Page 1 was actually submitted AND rejected
+      const wasPage1AttemptConsumed = consumedPage1Attempt(result, page1SubmitClicked);
+      const newPage1FailureCount = wasPage1AttemptConsumed
+        ? (prev.page1FailureCount ?? 0) + 1
+        : (prev.page1FailureCount ?? 0);
+
       return {
         ...prev,
         internalStatus: newStatus,
         facePageToken: newFacePageToken,
         fullReportToken: newFullReportToken,
         wrapperRuns: [...prev.wrapperRuns, newRun],
+        page1AttemptsHashes: updatedPage1Hashes,
+        page1FailureCount: newPage1FailureCount,
+        lastPage1FailureAt: wasPage1AttemptConsumed ? Date.now() : prev.lastPage1FailureAt,
         escalationData,
       };
     });
@@ -1110,7 +1188,11 @@ export default function StaffJobDetailPage() {
     } else if (result === 'FACE_PAGE') {
       toast.success('Face page retrieved. Full report may be available later.');
     } else if (result === 'PAGE1_NOT_FOUND') {
-      toast.warning('Report not found with provided Page 1 details.');
+      // Page 1 failure - explicit messaging handled by Page1FailureCard
+      toast.warning('Report not found. Check Page 1 details carefully.');
+    } else if (result === 'PAGE1_REJECTED_ATTEMPT_RISK') {
+      // CHP flagged as attempt risk - more severe warning
+      toast.error('CHP flagged this as an attempt risk. Further attempts may lock you out.');
     } else if (result === 'PAGE2_VERIFICATION_FAILED') {
       toast.warning('Page 2 verification failed. Need more identifiers.');
     } else if (result === 'PORTAL_ERROR') {
@@ -1760,7 +1842,7 @@ export default function StaffJobDetailPage() {
                   label="Officer ID"
                   value={page1Data.officerId}
                   onChange={(v) => setPage1Data((prev) => ({ ...prev, officerId: v }))}
-                  placeholder="6 digits (optional)"
+                  placeholder="5 digits (optional)"
                   icon={User}
                 />
               </div>
@@ -1914,6 +1996,13 @@ export default function StaffJobDetailPage() {
 
             {/* Card 3: CHP Wrapper */}
             <StaffControlCard title="CHP Wrapper" icon={Play} animationDelay={300}>
+              {/* Page 1 Attempt Guardrails (V2.7.0+) */}
+              {page1Locked ? (
+                <Page1LockedBanner className="mb-4" />
+              ) : page1FailureCount === 0 && !isClosedJob ? (
+                <Page1WarningBanner className="mb-4" />
+              ) : null}
+
               {/* Prerequisites */}
               <div className="space-y-2 mb-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
@@ -1921,6 +2010,9 @@ export default function StaffJobDetailPage() {
                 </p>
                 <PrerequisiteItem label="Page 1 complete (date + time)" met={isPage1Complete} />
                 <PrerequisiteItem label="Page 2 has at least one field" met={hasPage2Field} />
+                {page1Locked && (
+                  <PrerequisiteItem label="Page 1 not locked (2+ failures)" met={false} />
+                )}
               </div>
 
               {/* Run Button */}
@@ -2014,8 +2106,21 @@ export default function StaffJobDetailPage() {
                 </div>
               )}
 
-              {/* Last Result */}
-              {lastWrapperResult && !isWrapperRunning && (
+              {/* Last Result - Page 1 Failure Card (V2.7.0+) */}
+              {lastWrapperResult && isPage1Rejection(lastWrapperResult) && !isWrapperRunning && (
+                <Page1FailureCard
+                  resultType={lastWrapperResult as 'PAGE1_NOT_FOUND' | 'PAGE1_REJECTED_ATTEMPT_RISK'}
+                  attemptNumber={page1FailureCount}
+                  crashDate={page1Data.crashDate}
+                  crashTime={page1Data.crashTime}
+                  reportNumber={localJob.reportNumber}
+                  officerId={page1Data.officerId}
+                  className="mt-4"
+                />
+              )}
+
+              {/* Last Result - Standard (non-Page1 rejection) */}
+              {lastWrapperResult && !isPage1Rejection(lastWrapperResult as WrapperResult) && !isWrapperRunning && (
                 <div className="mt-4 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs text-slate-500">Result:</span>
@@ -2025,8 +2130,6 @@ export default function StaffJobDetailPage() {
                     {lastWrapperResult === 'FULL' && 'Full CHP crash report downloaded successfully.'}
                     {lastWrapperResult === 'FACE_PAGE' &&
                       'CHP report found (Face Page only). Full report may be available later.'}
-                    {lastWrapperResult === 'PAGE1_NOT_FOUND' &&
-                      'Report not found with provided Page 1 details (date/time/officer).'}
                     {lastWrapperResult === 'PAGE2_VERIFICATION_FAILED' &&
                       'Page 1 passed, but Page 2 verification failed. Need more identifiers.'}
                     {lastWrapperResult === 'PORTAL_ERROR' &&
@@ -2560,6 +2663,15 @@ export default function StaffJobDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Page 1 Confirmation Modal (V2.7.0+) */}
+      <Page1ConfirmationModal
+        isOpen={showPage1ConfirmModal}
+        onClose={() => setShowPage1ConfirmModal(false)}
+        onConfirm={handleRunWrapper}
+        expectedCrashDate={page1Data.crashDate}
+        expectedCrashTime={page1Data.crashTime}
+      />
 
       {/* Escalation Dialog */}
       <EscalationDialog

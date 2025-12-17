@@ -74,7 +74,7 @@ export default function LawFirmWelcome() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/law/jobs/new">
+            <Link href="/law/jobs/new-fast">
               <Button
                 variant="primary"
                 size="lg"
@@ -166,7 +166,7 @@ export default function LawFirmWelcome() {
         </Link>
 
         {/* New Request (primary FAB) */}
-        <Link href="/law/jobs/new">
+        <Link href="/law/jobs/new-fast">
           <FloatingActionButton
             icon={<Plus className="w-6 h-6" />}
             label="New Request"

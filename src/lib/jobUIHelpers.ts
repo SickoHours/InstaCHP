@@ -356,3 +356,57 @@ export function getAuthorizationStatusColor(job: Job): string {
   if (isReadyToClaim(job)) return 'emerald';
   return 'blue';
 }
+
+// ============================================
+// PAGE 1 ATTEMPT HELPERS (V2.7.0+)
+// ============================================
+
+/**
+ * Get Page 1 failure count from job
+ * Only counts consumed attempts (page1SubmitClicked && Page 1 rejection)
+ */
+export function getPage1FailureCount(job: Job): number {
+  return job.page1FailureCount ?? 0;
+}
+
+/**
+ * Check if Page 1 is locked (2+ consumed failures)
+ * When locked, the Run Wrapper button should be hidden
+ */
+export function isPage1Locked(job: Job): boolean {
+  return getPage1FailureCount(job) >= 2;
+}
+
+/**
+ * Check if Page 1 confirmation is required before next run
+ * Required after exactly 1 failure (second attempt)
+ */
+export function needsPage1Confirmation(job: Job): boolean {
+  return getPage1FailureCount(job) === 1;
+}
+
+/**
+ * Page 1 warning levels for UI display
+ * - 'caution': First attempt (0 failures) - show warning banner
+ * - 'danger': Second attempt (1 failure) - require confirmation modal
+ * - 'locked': No more attempts (2+ failures) - block UI
+ */
+export type Page1WarningLevel = 'caution' | 'danger' | 'locked';
+
+/**
+ * Get appropriate Page 1 warning level for UI
+ */
+export function getPage1WarningLevel(job: Job): Page1WarningLevel {
+  const count = getPage1FailureCount(job);
+  if (count >= 2) return 'locked';
+  if (count === 1) return 'danger';
+  return 'caution';
+}
+
+/**
+ * Check if wrapper can be run based on Page 1 attempt state
+ * Returns false if Page 1 is locked
+ */
+export function canRunWrapperForPage1(job: Job): boolean {
+  return !isPage1Locked(job);
+}

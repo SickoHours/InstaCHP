@@ -87,7 +87,7 @@ Once a face page is uploaded (manual or automated), that job now has **full real
 - Report Number (format: `9XXX-YYYY-ZZZZZ`)
 - Crash Date (MM/DD/YYYY)
 - Crash Time (HHMM, 24-hour)
-- Officer ID (6 digits starting with 0)
+- Officer ID (5 digits, left-padded with zeros)
 - NCIC (auto-derived from report number, read-only)
 
 **Page 2 (Verification) — At Least One Required:**
@@ -579,7 +579,7 @@ interface WrapperRequest {
   reportNumber: string
   crashDate: string           // MM/DD/YYYY
   crashTime: string           // HHMM
-  officerId: string           // 6 digits
+  officerId: string           // 5 digits, left-padded
   ncic: string                // Auto-derived
 
   // Page 2 (at least one required)

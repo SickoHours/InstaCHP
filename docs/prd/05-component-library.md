@@ -1979,7 +1979,7 @@ interface FastFormState {
 | Report Number | `9XXX-YYYY-ZZZZZ` format | "Format: 9XXX-YYYY-ZZZZZ" |
 | Crash Date | Not in future | "Date cannot be in future" |
 | Crash Time | HHMM (0000-2359) | "Use 24-hour format: HHMM" |
-| Officer ID | 6 digits, starts with 0 | "6 digits starting with 0" |
+| Officer ID | 5 digits, left-padded | "5 digits, left-padded with zeros" |
 | Client Name | Min 2 chars | "Name required" |
 | Perjury Checkbox | Must be checked | "You must acknowledge this statement" |
 

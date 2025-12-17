@@ -372,7 +372,7 @@ All fields required for CHP portal Page 1 submission:
 | Report Number | text | Yes | `9XXX-YYYY-ZZZZZ` | "9465-2025-02802" | CHP report format |
 | Crash Date | date | Yes | MM/DD/YYYY, not future | "12/15/2025" | HTML date input |
 | Crash Time | text | Yes | HHMM (00:00-23:59) | "1430" | 24-hour format |
-| Officer ID | text | Yes | 6 digits, starts with 0 | "012345" | CHP officer badge |
+| Officer ID | text | Yes | 5 digits, left-padded | "01234" | CHP officer badge |
 | NCIC | text | No (auto) | 4 digits, starts with 9 | "9465" | Auto-derived from report # (read-only) |
 
 **Section 2: Page 2 Verification Information (at least 1 required)**
@@ -524,7 +524,7 @@ CHP portal requires at least one matching identifier for report verification:
 - Report Number format check
 - Crash Date not in future
 - Crash Time valid range (0000-2359)
-- Officer ID 6 digits starting with 0
+- Officer ID 5 digits, left-padded with zeros
 - NCIC auto-derived and displayed
 
 **Submit Validation:**
@@ -916,7 +916,7 @@ Shows exactly what the law firm sees, plus additional context for staff.
 | Crash Date | date | - | mm/dd/yyyy, not future |
 | Crash Time | text | - | HHMM (0000-2359) |
 | NCIC | text | Auto from report # | 4 digits, starts with "9" |
-| Officer ID | text | - | 6 digits, starts with "0" |
+| Officer ID | text | - | 5 digits, left-padded |
 
 **Save Button:** "Save Page 1"
 

@@ -39,7 +39,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const isDark = theme === 'dark';
 
     const hasValue = value !== undefined && value !== '';
-    const isFloating = isFocused || hasValue;
+    // Date inputs always show a placeholder (mm/dd/yyyy), so always float the label
+    const isDateType = type === 'date' || type === 'datetime-local' || type === 'time';
+    const isFloating = isFocused || hasValue || isDateType;
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);

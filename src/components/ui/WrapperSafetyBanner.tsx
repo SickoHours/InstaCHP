@@ -87,6 +87,18 @@ const SAFETY_BLOCK_CONFIG: Record<SafetyBlockCode, SafetyBlockConfig> = {
   },
 };
 
+/**
+ * Fallback configuration for unknown safety block codes
+ * Used when the API returns a code not in our known list
+ */
+const FALLBACK_CONFIG: SafetyBlockConfig = {
+  icon: AlertTriangle,
+  title: 'Safety Block Active',
+  description: 'A temporary block is in effect.',
+  extendedDescription:
+    'Please wait a moment before trying again.',
+};
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -122,7 +134,8 @@ export function WrapperSafetyBanner({
     return null;
   }
 
-  const config = SAFETY_BLOCK_CONFIG[safetyBlockCode];
+  // Use fallback config for unknown safety block codes
+  const config = SAFETY_BLOCK_CONFIG[safetyBlockCode] ?? FALLBACK_CONFIG;
   const IconComponent = config.icon;
 
   return (
@@ -197,7 +210,8 @@ export function WrapperSafetyStatus({
     return null;
   }
 
-  const config = SAFETY_BLOCK_CONFIG[safetyBlockCode];
+  // Use fallback config for unknown safety block codes
+  const config = SAFETY_BLOCK_CONFIG[safetyBlockCode] ?? FALLBACK_CONFIG;
   const IconComponent = config.icon;
 
   return (

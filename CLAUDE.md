@@ -217,7 +217,7 @@ const { theme, toggleTheme, preference, setTheme } = useTheme();
 | Report Number | `9XXX-YYYY-ZZZZZ` | "9465-2025-02802" |
 | NCIC | 4 digits, starts with 9 (auto) | "9465" |
 | Crash Time | HHMM (24-hour) | "1430" |
-| Officer ID | 6 digits, starts with 0 | "012345" |
+| Officer ID | 5 digits, left-padded | "01234" |
 | Crash Date | mm/dd/yyyy, not future | "12/01/2025" |
 
 👉 **Details:** [docs/prd/06-implementation-guide.md § Validation Rules](docs/prd/06-implementation-guide.md)

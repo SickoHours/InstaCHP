@@ -4,6 +4,34 @@ Quick commands for syncing and testing the CHP wrapper API key.
 
 ---
 
+## Quick Start: Local Proxy Testing
+
+Deterministic test steps to verify wrapper connectivity:
+
+```bash
+# 1. Start dev server
+npm run dev
+
+# 2. Health check (GET)
+curl http://localhost:3000/api/wrapper/run
+# Expected: {"ok":true}
+
+# 3. Auth test (POST with empty body)
+curl -X POST http://localhost:3000/api/wrapper/run -H "Content-Type: application/json" -d '{}'
+# Results:
+#   503 = env vars missing (MISSING_CONFIG)
+#   401 = API key wrong (WRAPPER_AUTH_FAILED)
+#   400 = auth works, wrapper validation failed (PASS ✅)
+```
+
+Or run the smoke test script:
+
+```bash
+bash scripts/test-proxy-local.sh
+```
+
+---
+
 ## Prerequisites
 
 1. **Fly CLI installed** - https://fly.io/docs/flyctl/install/

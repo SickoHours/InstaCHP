@@ -3,7 +3,7 @@
 # Usage: bash scripts/sync-wrapper-key.sh
 set -euo pipefail
 
-APP="chp-wrapper"
+APP="chp-wrapper-tool-uxqp9q"
 ENV_FILE=".env.local"
 
 # ============================================

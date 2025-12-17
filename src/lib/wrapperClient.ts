@@ -82,7 +82,7 @@ export interface WrapperRequest {
   crashDate?: string;      // Format: YYYY-MM-DD (recommended) or MM/DD/YYYY (legacy)
   crashTime?: string;      // Format: HHMM (24-hour)
   ncic?: string;           // 4 digits, derived from report number
-  officerId?: string;      // 6 digits (optional)
+  officerId?: string;      // 5 digits, left-padded (optional)
 
   // Page 2 verification fields (at least one required)
   firstName?: string;
@@ -106,6 +106,8 @@ export interface WrapperSuccessResponse {
   journeyLog?: string[];
   duration?: number;
   fieldErrors?: Record<string, string>;
+  page1Hash?: string; // For duplicate detection
+  page1SubmitClicked?: boolean; // True if Page 1 submit button was clicked (attempt consumed)
 }
 
 /**
@@ -124,6 +126,7 @@ export type WrapperErrorCode =
   | 'MISSING_CONFIG'
   | 'INVALID_JSON'
   | 'NETWORK_ERROR'
+  | 'TIMEOUT_ERROR'
   | 'WRAPPER_AUTH_FAILED'
   | SafetyBlockCode
   | 'PORTAL_ERROR'
@@ -142,6 +145,8 @@ export interface WrapperErrorResponse {
   // Safety block fields
   retryAfterSeconds?: number;
   blockedUntil?: number; // Unix timestamp when block expires
+  page1Hash?: string; // For duplicate detection
+  page1SubmitClicked?: boolean; // True if Page 1 submit button was clicked (attempt consumed)
 }
 
 /**
@@ -191,6 +196,10 @@ export async function runWrapper(request: WrapperRequest): Promise<WrapperRespon
       mappedResultType: data.mappedResultType,
       message: data.message,
       fieldErrors: data.fieldErrors,
+      retryAfterSeconds: data.retryAfterSeconds,
+      blockedUntil: data.blockedUntil,
+      page1Hash: data.page1Hash,
+      page1SubmitClicked: data.page1SubmitClicked,
     } as WrapperErrorResponse;
   } catch (error) {
     // Network error (couldn't reach proxy)
@@ -217,6 +226,75 @@ export async function isWrapperConfigured(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ============================================
+// PAGE 1 HASH HELPERS
+// ============================================
+
+/**
+ * Page 1 input fields used for hash generation
+ */
+interface Page1HashInput {
+  crashDate?: string;
+  crashTime?: string;
+  ncic?: string;
+  officerId?: string;
+}
+
+/**
+ * Generate a deterministic hash for Page 1 inputs
+ * 
+ * This creates a unique identifier for a specific set of Page 1 inputs,
+ * used to detect if the same inputs have already been tried (and failed).
+ * This prevents redundant wrapper calls with identical Page 1 data.
+ * 
+ * The hash is a simple base64-encoded JSON string of the normalized inputs.
+ * For true cryptographic hashing, the server uses SHA256, but for client-side
+ * duplicate detection, this lightweight approach is sufficient.
+ * 
+ * @param input - Page 1 input fields
+ * @returns A deterministic hash string
+ */
+export function generatePage1Hash(input: Page1HashInput): string {
+  // Normalize inputs - empty strings and undefined should be treated the same
+  const normalized = {
+    crashDate: input.crashDate || '',
+    crashTime: input.crashTime || '',
+    ncic: input.ncic || '',
+    officerId: input.officerId || '',
+  };
+  
+  // Create a deterministic string representation
+  const jsonStr = JSON.stringify(normalized, Object.keys(normalized).sort());
+  
+  // Use btoa for browser-compatible base64 encoding
+  // This creates a unique, readable hash for the input set
+  if (typeof window !== 'undefined') {
+    return btoa(jsonStr);
+  }
+  
+  // Node.js fallback (for SSR)
+  return Buffer.from(jsonStr).toString('base64');
+}
+
+/**
+ * Check if a Page 1 input set has already been tried on a job
+ * 
+ * NOTE: The server generates SHA256 hashes for Page 1 inputs and only
+ * returns them on PAGE1_NOT_FOUND (deterministic failures). The client
+ * can also generate hashes locally for pre-checks before calling the wrapper.
+ * 
+ * @param existingHashes - Array of previously attempted hashes (from job.page1AttemptsHashes)
+ * @param newHash - The hash to check (from generatePage1Hash or server response)
+ * @returns true if this exact Page 1 input set was already attempted
+ */
+export function isPage1AlreadyAttempted(
+  existingHashes: string[] | undefined,
+  newHash: string
+): boolean {
+  if (!existingHashes || existingHashes.length === 0) return false;
+  return existingHashes.includes(newHash);
 }
 
 // ============================================
@@ -299,13 +377,55 @@ export function isTrueWrapperError(response: WrapperResponse): boolean {
   // Safety blocks are NOT true errors
   if (isRetryableSafetyBlock(errorResponse)) return false;
 
-  // Config/network issues are infrastructure problems, not job failures
-  if (errorResponse.code === 'MISSING_CONFIG' || errorResponse.code === 'NETWORK_ERROR') {
+  // Config/network/timeout issues are infrastructure problems, not job failures
+  if (
+    errorResponse.code === 'MISSING_CONFIG' ||
+    errorResponse.code === 'NETWORK_ERROR' ||
+    errorResponse.code === 'TIMEOUT_ERROR'
+  ) {
     return false;
   }
 
   // PORTAL_ERROR, WRAPPER_AUTH_FAILED, or unexpected errors are true failures
   return true;
+}
+
+// ============================================
+// PAGE 1 REJECTION HELPERS
+// ============================================
+
+/**
+ * Check if a wrapper result is a Page 1 rejection
+ * 
+ * Both PAGE1_NOT_FOUND and PAGE1_REJECTED_ATTEMPT_RISK count as Page 1 rejections.
+ * These indicate that CHP did not find a matching report with the given Page 1 inputs.
+ *
+ * @param result - Wrapper result type
+ * @returns true if this is a Page 1 rejection
+ */
+export function isPage1Rejection(result: WrapperResult | undefined): boolean {
+  return result === 'PAGE1_NOT_FOUND' || result === 'PAGE1_REJECTED_ATTEMPT_RISK';
+}
+
+/**
+ * Check if a wrapper run consumed a Page 1 attempt
+ * 
+ * A Page 1 attempt is only "consumed" (counts against the limit) when:
+ * 1. The Page 1 submit button was actually clicked (page1SubmitClicked === true)
+ * 2. AND the result was a Page 1 rejection (not found or attempt risk)
+ * 
+ * This ensures we don't count client-side validation failures or network errors
+ * against the user's limited Page 1 attempts.
+ *
+ * @param result - Wrapper result type
+ * @param page1SubmitClicked - Whether Page 1 submit was clicked
+ * @returns true if this run consumed a Page 1 attempt
+ */
+export function consumedPage1Attempt(
+  result: WrapperResult | undefined,
+  page1SubmitClicked: boolean | undefined
+): boolean {
+  return page1SubmitClicked === true && isPage1Rejection(result);
 }
 
 // ============================================

@@ -5,6 +5,342 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2025-12-16
+
+### Added
+
+#### Page 1 Attempt-Aware UX Guardrails
+
+**Purpose:**
+Protect users from burning their limited Page 1 attempts on the CHP portal. CHP limits Page 1 submissions to ~1-2 attempts before lockout. This feature adds tracking, warnings, confirmation modals, and hard stops to prevent accidental attempt exhaustion.
+
+**Critical CHP Portal Rule:**
+- Page 1 has only ~1-2 attempts max before CHP locks out the report
+- Page 1 should nearly always work if correct; failures mean user typo or counter report (not available online)
+- Page 2 retries are safe and unlimited
+
+**New Files Created:**
+
+1. **`src/components/ui/Page1AttemptGuard.tsx`** - Three guardrail components (~250 lines)
+   - `Page1WarningBanner` - Amber banner shown before first run
+     - Lists verification checklist: Crash Date, Crash Time (24h), Report Number, Officer ID (5 digits)
+     - Copy: "CHP limits attempts on Page 1. Double-check your details."
+   - `Page1ConfirmationModal` - Modal requiring re-confirmation after 1 failure
+     - Forces user to re-type crash date and crash time
+     - Required checkbox: "I've verified these details are correct"
+     - Normalized comparison prevents false mismatches from UI formatting
+     - Copy: "This is likely your last attempt before CHP locks you out."
+   - `Page1LockedBanner` - Red banner shown when Page 1 is locked (2+ failures)
+     - Hides Run button entirely
+     - Routes to manual handling
+
+2. **`src/components/ui/Page1FailureCard.tsx`** - Explicit failure messaging (~150 lines)
+   - Shows specific rejection type (NOT_FOUND vs ATTEMPT_RISK)
+   - Verification checklist with current values displayed
+   - Attempt count warning with remaining attempts or locked status
+   - Explains counter report possibility
+
+**Type System Updates:**
+
+- **`src/lib/types.ts`** - Extended Job interface and WrapperResult
+  - Added `PAGE1_REJECTED_ATTEMPT_RISK` to `WrapperResult` type
+  - Added `page1FailureCount?: number` to `Job` interface
+  - Added `lastPage1FailureAt?: number` to `Job` interface
+  - Fixed `officerId` comment: "5 digits, left-padded with zeros" (was incorrectly documented as 6 digits)
+
+- **`src/lib/wrapperClient.ts`** - Added helper functions and response fields (~40 lines)
+  - Added `page1SubmitClicked?: boolean` to `WrapperSuccessResponse` and `WrapperErrorResponse`
+  - Added `isPage1Rejection(result)` - Returns true for `PAGE1_NOT_FOUND` or `PAGE1_REJECTED_ATTEMPT_RISK`
+  - Added `consumedPage1Attempt(result, page1SubmitClicked)` - Returns true only when Page 1 submit clicked AND rejection occurred
+
+- **`src/lib/jobUIHelpers.ts`** - Added Page 1 attempt helpers (~50 lines)
+  - `getPage1FailureCount(job)` - Get current Page 1 failure count
+  - `isPage1Locked(job)` - Returns true if failure count >= 2
+  - `needsPage1Confirmation(job)` - Returns true if failure count === 1
+  - `getPage1WarningLevel(job)` - Returns 'caution' | 'danger' | 'locked'
+  - `canRunWrapperForPage1(job)` - Returns false if locked
+
+**API Route Updates:**
+
+- **`src/app/api/wrapper/run/route.ts`** - Updated validation and result mapping (~30 lines changed)
+  - Fixed `normalizeOfficerId()` - Changed padding from 6 to 5 digits
+  - Fixed `validatePage1Fields()` - Updated regex to `^\d{5}$` for officer ID
+  - Added `PAGE1_REJECTED_ATTEMPT_RISK` mapping for "attempt risk", "locked", "too many attempts" messages
+  - Passes through `page1SubmitClicked` from wrapper response
+
+**Staff Job Detail Updates:**
+
+- **`src/app/staff/jobs/[jobId]/page.tsx`** - Integrated guardrail components (~100 lines changed)
+  - Shows `Page1WarningBanner` before first run (0 failures)
+  - Shows `Page1ConfirmationModal` after 1 failure (requires re-typing date + time)
+  - Shows `Page1LockedBanner` and hides Run button after 2+ failures
+  - Shows `Page1FailureCard` with detailed checklist on rejection
+  - Tracks `page1FailureCount` only when `consumedPage1Attempt()` returns true
+  - Added `PAGE1_REJECTED_ATTEMPT_RISK` to `WrapperResultBadge` config
+
+**Law Firm Fast Form Updates:**
+
+- **`src/app/law/jobs/new-fast/page.tsx`** - Added warning banner and tracking (~30 lines changed)
+  - Shows `Page1WarningBanner` above submit button
+  - Tracks `page1FailureCount` based on `consumedPage1Attempt()`
+  - Handles `PAGE1_REJECTED_ATTEMPT_RISK` same as `PAGE1_NOT_FOUND`
+  - Updated Officer ID helper text: "5 digits, left-padded with zeros (optional)"
+
+**Driver Rescue Form Updates:**
+
+- **`src/components/ui/DriverInfoRescueForm.tsx`** - Added Page 1 context warning (~15 lines)
+  - Shows amber warning when `page1FailureCount > 0`
+  - Clarifies that Page 2 retries are safe but Page 1 changes have limits
+  - Shows locked message when count >= 2
+
+**Officer ID Format Fix (Global):**
+
+- **`src/lib/utils.ts`** - Updated validation utilities
+  - Changed `OFFICER_ID_REGEX` from `^0\d{5}$` to `^\d{5}$`
+  - Changed `normalizeOfficerId()` padding from 6 to 5 digits
+  - Updated `formatOfficerIdError()` to check for 5 digits instead of 6
+
+**UX Flow Summary:**
+
+```
+First Run (0 failures):
+  [Page1WarningBanner] → Run → Success/Fail
+
+After 1 Page 1 Failure:
+  [Page1WarningBanner] → Click Run → [Page1ConfirmationModal]
+     → Re-type date + time → Checkbox → Confirm → Run
+
+After 2 Page 1 Failures:
+  [Page1LockedBanner] → Run button hidden → Manual handling required
+```
+
+**Attempt Counting Logic:**
+
+| Condition | Increments Count? |
+|-----------|-------------------|
+| `page1SubmitClicked === true` AND `PAGE1_NOT_FOUND` | ✅ Yes |
+| `page1SubmitClicked === true` AND `PAGE1_REJECTED_ATTEMPT_RISK` | ✅ Yes |
+| `page1SubmitClicked === false` (validation failure) | ❌ No |
+| `PAGE2_VERIFICATION_FAILED` | ❌ No |
+| `PORTAL_ERROR` | ❌ No |
+
+**Confirmation Modal Validation:**
+
+- Uses `normalizeDateForComparison()` and `normalizeTimeForComparison()` for robust matching
+- Strips all non-digit characters before comparison
+- Prevents false mismatches due to date/time formatting differences (YYYY-MM-DD vs MM/DD/YYYY)
+
+**Files Created:** 2 files
+**Files Modified:** 8 files
+**Lines Added:** ~600 lines
+**Lines Changed:** ~100 lines
+
+**Version:** V2.7.0 (Page 1 Attempt Guardrails)
+
+---
+
+## [2.6.1] - 2025-12-17
+
+### Fixed
+
+#### Wrapper Timeout Handling & Error Message Improvements
+
+**Problem Solved:**
+Fast Form submissions were failing with a generic "error occurred" message when the CHP wrapper took longer than 60 seconds. This happened during Fly.io VM cold starts when the wrapper needed to log into the CHP portal, which can take 30-50 seconds.
+
+**Root Cause:**
+1. The proxy route (`src/app/api/wrapper/run/route.ts`) had no explicit timeout on the `fetch()` call
+2. Default Node.js/browser fetch timeout was ~60s, but wrapper runs can take up to 90s during cold starts
+3. When timeout occurred, socket was closed by the server, returning a generic 502 "Failed to reach wrapper service" error
+4. The Fast Form showed "An unexpected error occurred" without specific guidance
+
+**Fixes Applied:**
+
+1. **`src/app/api/wrapper/run/route.ts`** - Added 90-second timeout
+   - Added `AbortController` with 90-second timeout for wrapper fetch
+   - New `TIMEOUT_ERROR` code returned with HTTP 504
+   - User-friendly message: "Wrapper request timed out. The CHP portal may be slow or the service is starting up. Please try again."
+   - Proper cleanup with `clearTimeout()` in both success and error paths
+
+2. **`src/lib/wrapperClient.ts`** - Updated error handling
+   - Added `TIMEOUT_ERROR` to `WrapperErrorCode` type
+   - Updated `isTrueWrapperError()` to NOT escalate on timeout/network errors
+   - Infrastructure errors (timeout, network, config) are retryable, not job failures
+
+3. **`src/app/law/jobs/new-fast/page.tsx`** - Specific error messages
+   - `TIMEOUT_ERROR`: "Request timed out. The CHP portal may be slow. Please try again."
+   - `NETWORK_ERROR`: "Network error. Please check your connection and try again."
+   - `MISSING_CONFIG`: "Service configuration error. Please contact support."
+   - These errors do NOT create a job or trigger escalation
+
+4. **`scripts/sync-wrapper-key.sh`** - Fixed Fly app name
+   - Changed from `chp-wrapper` to `chp-wrapper-tool-uxqp9q`
+
+**Error Behavior Summary:**
+
+| Error Code | HTTP Status | Creates Job? | Escalates? | User Message |
+|------------|-------------|--------------|------------|--------------|
+| `TIMEOUT_ERROR` | 504 | No | No | "Request timed out... Please try again." |
+| `NETWORK_ERROR` | 502 | No | No | "Network error... try again." |
+| `MISSING_CONFIG` | 503 | No | No | "Service configuration error..." |
+| `PORTAL_ERROR` | 4xx | Yes | Yes | Escalation modal shown |
+
+**Files Modified:** 4 files
+**Lines Added:** ~40 lines
+**Lines Changed:** ~15 lines
+
+**Version:** V2.6.1 (Timeout Handling)
+
+---
+
+## [2.6.0] - 2025-12-16
+
+### Added
+
+#### Fast Form - Primary Entry Point for CHP Report Requests
+
+**Purpose:**
+Accelerated form that collects Page 1 + Page 2 data upfront and runs the CHP wrapper immediately. Designed for time-sensitive cases within the 72-hour window where law firms have all required information available.
+
+**New Files Created:**
+
+1. **`src/app/law/jobs/new-fast/page.tsx`** - Complete Fast Form implementation (~750 lines)
+   - **Layout**: 2-column desktop (Page 1 left, Page 2 right), stacked mobile
+   - **Page 1 Fields** (all required):
+     - Report Number (auto-derives NCIC)
+     - Crash Date (YYYY-MM-DD format)
+     - Crash Time (HHMM 24-hour format)
+     - Officer ID (6 digits starting with 0)
+     - NCIC (auto-populated, read-only)
+   - **Page 2 Fields** (at least one required):
+     - Client Full Name (auto-splits to first/last)
+     - License Plate
+     - Driver License Number
+     - VIN
+   - **Legal Section**:
+     - Required perjury acknowledgment checkbox
+     - Full legal text for California CVC 1808.22
+   - **Validation**:
+     - Local format validation with inline error messages
+     - Remote `fieldErrors` from wrapper rendered on form
+   - **Submit Flow**:
+     - Calls `runWrapper()` via `wrapperClient.ts`
+     - Handles all outcomes: FULL, FACE_PAGE, PAGE1_NOT_FOUND, PAGE2_VERIFICATION_FAILED, PORTAL_ERROR
+     - Safety block handling with `WrapperSafetyBanner` and countdown
+     - Auto-escalation modal for true errors
+   - **UX Features**:
+     - Glass-morphism dark theme matching app aesthetic
+     - Mobile-first with 48px touch targets
+     - Loading state with progress simulation
+     - Success/error feedback with job creation
+
+2. **`scripts/test-proxy-local.sh`** - Smoke test script for local proxy testing
+   - Checks if dev server is running
+   - Tests GET `/api/wrapper/run` health check (expects `{ ok: true }`)
+   - Tests POST with empty body to verify auth (expects 400 = auth works)
+   - Provides clear output for 503 (missing env), 401 (key mismatch), 400 (success)
+
+**Files Modified:**
+
+1. **`src/lib/wrapperClient.ts`** - Enhanced error response forwarding
+   - Added `retryAfterSeconds` and `blockedUntil` to error response handling
+   - Ensures safety block timing data reaches the UI
+
+2. **`src/lib/types.ts`** - New event types for Fast Form
+   - Added `fast_form_submitted` - Fast Form submitted
+   - Added `fast_form_success` - Wrapper run succeeded
+   - Added `fast_form_failed` - Wrapper run failed (escalation triggered)
+
+3. **`src/app/law/page.tsx`** - Updated navigation
+   - Desktop "New Request" button now routes to `/law/jobs/new-fast`
+   - Mobile FAB now routes to `/law/jobs/new-fast`
+
+4. **`src/components/ui/Input.tsx`** - Fixed date input label overlap
+   - Date, datetime-local, and time inputs now always float their labels
+   - Prevents label from overlapping with browser's native "mm/dd/yyyy" placeholder
+
+5. **`docs/wrapper-testing.md`** - Added Quick Start section
+   - Deterministic test steps for local proxy verification
+   - Health check command (GET)
+   - Auth test command (POST with empty body)
+   - Expected HTTP status codes and meanings
+
+**Fast Form Outcomes:**
+
+| Wrapper Result | Job Status | User Feedback |
+|----------------|------------|---------------|
+| `FULL` | `COMPLETED_FULL_REPORT` | Success, navigate to job |
+| `FACE_PAGE` | `FACE_PAGE_ONLY` | Success, navigate to job |
+| `PAGE1_NOT_FOUND` | `NEEDS_MORE_INFO` | Create job, show correction needed |
+| `PAGE2_VERIFICATION_FAILED` | `NEEDS_IN_PERSON_PICKUP` | Create job, show escalation modal |
+| `PORTAL_ERROR` | `NEEDS_IN_PERSON_PICKUP` | Create job, show escalation modal |
+| Safety Block | No job created | Show banner with countdown |
+
+**Validation Rules:**
+
+| Field | Format | Example | Error Message |
+|-------|--------|---------|---------------|
+| Report Number | 4-4-5 digits | 9465-2025-00028 | "Format: XXXX-XXXX-XXXXX" |
+| Crash Date | YYYY-MM-DD | 2025-12-15 | "Valid date required" |
+| Crash Time | HHMM (0000-2359) | 1430 | "Format: HHMM (e.g., 1430)" |
+| Officer ID | 6 digits, starts with 0 | 012345 | "Must be 6 digits starting with 0" |
+
+**Mobile-First Design:**
+- 48px touch targets on all interactive elements
+- Stacked layout on mobile (< 768px)
+- 2-column grid on desktop (≥ 768px)
+- Glass-morphism styling matching existing dark theme
+
+**Files Created:** 2 files
+**Files Modified:** 5 files
+**Lines Added:** ~850 lines
+
+**Version:** V2.6.0 (Fast Form)
+
+---
+
+## [2.5.5] - 2025-12-16
+
+### Fixed
+
+#### WrapperSafetyBanner Runtime Error for Unknown Safety Block Codes
+
+**Problem Solved:**
+When running a preflight check via the "Pre-Flight Check" button in the Staff Job View, a runtime TypeError occurred: `Cannot read properties of undefined (reading 'icon')`. This happened when the wrapper API returned a safety block code that wasn't in the `SAFETY_BLOCK_CONFIG` mapping.
+
+**Root Cause:**
+The `WrapperSafetyBanner` and `WrapperSafetyStatus` components accessed `SAFETY_BLOCK_CONFIG[safetyBlockCode]` directly without checking if the code existed in the mapping. When an unknown code was passed (e.g., from an unexpected API response), `config` was `undefined`, causing the error when accessing `config.icon`.
+
+**Fix Applied:**
+
+1. **Added `FALLBACK_CONFIG` constant** (`src/components/ui/WrapperSafetyBanner.tsx`)
+   - Generic fallback configuration for unknown safety block codes
+   - Uses `AlertTriangle` icon with "Safety Block Active" title
+   - Description: "A temporary block is in effect."
+
+2. **Updated config lookup with nullish coalescing** (lines 138, 214)
+   - Changed: `const config = SAFETY_BLOCK_CONFIG[safetyBlockCode];`
+   - To: `const config = SAFETY_BLOCK_CONFIG[safetyBlockCode] ?? FALLBACK_CONFIG;`
+   - Applied to both `WrapperSafetyBanner` and `WrapperSafetyStatus` components
+
+**Fallback Configuration:**
+
+```typescript
+const FALLBACK_CONFIG: SafetyBlockConfig = {
+  icon: AlertTriangle,
+  title: 'Safety Block Active',
+  description: 'A temporary block is in effect.',
+  extendedDescription: 'Please wait a moment before trying again.',
+};
+```
+
+**Files Modified:** 1 file
+**Lines Added:** ~10 lines
+
+**Version:** V2.5.5 (Safety Banner Fallback Fix)
+
+---
+
 ## [2.5.4] - 2025-12-16
 
 ### Added

@@ -154,6 +154,7 @@ export const DEFAULT_AUTO_CHECK_SETTINGS: AutoCheckSettings = {
  * - FULL: Success, full report retrieved
  * - FACE_PAGE: Success, face page only (full report may come later)
  * - PAGE1_NOT_FOUND: Page 1 failed - report not found with given date/time/officer
+ * - PAGE1_REJECTED_ATTEMPT_RISK: Page 1 rejected - CHP flagged as attempt risk/lockout warning
  * - PAGE2_VERIFICATION_FAILED: Page 1 passed, but Page 2 verification failed (need more identifiers)
  * - PORTAL_ERROR: Technical error (timeout, portal down, etc.)
  */
@@ -161,6 +162,7 @@ export type WrapperResult =
   | 'FULL'
   | 'FACE_PAGE'
   | 'PAGE1_NOT_FOUND'
+  | 'PAGE1_REJECTED_ATTEMPT_RISK'
   | 'PAGE2_VERIFICATION_FAILED'
   | 'PORTAL_ERROR';
 
@@ -307,7 +309,7 @@ export interface Job {
   crashDate?: string; // Format: MM/DD/YYYY (optional for NEW jobs)
   crashTime?: string; // Format: HHMM (24-hour)
   ncic: string; // 4 digits, derived from report number
-  officerId?: string; // 6 digits, starts with 0
+  officerId?: string; // 5 digits, left-padded with zeros (e.g., "01234")
   locationDescription?: string;
 
   // Verification Fields (Page 2 data)
@@ -340,6 +342,15 @@ export interface Job {
 
   // Wrapper History
   wrapperRuns: WrapperRun[];
+
+  // Page 1 attempt tracking - prevents duplicate runs with same inputs (V2.6.1+)
+  // Each entry is a JSON hash of {crashDate, crashTime, ncic, officerId}
+  page1AttemptsHashes?: string[];
+
+  // Page 1 failure tracking for attempt gating (V2.7.0+)
+  // Only incremented when page1SubmitClicked === true AND result is PAGE1_NOT_FOUND or PAGE1_REJECTED_ATTEMPT_RISK
+  page1FailureCount?: number;
+  lastPage1FailureAt?: number;
 
   // Escalation Data (V1.6.0+)
   escalationData?: EscalationData;
@@ -425,7 +436,11 @@ export type EventType =
   | 'pickup_completed' // Staff completed manual pickup
   // V1.6.0+ Fatal report events
   | 'fatal_report_created' // Fatal report request submitted
-  | 'death_certificate_uploaded'; // Death certificate uploaded
+  | 'death_certificate_uploaded' // Death certificate uploaded
+  // V2.5.0+ Fast Form events
+  | 'fast_form_submitted' // Fast Form submitted (Page 1 + Page 2 in one go)
+  | 'fast_form_success' // Fast Form wrapper run succeeded
+  | 'fast_form_failed'; // Fast Form wrapper run failed (escalation triggered)
 
 /**
  * Timeline event for job history

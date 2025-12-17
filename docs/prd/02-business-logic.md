@@ -676,7 +676,7 @@ interface Job {
   crashDate?: string;               // Format: "mm/dd/yyyy"
   crashTime?: string;               // Format: "HHMM" (24-hour, e.g., "1430")
   ncic?: string;                    // 4 digits, starts with "9" (auto-derived from reportNumber)
-  officerId?: string;               // 6 digits, starts with "0"
+  officerId?: string;               // 5 digits, left-padded with zeros
   locationDescription?: string;     // Optional location reference
 
   // Page 2 Data (Verification)

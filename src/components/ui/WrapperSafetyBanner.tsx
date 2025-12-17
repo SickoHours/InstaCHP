@@ -62,7 +62,7 @@ const SAFETY_BLOCK_CONFIG: Record<SafetyBlockCode, SafetyBlockConfig> = {
     title: 'Rate Limit Active',
     description: 'CHP portal is receiving too many requests.',
     extendedDescription:
-      'We're temporarily pausing to avoid overloading the CHP portal. This protects your access.',
+      "We're temporarily pausing to avoid overloading the CHP portal. This protects your access.",
   },
   RUN_LOCK_ACTIVE: {
     icon: Lock,

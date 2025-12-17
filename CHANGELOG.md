@@ -5,6 +5,95 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.4] - 2025-12-16
+
+### Added
+
+#### Universal Wrapper Safety-Awareness System
+
+**Purpose:**
+Create a reusable safety banner component for consistent wrapper protection UI across the app, with a DEV-only preflight check to test safety states without burning real runs.
+
+**New Files Created:**
+
+1. **`src/components/ui/WrapperSafetyBanner.tsx`** - Shared safety banner component (~200 lines)
+   - `WrapperSafetyBanner` - Full banner with countdown, copy, and optional run ID
+   - `WrapperSafetyStatus` - Compact variant for headers/inline use
+   - Consistent copy for all 4 safety block types:
+     - **RATE_LIMIT_ACTIVE** → "Rate Limit Active" with ⚡ icon
+     - **RUN_LOCK_ACTIVE** → "Run in Progress" with 🔒 icon
+     - **COOLDOWN_ACTIVE** → "Cooldown Active" with 🕐 icon
+     - **CIRCUIT_BREAKER_ACTIVE** → "Circuit Breaker" with ⚠️ icon
+   - Shows countdown timer and "This is not an error – just a protective pause" messaging
+   - Two variants: `inline` (within cards) and `standalone` (full-width banner)
+
+2. **`src/app/api/wrapper/safety-check/route.ts`** - Preflight proxy route (~120 lines)
+   - Calls wrapper's `/api/safety-check` endpoint with `mode=simulate`
+   - Returns current safety state without executing a run
+   - Used for DEV testing and pre-run health checks
+   - Response includes `canRun`, `blockCode`, `retryAfterSeconds`, `safetyState`
+
+**Files Modified:**
+
+1. **`src/lib/wrapperClient.ts`** - Added preflight function (~40 lines)
+   - `runSafetyPreflight()` - Calls `/api/wrapper/safety-check` to check safety state
+   - Returns `SafetyPreflightResponse` with `canRun`, `blockCode`, `retryAfterSeconds`
+   - Used by DEV preflight button to test UI without real runs
+
+2. **`src/app/staff/jobs/[jobId]/page.tsx`** - Refactored to use shared component
+   - Replaced inline safety banner with `<WrapperSafetyBanner />` component
+   - Added preflight state management (`isRunningPreflight`)
+   - Added DEV-only "Preflight Check" button in safety testing section
+   - Preflight button calls `runSafetyPreflight()` and updates UI state
+
+3. **`src/components/ui/index.ts`** - Added exports
+   - `WrapperSafetyBanner` and `WrapperSafetyStatus` exports
+
+**Component Props:**
+
+```typescript
+interface WrapperSafetyBannerProps {
+  isActive: boolean;
+  safetyBlockCode: SafetyBlockCode | null;
+  countdown: number;
+  lastRunId?: string | null;
+  className?: string;
+  variant?: 'inline' | 'standalone';
+}
+```
+
+**Safety Block Messaging:**
+
+| Code | Title | Description |
+|------|-------|-------------|
+| `RATE_LIMIT_ACTIVE` | Rate Limit Active | We've reached CHP's request limit. |
+| `RUN_LOCK_ACTIVE` | Run in Progress | Another automation is currently running. |
+| `COOLDOWN_ACTIVE` | Cooldown Active | Brief pause between runs. |
+| `CIRCUIT_BREAKER_ACTIVE` | Circuit Breaker | System is temporarily paused due to repeated issues. |
+
+**DEV Testing:**
+
+The preflight button allows testing all safety UI states without:
+- Burning real wrapper runs
+- Waiting for actual rate limits
+- Triggering circuit breakers
+
+```typescript
+// Preflight check returns simulated safety state
+const result = await runSafetyPreflight();
+if (!result.canRun) {
+  // Show safety banner with result.blockCode
+}
+```
+
+**Files Created:** 2 files
+**Files Modified:** 3 files
+**Lines Added:** ~360 lines
+
+**Version:** V2.5.4 (Universal Safety-Awareness)
+
+---
+
 ## [2.5.3] - 2025-12-16
 
 ### Changed

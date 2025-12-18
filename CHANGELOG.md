@@ -5,6 +5,249 @@ All notable changes to InstaTCR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2025-12-17
+
+### Added
+
+#### CHP Wrapper V2.0+ Integration
+
+**Purpose:**
+Integrate production-ready features from chp-wrapper-tool v2.0+, including 6-digit officer ID support, preflight mode, firstName-only strategy, enhanced safety codes, and comprehensive testing.
+
+**Changes:**
+
+1. **6-Digit Officer ID Support (BREAKING CHANGE)**
+   - **`src/lib/utils.ts`** - Updated officer ID validation
+     - `OFFICER_ID_REGEX` now accepts 1-6 digits (was 5 digits only)
+     - `normalizeOfficerId()` no longer pads to 5 digits - preserves original length
+     - `formatOfficerIdError()` updated to validate 1-6 digits
+     - Comments updated to reflect wrapper v2.0+ behavior
+
+   - **`src/app/api/wrapper/run/route.ts`** - Updated server-side validation
+     - `normalizeOfficerId()` no longer pads (wrapper handles it)
+     - Validation accepts 1-6 digits (was 5 digits)
+     - Error message updated: "Officer ID must be 1-6 digits"
+     - Comments updated throughout
+
+   - **`src/lib/types.ts`** - Updated Job interface
+     - `officerId` comment: "1-6 digits (e.g., '01234', '022851') - wrapper v2.0+"
+
+   - **`src/lib/wrapperClient.ts`** - Updated request interface
+     - `officerId` comment: "1-6 digits (optional)"
+
+2. **Preflight Mode Support**
+   - **`src/lib/wrapperClient.ts`** - Added preflight mode parameter
+     - `WrapperRequest.preflightMode?: boolean` - NEW field
+     - When true, fills Page 1 form and verifies inputs WITHOUT clicking submit
+     - Prevents consuming CHP attempt budget during testing
+     - `runWrapper()` passes through preflightMode safely
+     - Comments document wrapper v2.0+ behavior
+
+3. **firstName-only Page 2 Strategy**
+   - **Documentation** - firstName-only now priority #2 (was last resort)
+     - Wrapper tries: 1) firstName+lastName, 2) firstName-only, 3) lastName-only, etc.
+     - No code changes needed in InstaTCR - wrapper handles strategy
+     - InstaTCR already supports sending requests with only firstName
+
+4. **Enhanced Safety Codes & Journey Log**
+   - **`src/lib/wrapperClient.ts`** - Updated response interfaces
+     - `WrapperSuccessResponse.journeyLog` - Always present in v2.0+
+     - `WrapperSuccessResponse.wrapperMode` - 'live' | 'mock'
+     - `WrapperSuccessResponse.mockScenario` - If mock mode, which scenario
+     - `WrapperErrorResponse.journeyLog` - Always present in v2.0+
+     - `WrapperErrorResponse.wrapperMode` - 'live' | 'mock'
+     - Error response parsing includes journeyLog, wrapperMode, mockScenario
+
+5. **Mock Mode Documentation**
+   - **`src/lib/wrapperClient.ts`** - Added mockScenario field
+     - `WrapperRequest.mockScenario?: string` - DEV/TEST ONLY
+     - Warning: stripped by runWrapper() and API route for security
+     - Available scenarios documented: success-full-report, success-face-page, no-result, page1-rejected, page2-failed
+
+   - **`.env.local`** - Added mock mode documentation
+     - Documents wrapper service requirements: WRAPPER_MOCK_MODE, WRAPPER_MOCK_KEY
+     - Explains X-Mock-Key header requirement
+     - Notes that mock mode is NOT supported through InstaTCR production API
+
+6. **Comprehensive Test Suite**
+   - **`src/__tests__/wrapper-v2-features.test.ts`** - NEW test file (~360 lines, 34 tests)
+     - Officer ID validation tests: 1-6 digits, normalization, error messages
+     - Preflight mode tests: request interface, page1SubmitClicked tracking
+     - firstName-only strategy tests: request validation
+     - Enhanced safety codes tests: code recognition
+     - Journey log tests: presence, preflight behavior
+     - Mock mode tests: wrapperMode, mockScenario fields
+     - Integration scenario tests: preflight->live flow, firstName-only with 6-digit officer ID, safety blocks
+
+   - **All tests pass:** 71 tests (34 new + 37 existing page1-guardrails tests)
+   - **TypeScript validation:** No type errors
+   - **Live production test:** ✅ SUCCESS (Case A - 6-digit officer ID + firstName-only)
+
+### Changed
+
+- **`src/app/law/jobs/new-fast/page.tsx`** - Updated UI text for 6-digit support
+  - Line 170: Error message updated to "1-6 digits"
+  - Line 764: Helper text updated to "1-6 digits (optional)"
+
+- **`src/components/ui/Page1AttemptGuard.tsx`** - Updated warning banner
+  - Line 91: "Officer ID (5 digits, left-padded)" → "Officer ID (1-6 digits)"
+
+### Fixed
+
+- **`src/lib/mockData.ts`** - Already using 6-digit officer IDs
+  - Multiple jobs have 6-digit officer IDs (e.g., '034521', '045678', '022851')
+  - Mock data already compatible with wrapper v2.0+ (no changes needed)
+
+### Technical Notes
+
+**Why These Changes?**
+
+1. **6-digit officer IDs:** Real CHP reports use 6-digit officer IDs in some regions (e.g., Bay Area)
+2. **Preflight mode:** Test Page 1 inputs without consuming limited CHP attempt budget
+3. **firstName-only strategy:** More flexible searches when lastName unknown or uncertain
+4. **Enhanced safety codes:** Better error handling for rate limits, circuit breaker, cooldowns
+5. **Journey log:** Always present for debugging - shows step-by-step what happened
+
+**Backwards Compatibility:**
+
+- 5-digit officer IDs still work (1-6 digits accepted)
+- preflightMode is optional (defaults to false - live mode)
+- All existing functionality preserved
+
+**Testing Strategy:**
+
+- Unit tests cover all new validation rules
+- Integration tests verify preflight->live flow
+- Type checking confirms no regressions
+- Mock data already compatible
+
+---
+
+## [2.7.2] - 2025-12-17
+
+### Added
+
+#### Production Safety Lockdown for Dev Tools
+
+**Purpose:**
+Ensure the dev test panel and mock scenarios cannot accidentally be used in production, and add a release checklist for CHP wrapper deployments.
+
+**New Files Created:**
+
+1. **`docs/RELEASE-CHECKLIST.md`** - Pre-production verification steps (~100 lines)
+   - Critical warning about Page 1 attempt limits (~2 max before permanent lockout)
+   - Pre-production testing requirements:
+     - Staging test matrix first
+     - One known-good real run
+     - Never intentionally fail Page 1 on live CHP
+   - Environment configuration checklist
+   - Security verification steps
+   - Emergency procedures for lockouts
+   - Rollback procedure
+
+**Access Control Updates:**
+
+- **`src/lib/devConfig.ts`** - Added dev tools access control (~25 lines)
+  - Added `DEV_TOOLS_ENABLED` constant - checks `DEV_TOOLS_ENABLED=1` env var
+  - Added `isAdminUser()` - V1 stub, V2+ will use Clerk/Auth0
+  - Added `canAccessDevTools()` - returns true only in dev mode OR when `DEV_TOOLS_ENABLED=1` with admin
+
+- **`src/app/staff/dev/page1-test/page.tsx`** - Added access gating (~30 lines)
+  - Added `AccessDenied` component for unauthorized access
+  - Checks `canAccessDevTools()` at component start
+  - Shows "DEV MODE" badge in dev environment
+  - Shows "ADMIN TOOLS" badge in production with explicit enablement
+  - Updated version to V2.7.1
+
+**Mock Scenario Protection:**
+
+- **`src/app/api/wrapper/run/route.ts`** - Added server-side protection
+  - Explicitly strips `mockScenario` from all incoming requests
+  - Logs warning when stripping occurs
+  - Comment: "SECURITY: Strip mockScenario from all requests"
+
+- **`src/lib/wrapperClient.ts`** - Added client-side defense-in-depth
+  - `runWrapper()` now strips `mockScenario` before sending to server
+  - Double protection ensures mock scenarios never reach real CHP
+
+### Changed
+
+- **`src/components/ui/Page1AttemptGuard.tsx`** - Enhanced confirmation modal copy
+  - Updated docstring explaining "consumed" failures more clearly
+  - Changed body text to: "CHP rejected your previous Page 1 lookup attempt. This counts against the limited attempts before lockout."
+
+- **`AGENTS.md`** - Updated to v1.2
+  - Added reference to `docs/RELEASE-CHECKLIST.md` in Additional Resources
+  - Updated date to 2025-12-16
+
+### Fixed
+
+- **`src/__tests__/page1-guardrails.test.ts`** - Fixed TypeScript type error
+  - Updated `createTestJob` factory to include required Job fields
+  - Added `lawFirmId`, `lawFirmName`, `clientType`, `ncic` to test job
+
+---
+
+## [2.7.1] - 2025-12-17
+
+### Added
+
+#### Dev Test Panel for Page 1 Guardrails Verification
+
+**Purpose:**
+End-to-end verification that Page 1 attempt guardrails work correctly and failure counts are only incremented when a real Page 1 submit happened.
+
+**New Files Created:**
+
+1. **`src/app/staff/dev/page1-test/page.tsx`** - Dev Test Panel (~450 lines)
+   - Test matrix with 8 mock wrapper scenarios covering all result types
+   - Visual display of `errorCategory`, `page1SubmitClicked`, `isPage1Rejection`, `consumedPage1Attempt`
+   - Live job state tracking showing `page1FailureCount`, `isPage1Locked`, `needsPage1Confirmation`
+   - UI component preview for `Page1WarningBanner`, `Page1ConfirmationModal`, `Page1LockedBanner`
+   - Run All Tests button that executes complete test matrix
+   - Helper function reference documentation
+
+2. **`src/__tests__/page1-guardrails.test.ts`** - Unit/Integration Tests (~300 lines, 37 tests)
+   - `isPage1Rejection()` tests: All 7 WrapperResult types + undefined
+   - `consumedPage1Attempt()` tests: Complete test matrix per requirements
+   - UI helper tests: `getPage1FailureCount`, `isPage1Locked`, `needsPage1Confirmation`, `getPage1WarningLevel`, `canRunWrapperForPage1`
+   - Integration scenario tests: Full flow from fresh job through lockout
+   - Edge case tests: Success after failures, all failure types in sequence
+
+3. **`vitest.config.ts`** - Vitest configuration for the project
+   - Enabled globals for cleaner test syntax
+   - Path alias support for `@/` imports
+   - Node environment for fast unit tests
+
+**Test Matrix Verified:**
+
+| Scenario | page1SubmitClicked | Result | Should Increment |
+|----------|-------------------|--------|-----------------|
+| Pre-submit validation fail | false | PAGE1_NOT_FOUND | NO ✓ |
+| Pre-submit network error | false | PORTAL_ERROR | NO ✓ |
+| Page 1 not found (submitted) | true | PAGE1_NOT_FOUND | YES ✓ |
+| Page 1 attempt risk (submitted) | true | PAGE1_REJECTED_ATTEMPT_RISK | YES ✓ |
+| Page 2 failed (Page 1 OK) | true | PAGE2_VERIFICATION_FAILED | NO ✓ |
+| Success - full report | true | FULL | NO ✓ |
+| Success - face page | true | FACE_PAGE | NO ✓ |
+| Portal error (submitted) | true | PORTAL_ERROR | NO ✓ |
+
+**Package Updates:**
+
+- **`package.json`** - Added vitest and test scripts
+  - Added `vitest` ^3.2.2 to devDependencies
+  - Added `test` script: `vitest`
+  - Added `test:run` script: `vitest run`
+
+### Changed
+
+- **`src/components/ui/Page1AttemptGuard.tsx`** - Updated modal copy
+  - Added clarification that modal is only triggered after CONSUMED Page 1 failure
+  - Updated body text: "Your previous attempt was rejected by CHP..."
+  - Lists what does NOT trigger modal: validation failures, network errors, Page 2 failures, DOM/timeout issues
+
+---
+
 ## [2.7.0] - 2025-12-16
 
 ### Added

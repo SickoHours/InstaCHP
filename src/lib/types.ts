@@ -309,7 +309,7 @@ export interface Job {
   crashDate?: string; // Format: MM/DD/YYYY (optional for NEW jobs)
   crashTime?: string; // Format: HHMM (24-hour)
   ncic: string; // 4 digits, derived from report number
-  officerId?: string; // 5 digits, left-padded with zeros (e.g., "01234")
+  officerId?: string; // 1-6 digits (e.g., "01234", "022851") - wrapper v2.0+
   locationDescription?: string;
 
   // Verification Fields (Page 2 data)

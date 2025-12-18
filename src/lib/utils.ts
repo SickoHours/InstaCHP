@@ -180,34 +180,36 @@ export function formatRelativeTime(timestamp: number): string {
 
 /**
  * Regular expression for officer ID validation
- * Format: 5 digits, left-padded with zeros
- * @example "01234" - valid
- * @example "12345" - valid
+ * Format: 1-6 digits (CHP wrapper updated to support 6-digit officer IDs)
+ * @example "1234" - valid (4 digits)
+ * @example "01234" - valid (5 digits)
+ * @example "022851" - valid (6 digits)
  */
-export const OFFICER_ID_REGEX = /^\d{5}$/;
+export const OFFICER_ID_REGEX = /^\d{1,6}$/;
 
 /**
- * Normalize officer ID to 5 digits with leading zeros
- * @example normalizeOfficerId('1234') => '01234'
+ * Normalize officer ID - preserve original length (CHP wrapper handles padding)
+ * NOTE: We no longer pad to 5 digits client-side. The wrapper accepts 1-6 digits.
+ * @example normalizeOfficerId('1234') => '1234'
  * @example normalizeOfficerId('01234') => '01234'
- * @example normalizeOfficerId('123') => '00123'
+ * @example normalizeOfficerId('022851') => '022851'
  */
 export function normalizeOfficerId(value: string): string {
   if (!value) return '';
   // Extract only digits
   const digitsOnly = value.replace(/\D/g, '');
-  // Pad to 5 digits with leading zeros
-  return digitsOnly.padStart(5, '0');
+  // Return as-is (no padding) - let wrapper handle it
+  return digitsOnly;
 }
 
 /**
  * Validate officer ID format
  * @param value - The officer ID to validate
- * @returns true if valid format (5 digits, left-padded), false otherwise
+ * @returns true if valid format (1-6 digits), false otherwise
+ * @example isValidOfficerId('1234') => true
  * @example isValidOfficerId('01234') => true
- * @example isValidOfficerId('12345') => true
- * @example isValidOfficerId('1234') => false (too short)
- * @example isValidOfficerId('123456') => false (too long)
+ * @example isValidOfficerId('022851') => true (6 digits)
+ * @example isValidOfficerId('1234567') => false (too long)
  */
 export function isValidOfficerId(value: string): boolean {
   return OFFICER_ID_REGEX.test(value);
@@ -221,7 +223,7 @@ export function isValidOfficerId(value: string): boolean {
  */
 export function formatOfficerIdError(value: string): string | undefined {
   if (!value) return undefined; // Empty is OK (field is optional)
-  if (value.length !== 5) return 'Must be exactly 5 digits';
+  if (value.length < 1 || value.length > 6) return 'Must be 1-6 digits';
   if (!/^\d+$/.test(value)) return 'Must contain only digits';
   return undefined; // Valid
 }
@@ -266,7 +268,7 @@ export function normalizePage1Inputs(page1Data: {
     crashDate: page1Data.crashDate,
     // Crash time: normalize HH:MM or HHMM to HHMM
     crashTime: normalizeCrashTime(page1Data.crashTime),
-    // Officer ID: 5 digits with leading zeros
+    // Officer ID: 1-6 digits (no padding - preserved as-is)
     officerId: normalizeOfficerId(page1Data.officerId),
   };
 }

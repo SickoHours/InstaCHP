@@ -88,7 +88,7 @@ export function Page1WarningBanner({ className }: Page1WarningBannerProps) {
             <li>Crash Date (exact date, MM/DD/YYYY)</li>
             <li>Crash Time (24-hour format, e.g., 1430)</li>
             <li>Report Number (exact digits)</li>
-            <li>Officer ID (5 digits, left-padded)</li>
+            <li>Officer ID (1-6 digits)</li>
           </ul>
         </div>
       </div>
@@ -109,8 +109,19 @@ interface Page1ConfirmationModalProps {
 }
 
 /**
- * Confirmation modal shown after one Page 1 failure
- * Requires re-typing crash date and time to confirm
+ * Confirmation modal shown after one CONSUMED Page 1 failure
+ * (i.e., page1SubmitClicked === true AND Page 1 rejection)
+ *
+ * A "consumed" failure means CHP actually processed and rejected the Page 1 lookup.
+ * This is tracked via page1FailureCount in the job state.
+ *
+ * NOT triggered by:
+ * - Validation failures (pre-submit, client-side)
+ * - Network errors or timeouts (no CHP contact)
+ * - Page 2 failures (Page 1 passed)
+ * - DOM/timeout issues before submission
+ *
+ * Requires re-typing crash date and time to confirm intent
  */
 export function Page1ConfirmationModal({
   isOpen,
@@ -192,7 +203,7 @@ export function Page1ConfirmationModal({
           </div>
 
           <p className="text-sm text-slate-400">
-            Please re-confirm the crash details by typing them below:
+            CHP rejected your previous Page 1 lookup attempt. This counts against the limited attempts before lockout. Please verify the crash details before your final attempt:
           </p>
 
           {/* Crash Date Input */}

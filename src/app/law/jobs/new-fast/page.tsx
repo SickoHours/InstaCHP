@@ -167,7 +167,7 @@ export default function FastFormPage() {
           break;
         case 'officerId':
           if (value && !isValidOfficerId(value as string)) {
-            return '5 digits (left-padded with zeros)';
+            return '1-6 digits';
           }
           break;
         case 'clientFullName':
@@ -761,7 +761,7 @@ export default function FastFormPage() {
                     onBlur={() => handleBlur('officerId')}
                     error={touched.officerId ? errors.officerId : undefined}
                     isValid={formState.officerId ? isFieldValid('officerId') : undefined}
-                    helperText="5 digits, left-padded (optional)"
+                    helperText="1-6 digits (optional)"
                     theme={isDark ? 'dark' : 'light'}
                     inputMode="numeric"
                     maxLength={6}

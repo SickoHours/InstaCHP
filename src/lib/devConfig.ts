@@ -7,6 +7,31 @@
 
 export const DEV_MODE = process.env.NODE_ENV === 'development';
 
+/**
+ * Check if dev tools are enabled via environment variable
+ * Use DEV_TOOLS_ENABLED=1 in production to enable dev tools for admin users
+ */
+export const DEV_TOOLS_ENABLED = process.env.DEV_TOOLS_ENABLED === '1' || DEV_MODE;
+
+/**
+ * Check if current user is an admin (V1: always true for staff, V2+: real auth)
+ * In V1 mock mode, any staff access counts as admin
+ */
+export function isAdminUser(): boolean {
+  // V1: No real auth - assume staff users are admins for dev tool access
+  // V2+: This should check Clerk/Auth0 roles
+  return true;
+}
+
+/**
+ * Check if dev tools should be accessible
+ * Requires: DEV_MODE OR (DEV_TOOLS_ENABLED=1 AND admin user)
+ */
+export function canAccessDevTools(): boolean {
+  if (DEV_MODE) return true;
+  return DEV_TOOLS_ENABLED && isAdminUser();
+}
+
 export const DEV_CONFIG = {
   /**
    * Skip file upload requirements in dev mode

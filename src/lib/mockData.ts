@@ -911,6 +911,92 @@ export const mockJobs: Job[] = [
     createdAt: now - days(2),
     updatedAt: now - hours(2),
   },
+
+  // ========================================
+  // V2.7.0: Page 1 Attempt Guardrail Test Jobs
+  // ========================================
+
+  // Test: 1 Page 1 failure - should show confirmation modal before next run
+  {
+    _id: 'job_p1_test_1',
+    lawFirmId: LAW_FIRMS.MARTINEZ.id,
+    lawFirmName: LAW_FIRMS.MARTINEZ.name,
+    clientName: '[TEST] Page1 - Needs Confirmation',
+    clientType: 'driver',
+    reportNumber: '9111-2025-00001',
+    crashDate: '12/10/2025',
+    crashTime: '0930',
+    ncic: '9111',
+    firstName: 'Test',
+    lastName: 'Page1Confirm',
+    officerId: '01234',
+    internalStatus: 'NEEDS_MORE_INFO',
+    page1FailureCount: 1,
+    lastPage1FailureAt: now - hours(1),
+    wrapperRuns: [
+      {
+        runId: 'run_p1_test_1',
+        timestamp: now - hours(1),
+        result: 'PAGE1_NOT_FOUND',
+        duration: 12000,
+        errorMessage: 'No matching report found for the provided criteria',
+      },
+    ],
+    interactiveState: {
+      driverPassengerAsked: true,
+      chpNudgeDismissed: true,
+      flowStep: 'done',
+    },
+    createdAt: now - hours(2),
+    updatedAt: now - hours(1),
+  },
+
+  // Test: 2 Page 1 failures - should show locked banner, hide Run button
+  {
+    _id: 'job_p1_test_2',
+    lawFirmId: LAW_FIRMS.MARTINEZ.id,
+    lawFirmName: LAW_FIRMS.MARTINEZ.name,
+    clientName: '[TEST] Page1 - LOCKED',
+    clientType: 'driver',
+    reportNumber: '9111-2025-00002',
+    crashDate: '12/10/2025',
+    crashTime: '1430',
+    ncic: '9111',
+    firstName: 'Test',
+    lastName: 'Page1Locked',
+    officerId: '05678',
+    internalStatus: 'NEEDS_IN_PERSON_PICKUP',
+    page1FailureCount: 2,
+    lastPage1FailureAt: now - hours(30),
+    wrapperRuns: [
+      {
+        runId: 'run_p1_test_2a',
+        timestamp: now - hours(48),
+        result: 'PAGE1_NOT_FOUND',
+        duration: 11000,
+        errorMessage: 'No matching report found',
+      },
+      {
+        runId: 'run_p1_test_2b',
+        timestamp: now - hours(30),
+        result: 'PAGE1_REJECTED_ATTEMPT_RISK',
+        duration: 8000,
+        errorMessage: 'CHP detected too many attempts',
+      },
+    ],
+    escalationData: {
+      status: 'pending_authorization',
+      escalatedAt: now - hours(30),
+      escalationReason: 'manual',
+    },
+    interactiveState: {
+      driverPassengerAsked: true,
+      chpNudgeDismissed: true,
+      flowStep: 'done',
+    },
+    createdAt: now - days(2),
+    updatedAt: now - hours(30),
+  },
 ];
 
 // ============================================

@@ -38,14 +38,15 @@ function normalizeCrashTime(value: string): string {
 }
 
 /**
- * Normalize officerId to 5 digits with leading zeros
+ * Normalize officerId - preserve original length (CHP wrapper handles padding)
+ * NOTE: Wrapper now accepts 1-6 digits. No client-side padding needed.
  */
 function normalizeOfficerId(value: string): string {
   if (!value) return '';
   // Extract only digits
   const digitsOnly = value.replace(/\D/g, '');
-  // Pad to 5 digits with leading zeros
-  return digitsOnly.padStart(5, '0');
+  // Return as-is (no padding) - let wrapper handle it
+  return digitsOnly;
 }
 
 /**
@@ -67,7 +68,7 @@ function normalizePage1Inputs(body: Record<string, unknown>): Record<string, unk
     normalized.crashTime = normalizeCrashTime(normalized.crashTime);
   }
   
-  // Normalize officerId (5 digits with leading zeros)
+  // Normalize officerId (1-6 digits, no padding)
   if (typeof normalized.officerId === 'string' && normalized.officerId) {
     normalized.officerId = normalizeOfficerId(normalized.officerId);
   }
@@ -100,7 +101,7 @@ interface Page1ValidationResult {
  * - crashDate: YYYY-MM-DD format, not in future, not before 1990
  * - crashTime: HHMM 24-hour format (0000-2359)
  * - ncic: Exactly 4 digits starting with 9
- * - officerId: 5 digits, left-padded with zeros (optional field)
+ * - officerId: 1-6 digits (optional field)
  */
 function validatePage1Fields(body: Record<string, unknown>): Page1ValidationResult {
   const errors: Record<string, string> = {};
@@ -163,13 +164,13 @@ function validatePage1Fields(body: Record<string, unknown>): Page1ValidationResu
     }
   }
 
-  // officerId: 5 digits, left-padded with zeros (optional, post-normalization)
+  // officerId: 1-6 digits (optional, post-normalization)
   const officerId = body.officerId;
   if (officerId !== undefined && officerId !== null && officerId !== '') {
     if (typeof officerId !== 'string') {
       errors.officerId = 'Officer ID must be a string';
-    } else if (!/^\d{5}$/.test(officerId)) {
-      errors.officerId = 'Officer ID must be 5 digits (left-padded with zeros)';
+    } else if (!/^\d{1,6}$/.test(officerId)) {
+      errors.officerId = 'Officer ID must be 1-6 digits';
     }
   }
 
@@ -338,8 +339,17 @@ export async function POST(
     );
   }
 
+  // SECURITY: Strip mockScenario from all requests
+  // This ensures production wrapper calls never include test scenarios.
+  // Only the dev test panel (/staff/dev/page1-test) can use mock scenarios,
+  // and those are processed client-side - never sent to the real wrapper.
+  if ('mockScenario' in rawBody) {
+    console.warn('[wrapper/run] Stripped mockScenario from request - production safety');
+    delete rawBody.mockScenario;
+  }
+
   // 3. Normalize Page 1 inputs before validation
-  // This applies: crashTime HH:MM->HHMM, officerId->5 digits, ncic from reportNumber
+  // This applies: crashTime HH:MM->HHMM, officerId->digits only (1-6), ncic from reportNumber
   const body = normalizePage1Inputs(rawBody);
   console.log('[wrapper/run] Normalized Page 1:', {
     crashDate: body.crashDate,

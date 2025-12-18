@@ -1,7 +1,7 @@
 # InstaTCR - Guide for AI Agents
 
-**Version:** 1.1
-**Last Updated:** 2025-12-13
+**Version:** 1.2
+**Last Updated:** 2025-12-16
 **Purpose:** Help AI agents navigate InstaTCR documentation and work effectively in this codebase
 
 ---
@@ -262,6 +262,11 @@ When product behavior is unclear or documents disagree, follow this precedence:
 
 **Components:** `src/components/ui/Page1AttemptGuard.tsx`, `src/components/ui/Page1FailureCard.tsx`
 
+**Dev Verification (V2.7.1+):**
+- Dev Test Panel: `/staff/dev/page1-test` - Visual test matrix with live state tracking
+- Unit Tests: `npm run test:run` - 37 tests covering all guardrail logic
+- Test file: `src/__tests__/page1-guardrails.test.ts`
+
 ---
 
 ## 🔧 Tech Stack Reference
@@ -363,8 +368,9 @@ When product behavior is unclear or documents disagree, follow this precedence:
 - **[src/lib/types.ts](src/lib/types.ts)** - All TypeScript interfaces
 - **[src/lib/statusMapping.ts](src/lib/statusMapping.ts)** - Canonical status mapping
 - **[docs/notes/](docs/notes/)** - Historical documentation change notes
+- **[docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md)** - Pre-production verification steps
 
 ---
 
-*Last Updated: 2025-12-13*
+*Last Updated: 2025-12-16*
 *For Claude-specific tips, see [CLAUDE.md](CLAUDE.md)*

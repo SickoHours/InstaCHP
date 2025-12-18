@@ -82,7 +82,7 @@ export interface WrapperRequest {
   crashDate?: string;      // Format: YYYY-MM-DD (recommended) or MM/DD/YYYY (legacy)
   crashTime?: string;      // Format: HHMM (24-hour)
   ncic?: string;           // 4 digits, derived from report number
-  officerId?: string;      // 5 digits, left-padded (optional)
+  officerId?: string;      // 1-6 digits (optional)
 
   // Page 2 verification fields (at least one required)
   firstName?: string;
@@ -92,6 +92,18 @@ export interface WrapperRequest {
   vin?: string;
   organizationName?: string;
   propertyOwnerName?: string;
+
+  // Preflight mode (NEW in wrapper v2.0+)
+  // When true, fills Page 1 form and verifies inputs WITHOUT clicking submit
+  // This lets you test inputs without consuming CHP attempt budget
+  preflightMode?: boolean;
+
+  // Mock mode (DEV/TEST ONLY - NEW in wrapper v2.0+)
+  // Requires wrapper WRAPPER_MOCK_MODE=1 and X-Mock-Key header
+  // WARNING: This field is stripped by runWrapper() and the API route for security
+  // Available scenarios: 'success-full-report', 'success-face-page', 'no-result',
+  //                      'page1-rejected', 'page2-failed'
+  mockScenario?: string;
 }
 
 /**
@@ -103,11 +115,15 @@ export interface WrapperSuccessResponse {
   mappedResultType: WrapperResult;
   message?: string;
   downloadToken?: string;
-  journeyLog?: string[];
+  journeyLog?: string[]; // Always present in wrapper v2.0+
   duration?: number;
   fieldErrors?: Record<string, string>;
   page1Hash?: string; // For duplicate detection
   page1SubmitClicked?: boolean; // True if Page 1 submit button was clicked (attempt consumed)
+
+  // NEW in wrapper v2.0+
+  wrapperMode?: 'live' | 'mock'; // Indicates if response is from mock or live mode
+  mockScenario?: string; // If mock mode, which scenario was used
 }
 
 /**
@@ -142,11 +158,16 @@ export interface WrapperErrorResponse {
   mappedResultType?: WrapperResult;
   message?: string;
   fieldErrors?: Record<string, string>;
+  journeyLog?: string[]; // Always present in wrapper v2.0+ (shows what happened)
   // Safety block fields
   retryAfterSeconds?: number;
   blockedUntil?: number; // Unix timestamp when block expires
   page1Hash?: string; // For duplicate detection
   page1SubmitClicked?: boolean; // True if Page 1 submit button was clicked (attempt consumed)
+
+  // NEW in wrapper v2.0+
+  wrapperMode?: 'live' | 'mock'; // Indicates if response is from mock or live mode
+  mockScenario?: string; // If mock mode, which scenario was used
 }
 
 /**
@@ -161,6 +182,13 @@ export type WrapperResponse = WrapperSuccessResponse | WrapperErrorResponse;
 /**
  * Call the CHP wrapper via the proxy route
  *
+ * SECURITY: This function never sends mockScenario to the wrapper.
+ * Mock scenarios are only for the dev test panel's client-side testing.
+ *
+ * NEW in wrapper v2.0+:
+ * - preflightMode: Test Page 1 inputs without clicking submit (no attempt consumed)
+ * - firstName-only strategy: Can omit lastName (firstName-only tried before plate/VIN)
+ *
  * @param request - Wrapper request payload
  * @returns Wrapper response with mappedResultType for UI compatibility
  */
@@ -171,13 +199,24 @@ export async function runWrapper(request: WrapperRequest): Promise<WrapperRespon
     crashDate: request.crashDate ? normalizeDate(request.crashDate) : undefined,
   };
 
+  // SECURITY: Never send mockScenario to the real wrapper
+  // This is a defense-in-depth measure (server also strips it)
+  // preflightMode is allowed and passed through safely
+  const safeRequest = { ...normalizedRequest };
+  if ('mockScenario' in safeRequest) {
+    delete (safeRequest as Record<string, unknown>).mockScenario;
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[wrapperClient] Stripped mockScenario from request');
+    }
+  }
+
   try {
     const response = await fetch('/api/wrapper/run', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(normalizedRequest),
+      body: JSON.stringify(safeRequest),
     });
 
     // Parse response (always JSON from our proxy)
@@ -196,10 +235,13 @@ export async function runWrapper(request: WrapperRequest): Promise<WrapperRespon
       mappedResultType: data.mappedResultType,
       message: data.message,
       fieldErrors: data.fieldErrors,
+      journeyLog: data.journeyLog,
       retryAfterSeconds: data.retryAfterSeconds,
       blockedUntil: data.blockedUntil,
       page1Hash: data.page1Hash,
       page1SubmitClicked: data.page1SubmitClicked,
+      wrapperMode: data.wrapperMode,
+      mockScenario: data.mockScenario,
     } as WrapperErrorResponse;
   } catch (error) {
     // Network error (couldn't reach proxy)
